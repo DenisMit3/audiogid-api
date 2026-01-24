@@ -1,36 +1,32 @@
 from datetime import datetime
 import json
 import httpx
+import hashlib
 from sqlmodel import Session, select
-from .models import Job, IngestionRun, PoiStaging, HelperPlace
+from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
 from .config import config
 
-# ... (Previous imports and process_job dispatcher same as before) ...
+# ... (Previous imports and process_job dispatcher updated) ...
+
 def process_job(session: Session, job: Job):
     if job.type == "osm_import":
         _process_osm_import(session, job)
     elif job.type == "helpers_import":
         _process_helpers_import(session, job)
+    elif job.type == "delete_user_data": # PR-10
+        _process_deletion(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"
 
-def _process_osm_import(session: Session, job: Job):
-    # (Same logic as PR-3/4 for Staging, skipping redundant paste)
-    # Staging doesn't have geo column, it has raw_payload.
-    # We do NOT propagate to POI table here yet (that is Publish step).
-    # So no change needed here for geo.
-    # ...
-    # Wait, strict rules say I should overwrite full content usually?
-    # I'll stick to 'no change' assumption if file is huge, but to be safe I'll recreate it fully 
-    # if I'm creating a functioning system, I just need to ensure imports are satisfied.
-    # But wait! HelperPlace IS written here directly.
-    # I need to update HelperPlace writing to include geo.
-    pass 
-    # ... (Actual code reuse below) ...
+# ... (Previous _process_osm_import and _process_helpers_import omitted for brevity, assume retained) ...
+# I will paste the previous methods to prevent erasure if overwrite is true.
+# Since I am using `write_to_file` and NOT `replace`, I must provide FULL CONTENT.
+# I will use a placeholder comment for the large OSM methods if I was smart, but "Overwrite: true" means I destroy them.
+# I MUST REWRITE THEM.
 
-# RE-WRITING FULL FILE TO ENSURE HELPER UPDATE
 def _process_osm_import(session: Session, job: Job):
+    # (Restored from PR-6 context)
     payload = json.loads(job.payload or "{}")
     city_slug = payload.get("city_slug")
     boundary_ref = payload.get("boundary_ref")
@@ -85,6 +81,7 @@ def _process_osm_import(session: Session, job: Job):
         session.commit()
 
 def _process_helpers_import(session: Session, job: Job):
+    # (Restored from PR-6 context)
     payload = json.loads(job.payload or "{}")
     city_slug = payload.get("city_slug")
     boundary_id = "319662" if city_slug == "kaliningrad_city" else None
@@ -119,10 +116,6 @@ def _process_helpers_import(session: Session, job: Job):
             lat, lon = el.get("lat"), el.get("lon")
             if lat is None or lon is None: continue
             
-            # PostGIS Point
-            # We must construct WKT for "POINT(lon lat)"
-            # And enable session to write it. SQLModel might struggle with WKTElement if we typed it as Any.
-            # Easiest way using SQLModel with GeoAlchemy2 is WKTElement.
             point_wkt = f"POINT({lon} {lat})"
             
             stmt = select(HelperPlace).where(HelperPlace.city_slug == city_slug, HelperPlace.osm_id == e_id)
@@ -162,3 +155,68 @@ def _process_helpers_import(session: Session, job: Job):
     finally:
         session.add(run)
         session.commit()
+
+# --- PR-10 Deletion Logic ---
+def _process_deletion(session: Session, job: Job):
+    payload = json.loads(job.payload or "{}")
+    req_id = payload.get("deletion_request_id")
+    subject_id = payload.get("subject_id")
+    
+    req = session.get(DeletionRequest, req_id)
+    if not req:
+        job.error = "DeletionRequest not found"
+        job.status = "FAILED"
+        return
+
+    try:
+        req.status = "PROCESSING"
+        session.add(req)
+        session.commit()
+        
+        log_summary = {"revoked_entitlements": 0, "anonymized_intents": 0, "anonymized_purchases": 0}
+        
+        # 1. Entitlements -> Revoke
+        ents = session.exec(select(Entitlement).where(Entitlement.device_anon_id == subject_id)).all()
+        for e in ents:
+            e.revoked_at = datetime.utcnow()
+            session.add(e)
+            log_summary["revoked_entitlements"] += 1
+            
+        # 2. Intents -> Anonymize
+        intents = session.exec(select(PurchaseIntent).where(PurchaseIntent.device_anon_id == subject_id)).all()
+        for i in intents:
+            i.device_anon_id = f"anon_{hashlib.sha256(i.idempotency_key.encode()).hexdigest()[:12]}"
+            i.status = "ANONYMIZED"
+            session.add(i)
+            log_summary["anonymized_intents"] += 1
+            
+        # 3. Purchases -> Anonymize (No direct link to subject_id in Purchase table, it's via Intent)
+        # But if the Intent is anonymized, the Purchase is effectively unlinkable to the device.
+        # We might want to mark status explicitly?
+        # Purchases linked to Anonymized Intents are kept for records.
+        
+        req.status = "COMPLETED"
+        req.completed_at = datetime.utcnow()
+        req.log_json = json.dumps(log_summary)
+        
+        session.add(req)
+        
+        # Audit
+        audit = AuditLog(
+            action="USER_DELETION",
+            target_id=req.id,
+            actor_type="system",
+            actor_fingerprint="worker"
+        )
+        session.add(audit)
+        
+        session.commit()
+        job.status = "COMPLETED"
+        job.result = "Deleted"
+        
+    except Exception as e:
+        req.status = "FAILED"
+        req.last_error = str(e)
+        session.add(req)
+        session.commit()
+        raise e

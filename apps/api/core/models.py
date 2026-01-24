@@ -19,7 +19,7 @@ class City(CityBase, table=True):
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
-    description_ru: Optional[str] = None # Added PR-9
+    description_ru: Optional[str] = None 
     published_at: Optional[datetime] = Field(default=None, index=True)
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
@@ -114,7 +114,7 @@ class Purchase(SQLModel, table=True):
     store: str 
     store_transaction_id: str = Field(index=True)
     purchased_at: datetime = Field(default_factory=datetime.utcnow)
-    status: str = Field(default="VALID") 
+    status: str = Field(default="VALID") # VALID, REVOKED, ANONYMIZED
 
 class Entitlement(SQLModel, table=True):
     __tablename__ = "entitlements"
@@ -124,6 +124,24 @@ class Entitlement(SQLModel, table=True):
     device_anon_id: str = Field(index=True)
     granted_at: datetime = Field(default_factory=datetime.utcnow)
     revoked_at: Optional[datetime] = None
+
+# --- PR-10: Deletion Requests ---
+
+class DeletionRequest(SQLModel, table=True):
+    __tablename__ = "deletion_requests"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    subject_type: str = Field(default="DEVICE") # DEVICE
+    subject_id: str = Field(index=True) # device_anon_id
+    status: str = Field(default="PENDING", index=True) # PENDING, PROCESSING, COMPLETED, FAILED
+    request_channel: str = Field(default="IN_APP") # IN_APP, WEB
+    
+    idempotency_key: str = Field(unique=True, index=True)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    
+    log_json: Optional[str] = None
+    last_error: Optional[str] = None
 
 # --- Helpers ---
 class Job(SQLModel, table=True):
@@ -142,7 +160,7 @@ class AuditLog(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     action: str 
     target_id: uuid.UUID = Field(index=True)
-    actor_type: str = "admin_token"
+    actor_type: str = "admin_token" # or "system"
     actor_fingerprint: str 
     trace_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

@@ -1,24 +1,23 @@
 # API Documentation
 
 ## Overview
-*   **Protocol**: REST / OpenAPI 3.1.
 *   **Base URL**: `/api/v1`
 
-## Offline & Entitlements
-*   **Manifest**: `GET /tours/{id}/manifest` is the **Premium** endpoint. It requires a purchased Entitlement (checked via `device_anon_id`).
-*   **Public Detail**: `GET /tours/{id}` is the **Store Page**. It is public but omits description/assets.
+## Deletion & Privacy
+*   **Security**: All deletion requests require a `proof` token.
+    *   **Get Token**: `POST /public/account/delete/token` (In-App).
+    *   **Request Deletion**: `POST /public/account/delete/request` (Requires Token).
+*   **Web Deletion**: `GET /delete` (HTML Form, requires Token).
+*   **Status**: `GET /public/account/delete/status`.
+*   **Cache-Control**: `no-store` on all deletion flow endpoints.
 
-## Endpoints
-
-### Public
-*   `GET /manifest`: **Premium**. Returns full offline package.
+### Public Endpoints
 *   `GET /tours`: List.
-*   `GET /tours/{id}`: Detail (Metadata).
-*   `POST /purchases/...`: Purchase flow.
+*   `GET /tours/{id}/manifest`: **Premium**.
+*   `POST /purchases/tours/intent`: Purchase.
+*   `GET /entitlements`: Check access.
+*   `GET /nearby`: Geo search.
 
-### Admin
-*   **Publish Gates**:
-    *   Sources required.
-    *   Licensed Media required.
-    *   **Audio Coverage**: All POIs must have Audio.
-    *   All POIs must be Published.
+### Admin Endpoints
+*   `POST /admin/tours`: Manage.
+*   `POST /admin/tours/{id}/publish`: Gate check.

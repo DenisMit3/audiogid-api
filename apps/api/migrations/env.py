@@ -1,4 +1,5 @@
 from logging.config import fileConfig
+import os
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -59,11 +60,13 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    from core.config import config as app_config
     
-    # Override URL with environment variable
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = app_config.DATABASE_URL
+    # Override URL with environment variable IF PRESENT, else use alembic.ini default
+    db_url = os.getenv("DATABASE_URL")
+    
+    configuration = config.get_section(config.config_ini_section) or {}
+    if db_url:
+        configuration["sqlalchemy.url"] = db_url
     
     connectable = engine_from_config(
         configuration,

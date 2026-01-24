@@ -1,8 +1,9 @@
 import sys
 import os
 
-# Add the api directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the apps/api directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 from api.index import app
 

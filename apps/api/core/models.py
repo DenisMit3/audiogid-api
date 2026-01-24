@@ -5,7 +5,7 @@ from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
 
-# --- Previous Models (Cities, Pois, Tours, etc.) ---
+# --- Previous Models ---
 class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
@@ -19,6 +19,7 @@ class City(CityBase, table=True):
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
+    description_ru: Optional[str] = None # Added PR-9
     published_at: Optional[datetime] = Field(default=None, index=True)
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
@@ -95,20 +96,14 @@ class TourMedia(SQLModel, table=True):
     source_page_url: str
     tour: Optional[Tour] = Relationship(back_populates="media")
 
-# --- PR-8: Purchases & Entitlements ---
-
 class PurchaseIntent(SQLModel, table=True):
     __tablename__ = "purchase_intents"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
     tour_id: uuid.UUID = Field(index=True)
     device_anon_id: str = Field(index=True)
-    platform: str # 'ios' or 'android'
-    
-    # Status
-    status: str = Field(default="PENDING", index=True) # PENDING, COMPLETED, FAILED
-    
-    # Idempotency
+    platform: str 
+    status: str = Field(default="PENDING", index=True) 
     idempotency_key: str = Field(unique=True, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -116,26 +111,21 @@ class Purchase(SQLModel, table=True):
     __tablename__ = "purchases"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     intent_id: uuid.UUID = Field(foreign_key="purchase_intents.id", unique=True)
-    
-    # Store proof details
-    store: str # 'APPSTORE', 'PLAY'
+    store: str 
     store_transaction_id: str = Field(index=True)
-    
     purchased_at: datetime = Field(default_factory=datetime.utcnow)
-    status: str = Field(default="VALID") # VALID, REVOKED
+    status: str = Field(default="VALID") 
 
 class Entitlement(SQLModel, table=True):
     __tablename__ = "entitlements"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    
     city_slug: str = Field(index=True)
     tour_id: uuid.UUID = Field(index=True)
     device_anon_id: str = Field(index=True)
-    
     granted_at: datetime = Field(default_factory=datetime.utcnow)
     revoked_at: Optional[datetime] = None
 
-# --- Helpers/Audit (Preserved) ---
+# --- Helpers ---
 class Job(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: str

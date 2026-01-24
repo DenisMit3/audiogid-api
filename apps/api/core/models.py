@@ -1,5 +1,7 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column
+from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
 
@@ -34,17 +36,23 @@ class Tour(TourBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city: Optional[City] = Relationship(back_populates="tours")
 
-# --- PR-5 Models ---
+# --- Updated POI (PostGIS Geography) ---
 
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
     published_at: Optional[datetime] = Field(default=None, index=True)
+    
+    # Lat/Lon floats kept for easy REST API I/O & Admin edits
+    lat: Optional[float] = Field(default=None)
+    lon: Optional[float] = Field(default=None)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    # Geo column: Geography type for native meter-based calculations
+    geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
+
     city: Optional[City] = Relationship(back_populates="pois")
-    
     sources: List["PoiSource"] = Relationship(back_populates="poi")
     media: List["PoiMedia"] = Relationship(back_populates="poi")
 
@@ -73,12 +81,10 @@ class AuditLog(SQLModel, table=True):
     action: str 
     target_id: uuid.UUID = Field(index=True)
     actor_type: str = "admin_token"
-    # SECURITY: Using fingerprint (hash), never raw token
     actor_fingerprint: str 
     trace_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-# Ingestion models...
 class IngestionRun(SQLModel, table=True):
     __tablename__ = "ingestion_runs"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -103,7 +109,8 @@ class HelperPlace(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
     type: str 
-    lat: float
-    lon: float
+    lat: float 
+    lon: float 
+    geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
     name_ru: Optional[str] = None
     osm_id: Optional[str] = None

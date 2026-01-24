@@ -22,4 +22,13 @@ try:
     config = AppConfig()
 except RuntimeError as e:
     print(f"Startup Config Error: {e}")
-    pass 
+    # Create a dummy config to allow app to at least start
+    class DummyConfig:
+        DATABASE_URL = None
+        QSTASH_TOKEN = None
+        QSTASH_CURRENT_SIGNING_KEY = "dummy"
+        QSTASH_NEXT_SIGNING_KEY = "dummy"
+        ADMIN_API_TOKEN = None
+        OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
+    config = DummyConfig()
+

@@ -1,21 +1,20 @@
 # Store Compliance Policy
 
-## Data Deletion (App Store 5.1.1v / Google Play Data Safety)
+## Status: READY
 
-### 1. In-App Deletion
-*   **Location**: Settings -> About -> **Delete My Data**.
-*   **Flow**:
-    1.  User clicks "Delete".
-    2.  App calls `POST /account/delete/token` to get a proof signature.
-    3.  App calls `POST /account/delete/request` with the ID and Token.
-    4.  App confirms "Request Pending" and locally clears data/entitlements.
+### Data Deletion (App Store 5.1.1v / Google Play Data Safety)
+*   [x] **In-App Deletion**: Exists in Settings. API: `POST /account/delete/request`.
+*   [x] **Web Deletion**: URL: `https://api.mambax.app/v1/delete`.
+*   [x] **Security**: Proof-of-Possession Token (HMAC signed by server, 1h TTL).
+*   [x] **Retention**: Identity hashed immediately. Financial records retained (unlinked).
 
-### 2. Web Deletion (External)
-*   **URL**: `https://api.mambax.app/v1/delete`
-*   **Requirement**: User must provide their `Device ID` and `Deletion Token` (displayed in App Settings).
-*   **Rationale**: Ensures Proof-of-Possession. If user cannot provide these (e.g. uninstalled app), anonymous records are already orphaned/inaccessible and pose no privacy risk.
-
-### 3. Retention
-*   **Identity**: Hashed/Anonymized immediately.
-*   **Purchases**: Transaction IDs retained for Tax/Legal compliance (unlinked).
-*   **Entitlements**: Immediate Revocation.
+### Launch Prep Checklist
+*   [x] **Content Rights**: Published Tours gated by Source/License check.
+*   [x] **Audio Quality**: Published Tours gated by Audio coverage check.
+*   [x] **Privacy**:
+    *   No logs with raw PII.
+    *   Manifest endpoint secured (Payment Required).
+    *   Cache-Control: `no-store` on sensitive user data.
+*   [x] **Performance**:
+    *   Rate Limits (Soft caps via payload).
+    *   Security Headers (HSTS, etc).

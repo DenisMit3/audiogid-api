@@ -3,7 +3,9 @@ from sqlmodel import Session, select
 from upstash_qstash import Receiver
 
 from .core.config import config
-from .core.middleware import structured_logging_middleware
+# Updated Middleware Import
+from .core.middleware_security import SecurityMiddleware # security headers + redaction
+
 from .core.models import Job
 from .core.database import engine
 from .core.worker import process_job
@@ -14,35 +16,37 @@ from .map import router as map_router
 from .publish import router as publish_router
 from .admin_tours import router as admin_tours_router
 from .purchases import router as purchases_router
-from .deletion import router as deletion_router # PR-10
+from .deletion import router as deletion_router
+from .ops import router as ops_router # PR-11
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.10.0",
+    version="1.11.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
 
+# Mount Security Middleware (Global)
+app.add_middleware(SecurityMiddleware)
+
+app.include_router(ops_router, prefix="/v1") # Ops first
 app.include_router(public_router, prefix="/v1")
 app.include_router(ingestion_router, prefix="/v1")
 app.include_router(map_router, prefix="/v1")
 app.include_router(publish_router, prefix="/v1")
 app.include_router(admin_tours_router, prefix="/v1")
 app.include_router(purchases_router, prefix="/v1")
-app.include_router(deletion_router, prefix="/v1") # Mount Deletion
+app.include_router(deletion_router, prefix="/v1")
 
 receiver = Receiver({
     "current_signing_key": config.QSTASH_CURRENT_SIGNING_KEY,
     "next_signing_key": config.QSTASH_NEXT_SIGNING_KEY,
 })
 
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    return await structured_logging_middleware(request, call_next)
-
 @app.get("/api/health")
-def health_check():
-    return {"status": "ok", "version": "1.10.0"}
+def health_check_legacy():
+    # Legacy path alias
+    return {"status": "ok", "version": "1.11.0"}
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):

@@ -1,29 +1,38 @@
-# Audio Guide 2026 — Runbook
+# Audio Guide 2026 — Master Runbook
 
-## Ops & Deployment
-*   **Env**: `ADMIN_API_TOKEN`, `STORE_SANDBOX`.
+## Deployment Checklist (Day 1)
+*   **Env Vars**: `ADMIN_API_TOKEN` (Rotatable), `STORE_SANDBOX` (Preview Only), `QSTASH_*` (Async).
+*   **DB**: Migrations Applied (`alembic upgrade head`).
 
-## Validation Procedures
+## Ops Validation
+*   **Health**: `GET /v1/ops/health` -> 200 OK.
+*   **Ready**: `GET /v1/ops/ready` -> 200 OK (DB Connected).
 
-### Deletion Flow (Data Safety)
-1.  **Create Entitlement**: Purchase a tour (Sandbox) for `test-delete-1`.
-2.  **Verify Active**: `GET /entitlements?device_anon_id=test-delete-1` -> Returns tour.
-3.  **Request Deletion**:
-    `POST /v1/public/account/delete/request`
-    Body: `{"subject_id": "test-delete-1", "idempotency_key": "del-1"}`
-    *Response*: `{"id": "REQ_ID", "status": "PENDING"}`.
-4.  **Wait**: Job processes in background (simulated or real worker).
-5.  **Poll Status**:
-    `GET /v1/public/account/delete/status?deletion_request_id=REQ_ID`
-    *Expect*: `status: "COMPLETED"`.
-6.  **Verify Revocation**:
-    `GET /entitlements?device_anon_id=test-delete-1`
-    *Expect*: Empty list `[]`.
+## Functional Validation Flow
+1.  **Onboarding (Public Read)**
+    *   `GET /v1/public/cities` -> JSON list.
+    *   `GET /v1/public/tours?city=...` -> JSON list (Published only).
 
-### Web Deletion Form
-1.  **Visit**: `/v1/delete` in browser.
-2.  **Submit**: Form with ID.
-3.  **Result**: HTML page confirmation.
+2.  **Purchase Flow (Sandbox)**
+    *   Enable `STORE_SANDBOX=true`.
+    *   **Intent**: `POST /v1/public/purchases/tours/intent` -> 201 Created (Pending).
+    *   **Confirm**: `POST /v1/public/purchases/tours/confirm` (`proof: "SANDBOX_SUCCESS"`) -> 200 OK (Entitlement Granted).
+    *   **Check Entitlement**: `GET /v1/public/entitlements` -> Returns ID.
+
+3.  **Content Delivery (Secure)**
+    *   **Manifest (Entitled)**: `GET /v1/public/tours/{id}/manifest` -> 200 OK (Assets List).
+    *   **Manifest (Unpaid)**: `GET ...` (Random ID) -> 403 Forbidden.
+
+4.  **Deletion (Compliance)**
+    *   **Get Token**: `POST /v1/public/account/delete/token` -> Returns signed token (1hr TTL).
+    *   **Request**: `POST /v1/public/account/delete/request` (ID + Token) -> 202 Pending.
+    *   **Poll**: `GET /v1/public/account/delete/status` -> COMPLETED.
+    *   **Verify Revocation**: `GET /v1/public/entitlements` -> Empty.
+
+## Security Logs Check
+*   **Search**: "Request Processed" / "Request Failed".
+*   **Verify**: Trace ID present. `authorization`/`proof` headers REDACTED (not visible in raw log).
+*   **Headers**: Response headers include `Strict-Transport-Security`, `X-Content-Type-Options`.
 
 ## Disaster Recovery
-*   **Rollback**: Revert + Instant Rollback.
+*   **Rollback**: Instant Revert via Vercel Dashboard / Git Revert.

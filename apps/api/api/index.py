@@ -10,11 +10,12 @@ from .core.worker import process_job
 
 from .public import router as public_router
 from .ingestion import router as ingestion_router
-from .map import router as map_router # PR-4
+from .map import router as map_router
+from .publish import router as publish_router # PR-5
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.4.0",
+    version="1.5.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -22,6 +23,7 @@ app = FastAPI(
 app.include_router(public_router, prefix="/v1")
 app.include_router(ingestion_router, prefix="/v1")
 app.include_router(map_router, prefix="/v1")
+app.include_router(publish_router, prefix="/v1")
 
 receiver = Receiver({
     "current_signing_key": config.QSTASH_CURRENT_SIGNING_KEY,
@@ -34,7 +36,7 @@ async def add_process_time_header(request: Request, call_next):
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "1.4.0"}
+    return {"status": "ok", "version": "1.5.0"}
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):

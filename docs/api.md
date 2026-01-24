@@ -10,18 +10,22 @@
 
 ## Endpoints
 
-### Public (Offline Onboarding & Map)
+### Public
 *   `GET /v1/public/cities`: List tenant cities.
-*   `GET /v1/public/tours?city={slug}`: List tours.
-*   `GET /v1/public/catalog?city={slug}`: List POIs.
-*   `GET /v1/public/map/attribution?city={slug}`: Map attribution config & license info.
-*   `GET /v1/public/helpers?city={slug}&category={type}`: List utility markers (lat/lon).
+*   `GET /v1/public/tours?city={slug}`: List tours (Published Only).
+*   `GET /v1/public/catalog?city={slug}`: List POIs (Published Only).
+*   `GET /v1/public/poi/{id}?city={slug}`: POI Detail (Published Only).
+*   `GET /v1/public/map/attribution?city={slug}`: Map attribution.
+*   `GET /v1/public/helpers`: List utility markers.
 
-### Admin Ingestion
+### Admin
 (Requires `X-Admin-Token` header)
-*   `POST /v1/admin/ingestion/osm/enqueue`: Import OSM Data.
-*   `POST /v1/admin/ingestion/helpers/enqueue`: Import Helpers.
-*   `GET /v1/admin/ingestion/runs`: Inspect past job runs.
+*   **Ingestion**: `enqueue` endpoints, `runs` inspection.
+*   **Publishing**:
+    *   `POST /pois`: Create Draft POI (Test Support).
+    *   `POST /pois/{id}/publish`: Enforce gates (Sources + Licensed Media).
+    *   `POST /pois/{id}/sources`: Add attribution.
+    *   `POST /pois/{id}/media`: Add content.
 
 ### Internal
 *   `POST /v1/internal/jobs/callback`: QStash webhook entrypoint.

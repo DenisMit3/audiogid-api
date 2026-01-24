@@ -4,32 +4,36 @@
 *   **Platform**: Vercel.
 *   **Production URL**: Included in PR validation steps.
 
-## CI/CD
-*   **API Client**: Regenerated on every OpenAPI change.
-
 ## Environment Variables
-*   `DATABASE_URL`, `QSTASH_TOKEN`, `OVERPASS_API_URL`, `ADMIN_API_TOKEN`...
+*   `ADMIN_API_TOKEN`: **REQUIRED** for all operations.
 
 ## Validation Procedures
 
-### Ingestion: Helpers (Admin)
-1.  **Enqueue**:
-    `POST /v1/admin/ingestion/helpers/enqueue` (Auth: X-Admin-Token)
-    Body: `{"city_slug": "kaliningrad_city"}`
-    *Expect*: 202 Accepted.
-2.  **Monitor**:
-    `GET /v1/jobs/{job_id}` -> Wait for `COMPLETED`.
-3.  **Inspect**:
-    `GET /v1/public/helpers?city=kaliningrad_city&category=toilet`
-    *Expect*: JSON List (non-empty if OSM has data).
+### Publishing Flow (Cloud Validation)
+1.  **Create Draft POI**:
+    `POST /v1/admin/pois` (Auth Required)
+    Body: `{"title_ru": "Cloud Test", "city_slug": "kaliningrad_city"}`
+    *Response*: `{"id": "UUID", "status": "created_unpublished"}`. Copy UUID.
 
-### Map Attribution (Public)
-1.  **Fetch**:
-    `GET /v1/public/map/attribution?city=kaliningrad_city`
-    *Expect*: 200 OK + `ETag`.
-2.  **Conditional**:
-    `GET ...` with `If-None-Match: <etag>`
-    *Expect*: 304 Not Modified.
+2.  **Try Publish (Fail)**:
+    `POST /v1/admin/pois/{UUID}/publish` (Auth Required)
+    *Expect*: 422 Unprocessable Entity (Gates Failed).
+
+3.  **Add Source**:
+    `POST /v1/admin/pois/{UUID}/sources`
+    Body: `{"name": "OSM", "url": "https://osm.org"}`
+
+4.  **Add Media**:
+    `POST /v1/admin/pois/{UUID}/media`
+    Body: `{"url": "https://example.com/img.jpg", "media_type": "image", "license_type": "CC-BY", "author": "WikiUser", "source_page_url": "https://example.com"}`
+
+5.  **Publish (Success)**:
+    `POST /v1/admin/pois/{UUID}/publish`
+    *Expect*: 200 OK.
+
+6.  **Verify Public**:
+    `GET /v1/public/poi/{UUID}?city=kaliningrad_city`
+    *Expect*: 200 OK (Visible).
 
 ## Disaster Recovery
 *   **Rollback**: Revert + Instant Rollback.

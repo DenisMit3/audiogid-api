@@ -1,32 +1,20 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.4.0
-  description: "Strict Contract for Audio Guide 2026. Source of truth."
+  version: 1.5.0
 
 servers:
   - url: https://api.mambax.app/v1
-    description: Production
   - url: https://audiogid-api-preview.vercel.app/v1
-    description: Preview
 
 paths:
   /health:
     get:
       summary: System Health
       operationId: getHealth
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string }
-                  version: { type: string }
+      responses: { '200': { description: OK } }
 
-  # --- Public (PR-1 & PR-4) ---
+  # --- Public ---
   /public/cities:
     get:
       summary: List available city tenants
@@ -60,7 +48,7 @@ paths:
 
   /public/catalog:
     get:
-      summary: List POIs for a city
+      summary: List Published POIs for a city
       operationId: getPublicCatalog
       parameters:
         - name: city
@@ -75,7 +63,30 @@ paths:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PoiRead' } }
         '304': { description: Not Modified }
-  
+
+  /public/poi/{poiId}:
+    get:
+      summary: Get Published POI Detail
+      operationId: getPublicPoiDetail
+      parameters:
+        - name: poiId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: POI Detail
+          headers: { ETag: { schema: { type: string } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PoiDetail' }
+        '404': { description: Not Found or Not Published }
+        '304': { description: Not Modified }
+
   /public/map/attribution:
     get:
       summary: Get Map Attribution Config
@@ -88,11 +99,9 @@ paths:
       responses:
         '200':
           description: Attribution Config
-          headers: { ETag: { schema: { type: string } } }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MapAttributionRead' }
-        '304': { description: Not Modified }
 
   /public/helpers:
     get:
@@ -109,54 +118,127 @@ paths:
       responses:
         '200':
           description: List of Helpers
-          headers: { ETag: { schema: { type: string } } }
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/HelperPlaceRead' } }
-        '304': { description: Not Modified }
 
-  # --- Ingestion Admin (PR-2/3) ---
-  /admin/ingestion/osm/enqueue:
+  # --- Admin (Publishing Gates) ---
+  /admin/pois:
     post:
-      summary: Enqueue OSM Import Job
-      operationId: enqueueOsmImport
+      summary: Create Draft POI (Test/Validation)
+      operationId: createPoi
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [city_slug, boundary_ref]
+              required: [title_ru, city_slug]
               properties:
+                title_ru: { type: string }
                 city_slug: { type: string }
-                boundary_ref: { type: string }
+      responses: { '201': { description: Created } }
+
+  /admin/pois/{poiId}/sources:
+    post:
+      summary: Add POI Source
+      operationId: addPoiSource
+      parameters:
+        - name: poiId
+          in: path
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                url: { type: string, nullable: true }
+      responses: { '201': { description: Created } }
+
+  /admin/pois/{poiId}/media:
+    post:
+      summary: Add POI Media
+      operationId: addPoiMedia
+      parameters:
+        - name: poiId
+          in: path
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, media_type, license_type, author, source_page_url]
+              properties:
+                url: { type: string }
+                media_type: { type: string }
+                license_type: { type: string }
+                author: { type: string }
+                source_page_url: { type: string }
+      responses: { '201': { description: Created } }
+
+  /admin/pois/{poiId}/publish:
+    post:
+      summary: Publish POI (with Gates)
+      operationId: publishPoi
+      parameters:
+        - name: poiId
+          in: path
+          schema: { type: string, format: uuid }
       responses:
-        '202':
-          description: Accepted
+        '200': { description: Published }
+        '422': { description: Gates Failed }
+
+  /admin/pois/{poiId}/unpublish:
+    post:
+      summary: Unpublish POI
+      operationId: unpublishPoi
+      parameters:
+        - name: poiId
+          in: path
+          schema: { type: string, format: uuid }
+      responses: { '200': { description: Unpublished } }
+
+  /admin/pois/{poiId}/publish_check:
+    get:
+      summary: Check Publish Eligibility
+      operationId: checkPublish
+      parameters:
+        - name: poiId
+          in: path
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Check Result
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/JobEnqueueResponse' }
+              schema:
+                type: object
+                required: [can_publish, issues]
+                properties:
+                  can_publish: { type: boolean }
+                  issues: { type: array, items: { type: string } }
+
+  # --- Admin (Ingestion) ---
+  /admin/ingestion/osm/enqueue:
+    post:
+      summary: Enqueue OSM Import Job
+      operationId: enqueueOsmImport
+      requestBody: { content: { application/json: { schema: { type: object, required: [city_slug, boundary_ref], properties: { city_slug: { type: string }, boundary_ref: { type: string } } } } } }
+      responses: { '202': { description: Accepted } }
 
   /admin/ingestion/helpers/enqueue:
     post:
       summary: Enqueue Helpers Import Job
       operationId: enqueueHelpersImport
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [city_slug]
-              properties:
-                city_slug: { type: string }
-      responses:
-        '202':
-          description: Accepted
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/JobEnqueueResponse' }
-
+      requestBody: { content: { application/json: { schema: { type: object, required: [city_slug], properties: { city_slug: { type: string } } } } } }
+      responses: { '202': { description: Accepted } }
+      
   /admin/ingestion/runs:
     get:
       summary: List Ingestion Runs
@@ -180,31 +262,18 @@ paths:
       parameters:
         - name: jobId
           in: path
-          required: true
           schema: { type: string, format: uuid }
       responses:
         '200':
-          description: Job Details
           content:
             application/json:
               schema: { $ref: '#/components/schemas/JobRead' }
-        '404': { description: Job Not Found }
 
   /internal/jobs/callback:
     post:
       summary: QStash Callback (Internal)
       operationId: handleJobCallback
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                job_id: { type: string, format: uuid }
-      responses:
-        '200': { description: Processed }
-        '401': { description: Invalid Signature }
+      responses: { '200': { description: Processed } }
 
 components:
   schemas:
@@ -231,6 +300,33 @@ components:
         id: { type: string, format: uuid }
         city_slug: { type: string }
         title_ru: { type: string }
+    
+    PoiDetail:
+      type: object
+      required: [id, city_slug, title_ru, published_at, sources, media]
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        title_ru: { type: string }
+        published_at: { type: string, format: date-time }
+        sources: 
+          type: array
+          items:
+            type: object
+            required: [name, url]
+            properties:
+              name: { type: string }
+              url: { type: string, nullable: true }
+        media:
+          type: array
+          items:
+            type: object
+            required: [url, license_type, author, source_page_url]
+            properties:
+              url: { type: string }
+              license_type: { type: string }
+              author: { type: string }
+              source_page_url: { type: string }
 
     HelperPlaceRead:
       type: object

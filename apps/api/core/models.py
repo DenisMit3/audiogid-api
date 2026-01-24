@@ -2,9 +2,8 @@ from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
 import uuid
-# ... Imports from previous PRs maintained generally, but re-stating for file overwrite ...
 
-# --- Job (Existing) ---
+# --- Previous Models ---
 class Job(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: str
@@ -16,7 +15,6 @@ class Job(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-# --- Public Content Models (Existing) ---
 class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
@@ -36,24 +34,58 @@ class Tour(TourBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city: Optional[City] = Relationship(back_populates="tours")
 
+# --- PR-5 Models ---
+
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
-    is_published: bool = Field(default=False)
+    published_at: Optional[datetime] = Field(default=None, index=True)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city: Optional[City] = Relationship(back_populates="pois")
+    
+    sources: List["PoiSource"] = Relationship(back_populates="poi")
+    media: List["PoiMedia"] = Relationship(back_populates="poi")
 
-# --- PR-2 Ingestion Models ---
+class PoiSource(SQLModel, table=True):
+    __tablename__ = "poi_sources"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True)
+    name: str 
+    url: Optional[str] = None
+    poi: Optional[Poi] = Relationship(back_populates="sources")
 
+class PoiMedia(SQLModel, table=True):
+    __tablename__ = "poi_media"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True)
+    url: str
+    media_type: str = "image"
+    license_type: str 
+    author: str
+    source_page_url: str
+    poi: Optional[Poi] = Relationship(back_populates="media")
+
+class AuditLog(SQLModel, table=True):
+    __tablename__ = "audit_logs"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    action: str 
+    target_id: uuid.UUID = Field(index=True)
+    actor_type: str = "admin_token"
+    # SECURITY: Using fingerprint (hash), never raw token
+    actor_fingerprint: str 
+    trace_id: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+# Ingestion models...
 class IngestionRun(SQLModel, table=True):
     __tablename__ = "ingestion_runs"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
     started_at: datetime = Field(default_factory=datetime.utcnow)
     finished_at: Optional[datetime] = None
-    status: str = Field(default="RUNNING") # RUNNING, COMPLETED, FAILED
+    status: str = Field(default="RUNNING")
     stats_json: Optional[str] = None
     last_error: Optional[str] = None
 
@@ -62,7 +94,7 @@ class PoiStaging(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
     osm_id: str = Field(index=True)
-    raw_payload: str # JSON
+    raw_payload: str
     name_ru: Optional[str] = None
     normalized_json: Optional[str] = None
 
@@ -70,7 +102,7 @@ class HelperPlace(SQLModel, table=True):
     __tablename__ = "helper_places"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
-    type: str # toilet, water, cafe
+    type: str 
     lat: float
     lon: float
     name_ru: Optional[str] = None

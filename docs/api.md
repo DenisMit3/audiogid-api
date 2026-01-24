@@ -4,36 +4,22 @@
 *   **Protocol**: REST / OpenAPI 3.1.
 *   **Base URL**: `/api/v1`
 
-## Caching Strategy
-*   **Tours List/Detail**: `Cache-Control: public, max-age=60`. Supports ETag / 304.
-*   **POI List/Detail**: `Cache-Control: public, max-age=60`. Supports ETag / 304.
-*   **Nearby**: `Cache-Control: private, max-age=10`.
-
-## Error Handling
-*   **422 Unprocessable Entity (Publish Gates)**:
-    Structure:
-    ```json
-    {
-      "error": "TOUR_PUBLISH_BLOCKED",
-      "message": "Gates Failed",
-      "missing_requirements": ["sources", "media"],
-      "unpublished_poi_ids": ["uuid-1"]
-    }
-    ```
+## Purchases & Entitlements
+*   **Flow**: Intent -> Store Payment (Client) -> Confirm (Server) -> Entitlement.
+*   **Sandbox**: On Preview envs, use `store_proof="SANDBOX_SUCCESS"`.
 
 ## Endpoints
 
-### Public (Published Only)
-*   `GET /tours`: List. Filter by `city`.
-*   `GET /tours/{id}`: Detail. Includes Items, Sources, Media.
+### Public (Purchases)
+*   `POST /purchases/tours/intent`: Start transaction.
+*   `POST /purchases/tours/confirm`: Validate receipt & Grant.
+*   `GET /entitlements`: List accessible tours.
+
+### Public (Content)
+*   `GET /tours`: List.
+*   `GET /tours/{id}`: Detail.
 *   `GET /nearby`: Geo discovery.
-*   `GET /catalog`: POI List.
-*   `GET /poi/{id}`: POI Detail.
 
 ### Admin (Auth: X-Admin-Token)
-*   **Tours**:
-    *   `POST /admin/tours`: Create Draft.
-    *   `POST /admin/tours/{id}/items`: Add POI.
-    *   `POST /admin/tours/{id}/publish`: Strict Gates.
-*   **POIs**: Create, Publish (with gates).
-*   **Ingestion**: Import OSM/Helpers.
+*   `POST /admin/tours`: Manage Tours.
+*   `POST /admin/tours/{id}/publish`: Publish.

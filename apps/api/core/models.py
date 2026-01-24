@@ -5,7 +5,7 @@ from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
 
-# --- Poi & Dependencies (Previous) ---
+# --- Previous Models (Cities, Pois, Tours, etc.) ---
 class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
@@ -26,12 +26,10 @@ class PoiBase(SQLModel):
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
-
     city: Optional[City] = Relationship(back_populates="pois")
+    tour_items: List["TourItem"] = Relationship(back_populates="poi")
     sources: List["PoiSource"] = Relationship(back_populates="poi")
     media: List["PoiMedia"] = Relationship(back_populates="poi")
-    # PR-7: Link to Tours
-    tour_items: List["TourItem"] = Relationship(back_populates="poi")
 
 class PoiSource(SQLModel, table=True):
     __tablename__ = "poi_sources"
@@ -52,8 +50,6 @@ class PoiMedia(SQLModel, table=True):
     source_page_url: str
     poi: Optional[Poi] = Relationship(back_populates="media")
 
-# --- PR-7: Tours & Catalog ---
-
 class TourBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
@@ -66,7 +62,6 @@ class TourBase(SQLModel):
 class Tour(TourBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city: Optional[City] = Relationship(back_populates="tours")
-    
     items: List["TourItem"] = Relationship(back_populates="tour")
     sources: List["TourSource"] = Relationship(back_populates="tour")
     media: List["TourMedia"] = Relationship(back_populates="tour")
@@ -75,9 +70,8 @@ class TourItem(SQLModel, table=True):
     __tablename__ = "tour_items"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
-    poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id") # Optional if we support non-POI stops later
+    poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id")
     order_index: int = Field(default=0)
-    
     tour: Optional[Tour] = Relationship(back_populates="items")
     poi: Optional[Poi] = Relationship(back_populates="tour_items")
 
@@ -88,7 +82,6 @@ class TourSource(SQLModel, table=True):
     name: str
     url: Optional[str] = None
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)
-    
     tour: Optional[Tour] = Relationship(back_populates="sources")
 
 class TourMedia(SQLModel, table=True):
@@ -97,14 +90,52 @@ class TourMedia(SQLModel, table=True):
     tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
     url: str
     media_type: str = "image"
-    # Gates
     license_type: str
     author: str
     source_page_url: str
-    
     tour: Optional[Tour] = Relationship(back_populates="media")
 
-# --- Jobs/Audit/Helpers (Preserved) ---
+# --- PR-8: Purchases & Entitlements ---
+
+class PurchaseIntent(SQLModel, table=True):
+    __tablename__ = "purchase_intents"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    city_slug: str = Field(index=True)
+    tour_id: uuid.UUID = Field(index=True)
+    device_anon_id: str = Field(index=True)
+    platform: str # 'ios' or 'android'
+    
+    # Status
+    status: str = Field(default="PENDING", index=True) # PENDING, COMPLETED, FAILED
+    
+    # Idempotency
+    idempotency_key: str = Field(unique=True, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Purchase(SQLModel, table=True):
+    __tablename__ = "purchases"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    intent_id: uuid.UUID = Field(foreign_key="purchase_intents.id", unique=True)
+    
+    # Store proof details
+    store: str # 'APPSTORE', 'PLAY'
+    store_transaction_id: str = Field(index=True)
+    
+    purchased_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str = Field(default="VALID") # VALID, REVOKED
+
+class Entitlement(SQLModel, table=True):
+    __tablename__ = "entitlements"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    
+    city_slug: str = Field(index=True)
+    tour_id: uuid.UUID = Field(index=True)
+    device_anon_id: str = Field(index=True)
+    
+    granted_at: datetime = Field(default_factory=datetime.utcnow)
+    revoked_at: Optional[datetime] = None
+
+# --- Helpers/Audit (Preserved) ---
 class Job(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: str
@@ -150,8 +181,8 @@ class HelperPlace(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
     type: str 
-    lat: float 
-    lon: float 
+    lat: float = Field(index=True)
+    lon: float = Field(index=True)
     geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
     name_ru: Optional[str] = None
     osm_id: Optional[str] = None

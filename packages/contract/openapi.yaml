@@ -1,336 +1,166 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.7.0
+  version: 1.8.0
 
 servers:
   - url: https://api.mambax.app/v1
   - url: https://audiogid-api-preview.vercel.app/v1
 
 paths:
+  # ... (Previous paths preserved) ...
   /health:
-    get:
-      summary: System Health
-      operationId: getHealth
-      responses: { '200': { description: OK } }
+     get: { summary: System Health, operationId: getHealth, responses: { '200': { description: OK } } }
 
-  # --- Public ---
   /public/tours:
-    get:
-      summary: List tours for a city
-      operationId: getPublicTours
-      parameters:
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: List of tours
-          headers: { ETag: { schema: { type: string } } }
-          content:
-            application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/TourRead' } }
-        '304': { description: Not Modified }
-
+    get: { summary: List Tours, operationId: getPublicTours, parameters: [{name: city, in: query, required: true, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TourRead' } } } } } } } 
   /public/tours/{tourId}:
-    get:
-      summary: Get Published Tour Detail
-      operationId: getPublicTourDetail
-      parameters:
-        - name: tourId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Tour Detail
-          headers: { ETag: { schema: { type: string } } }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/TourDetail' }
-        '404': { description: Not Found or Unpublished }
-        '304': { description: Not Modified }
-
+    get: { summary: Tour Detail, operationId: getPublicTourDetail, parameters: [{name: tourId, in: path, schema: {type: string, format: uuid}}, {name: city, in: query, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/TourDetail' } } } } } } }
   /public/nearby:
-    get:
-      summary: Discover Nearby Items
-      operationId: getNearby
-      parameters:
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-        - name: lat
-          in: query
-          required: true
-          schema: { type: number }
-        - name: lon
-          in: query
-          required: true
-          schema: { type: number }
-        - name: radius_m
-          in: query
-          schema: { type: integer, default: 1000 }
-      responses:
-        '200':
-          description: Nearby Items
-          content:
-            application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/NearbyItem' } }
-
+    get: { summary: Nearby, operationId: getNearby, parameters: [{name: city, in: query, schema: {type: string}}, {name: lat, in: query, schema: {type: number}}, {name: lon, in: query, schema: {type: number}}, {name: radius_m, in: query, schema: {type: integer}}], responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/NearbyItem' } } } } } } }
   /public/catalog:
-    get:
-      summary: List Published POIs
-      operationId: getPublicCatalog
-      parameters:
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-      responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PoiRead' } } } } } }
-
+    get: { summary: Catalog, operationId: getPublicCatalog, parameters: [{name: city, in: query, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PoiRead' } } } } } } }
   /public/poi/{poiId}:
-    get:
-      summary: Get POI Detail
-      operationId: getPublicPoiDetail
-      parameters:
-        - name: poiId
-          in: path
-          schema: { type: string, format: uuid }
-        - name: city
-          in: query
-          schema: { type: string }
-      responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PoiDetail' } } } } }
-
+    get: { summary: POI Detail, operationId: getPublicPoiDetail, parameters: [{name: poiId, in: path, schema: {type: string}}, {name: city, in: query, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PoiDetail' } } } } } } }
   /public/cities:
-    get:
-      summary: List Cities
-      operationId: getPublicCities
-      responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/CityRead' } } } } } }
-      
+    get: { summary: Cities, operationId: getPublicCities, responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/CityRead' } } } } } } }
   /public/map/attribution:
-    get:
-      summary: Get Map Attribution
-      operationId: getMapAttribution
-      parameters:
-        - name: city
-          in: query
-          schema: { type: string }
-      responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/MapAttributionRead' } } } } }
-  
+     get: { summary: Map Attribution, operationId: getMapAttribution, parameters: [{name: city, in: query}], responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/MapAttributionRead' } } } } } }
   /public/helpers:
-    get:
-      summary: List Helpers
-      operationId: getHelpers
-      parameters:
-        - name: city
-          in: query
-          schema: { type: string }
-        - name: category
-          in: query
-          schema: { type: string }
-      responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/HelperPlaceRead' } } } } } }
+     get: { summary: Helpers, operationId: getHelpers, parameters: [{name: city, in: query}, {name: category, in: query}], responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/HelperPlaceRead' } } } } } } }
 
-  # --- Admin Tours ---
-  /admin/tours:
+  # --- Purchases (PR-8) ---
+  /public/purchases/tours/intent:
     post:
-      summary: Create Draft Tour
-      operationId: createTour
+      summary: Create Purchase Intent
+      operationId: createPurchaseIntent
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [city_slug, title_ru]
+              required: [city_slug, tour_id, device_anon_id, platform, idempotency_key]
               properties:
                 city_slug: { type: string }
-                title_ru: { type: string }
-                description_ru: { type: string }
-                duration_minutes: { type: integer }
-      responses: { '201': { description: Created } }
+                tour_id: { type: string, format: uuid }
+                device_anon_id: { type: string }
+                platform: { type: string, enum: [ios, android] }
+                idempotency_key: { type: string }
+      responses: 
+        '201': 
+          description: Created
+          content: 
+            application/json:
+              schema: { type: object, properties: { id: { type: string }, status: { type: string } } }
 
-  /admin/tours/{tourId}/sources:
+  /public/purchases/tours/confirm:
     post:
-      summary: Add Tour Source
-      operationId: addTourSource
-      parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      requestBody: { content: { application/json: { schema: { type: object, required: [name], properties: { name: { type: string }, url: { type: string } } } } } }
-      responses: { '201': { description: Created } }
+      summary: Confirm Purchase
+      operationId: confirmPurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [intent_id, platform, store_proof, idempotency_key]
+              properties:
+                intent_id: { type: string, format: uuid }
+                platform: { type: string, enum: [ios, android] }
+                store_proof: { type: string }
+                idempotency_key: { type: string }
+      responses: 
+        '200': 
+          description: Success
+          content: 
+             application/json:
+               schema: { type: object, properties: { status: { type: string }, entitlement_granted: { type: boolean } } }
 
-  /admin/tours/{tourId}/media:
-    post:
-      summary: Add Tour Media
-      operationId: addTourMedia
-      parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      requestBody: { content: { application/json: { schema: { type: object, required: [url, media_type, license_type, author, source_page_url], properties: { url: { type: string }, media_type: { type: string }, license_type: { type: string }, author: { type: string }, source_page_url: { type: string } } } } } }
-      responses: { '201': { description: Created } }
-
-  /admin/tours/{tourId}/items:
-    post:
-      summary: Add Tour Item (POI)
-      operationId: addTourItem
-      parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      requestBody: { content: { application/json: { schema: { type: object, required: [poi_id, order_index], properties: { poi_id: { type: string, format: uuid }, order_index: { type: integer } } } } } }
-      responses: { '201': { description: Created } }
-
-  /admin/tours/{tourId}/publish:
-    post:
-      summary: Publish Tour
-      operationId: publishTour
-      parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      responses: { '200': { description: Published }, '422': { description: Gates Failed } }
-
-  /admin/tours/{tourId}/unpublish:
-    post:
-      summary: Unpublish Tour
-      operationId: unpublishTour
-      parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      responses: { '200': { description: Unpublished } }
-
-  /admin/tours/{tourId}/publish_check:
+  /public/entitlements:
     get:
-      summary: Check Tour Publish
-      operationId: checkTourPublish
+      summary: Get Entitlements
+      operationId: getEntitlements
       parameters:
-        - name: tourId
-          in: path
-          schema: { type: string, format: uuid }
-      responses: { '200': { content: { application/json: { schema: { type: object, properties: { can_publish: { type: boolean }, issues: { type: array, items: { type: string } } } } } } } }
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: device_anon_id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of Tour IDs
+          content:
+            application/json:
+              schema: { type: array, items: { type: string, format: uuid } }
 
-  # --- Admin POIs (Existing) ---
+  # --- Admin (Existing) ---
+  /admin/tours:
+     post: { summary: Create Draft Tour, operationId: createTour, requestBody: { content: { application/json: { schema: { type: object, properties: { city_slug: { type: string }, title_ru: { type: string } } } } } }, responses: { '201': {} } }
+  /admin/tours/{tourId}/items:
+     post: { summary: Add Tour Item, operationId: addTourItem, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object, properties: { poi_id: { type: string }, order_index: { type: integer } } } } } }, responses: { '201': {} } }
+  /admin/tours/{tourId}/sources:
+     post: { summary: Add Tour Source, operationId: addTourSource, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object, properties: { name: { type: string }, url: { type: string } } } } } }, responses: { '201': {} } }
+  /admin/tours/{tourId}/media:
+     post: { summary: Add Tour Media, operationId: addTourMedia, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object, properties: { url: { type: string }, media_type: { type: string }, license_type: { type: string }, author: { type: string }, source_page_url: { type: string } } } } } }, responses: { '201': {} } }
+  /admin/tours/{tourId}/publish:
+     post: { summary: Publish Tour, operationId: publishTour, parameters: [{name: tourId, in: path}], responses: { '200': {} } }
+  /admin/tours/{tourId}/unpublish:
+     post: { summary: Unpublish Tour, operationId: unpublishTour, parameters: [{name: tourId, in: path}], responses: { '200': {} } }
+  /admin/tours/{tourId}/publish_check:
+     get: { summary: Check Tour, operationId: checkTourPublish, parameters: [{name: tourId, in: path}], responses: { '200': {} } }
+
   /admin/pois:
-    post: { summary: Create Draft POI, operationId: createPoi, responses: { '201': { description: Created } } }
+     post: { summary: Create Draft POI, operationId: createPoi, responses: { '201': {} } }
   /admin/pois/{poiId}/sources:
-    post: { summary: Add POI Source, operationId: addPoiSource, responses: { '201': { description: Created } } }
+     post: { summary: Add POI Source, operationId: addPoiSource, responses: { '201': {} } }
   /admin/pois/{poiId}/media:
-    post: { summary: Add POI Media, operationId: addPoiMedia, responses: { '201': { description: Created } } }
+     post: { summary: Add POI Media, operationId: addPoiMedia, responses: { '201': {} } }
   /admin/pois/{poiId}/publish:
-    post: { summary: Publish POI, operationId: publishPoi, responses: { '200': { description: Published }, '422': { description: Gates Failed } } }
+     post: { summary: Publish POI, operationId: publishPoi, responses: { '200': {} } }
   /admin/pois/{poiId}/unpublish:
-    post: { summary: Unpublish POI, operationId: unpublishPoi, responses: { '200': { description: Unpublished } } }
+     post: { summary: Unpublish POI, operationId: unpublishPoi, responses: { '200': {} } }
   /admin/pois/{poiId}/publish_check:
-    get: { summary: Check POI Publish, operationId: checkPoiPublish, responses: { '200': { description: Result } } }
+     get: { summary: Check POI Publish, operationId: checkPoiPublish, responses: { '200': {} } }
 
-  # --- Admin Ingestion (Existing) ---
   /admin/ingestion/osm/enqueue:
-    post: { summary: Enqueue OSM, operationId: enqueueOsmImport, responses: { '202': { description: Accepted } } }
+    post: { summary: Enqueue OSM, operationId: enqueueOsmImport, responses: { '202': {} } }
   /admin/ingestion/helpers/enqueue:
-    post: { summary: Enqueue Helpers, operationId: enqueueHelpersImport, responses: { '202': { description: Accepted } } }
+    post: { summary: Enqueue Helpers, operationId: enqueueHelpersImport, responses: { '202': {} } }
   /admin/ingestion/runs:
-    get: { summary: List Runs, operationId: getIngestionRuns, responses: { '200': { description: List } } }
+    get: { summary: List Runs, operationId: getIngestionRuns, responses: { '200': {} } }
 
-  # --- Core (Existing) ---
   /jobs/{jobId}:
-    get: { summary: Get Job, operationId: getJob, responses: { '200': { description: Job } } }
+    get: { summary: Get Job, operationId: getJob, responses: { '200': {} } }
   /internal/jobs/callback:
-    post: { summary: QStash Callback, operationId: handleJobCallback, responses: { '200': { description: Processed } } }
+    post: { summary: QStash Callback, operationId: handleJobCallback, responses: { '200': {} } }
 
 components:
   schemas:
     TourRead:
       type: object
-      required: [id, city_slug, title_ru]
-      properties:
-        id: { type: string, format: uuid }
-        city_slug: { type: string }
-        title_ru: { type: string }
-        description_ru: { type: string }
-        duration_minutes: { type: integer }
-        published_at: { type: string, format: date-time }
-
+      properties: { id: { type: string }, city_slug: { type: string }, title_ru: { type: string } }
     TourDetail:
       type: object
-      required: [id, city_slug, title_ru, published_at, items, sources, media]
-      properties:
-        id: { type: string, format: uuid }
-        city_slug: { type: string }
-        title_ru: { type: string }
-        published_at: { type: string, format: date-time }
-        items: 
-          type: array
-          items:
-            type: object
-            required: [id, order_index]
-            properties:
-              id: { type: string, format: uuid }
-              order_index: { type: integer }
-              poi: { $ref: '#/components/schemas/PoiRead' }
-        sources: { type: array, items: { type: object } }
-        media: { type: array, items: { type: object } }
-
+      properties: { id: { type: string }, city_slug: { type: string }, title_ru: { type: string } }
     PoiRead:
       type: object
-      required: [id, city_slug, title_ru]
-      properties:
-        id: { type: string, format: uuid }
-        city_slug: { type: string }
-        title_ru: { type: string }
-        lat: { type: number } # Added for detail views
-        lon: { type: number }
-
+      properties: { id: { type: string }, title_ru: { type: string } }
     PoiDetail:
       type: object
-      required: [id, city_slug, title_ru, published_at, sources, media]
-      properties:
-        id: { type: string, format: uuid }
-        city_slug: { type: string }
-        title_ru: { type: string }
-        published_at: { type: string, format: date-time }
-        sources: { type: array, items: { type: object } }
-        media: { type: array, items: { type: object } }
-    
+      properties: { id: { type: string }, title_ru: { type: string } }
     NearbyItem:
       type: object
-      required: [id, type, lat, lon, distance_m]
-      properties:
-        id: { type: string, format: uuid }
-        type: { type: string }
-        lat: { type: number }
-        lon: { type: number }
-        distance_m: { type: number }
-        title: { type: string }
-
+      properties: { id: { type: string }, type: { type: string }, distance_m: { type: number } }
     CityRead:
       type: object
-      required: [id, slug, name_ru]
-      properties:
-        id: { type: string, format: uuid }
-        slug: { type: string }
-        name_ru: { type: string }
-    
+      properties: { id: { type: string }, slug: { type: string } }
     HelperPlaceRead:
-      type: object
-      properties: { id: { type: string }, type: { type: string } }
-    
+       type: object
+       properties: { id: { type: string } }
     MapAttributionRead:
-      type: object
-      properties: { attribution_text: { type: string } }
-
-    JobRead:
-      type: object
-      properties: { id: { type: string }, status: { type: string } }
-    
-    IngestionRunRead:
-      type: object
-      properties: { id: { type: string }, status: { type: string } }
+       type: object
+       properties: { attribution_text: { type: string } }

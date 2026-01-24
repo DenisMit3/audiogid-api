@@ -6,18 +6,11 @@
 
 ## Authentication
 *   **Public Read Endpoints**: No authentication required.
-*   **Admin/Write Endpoints**: (Planned) Authenticated.
+*   **Admin Endpoints**: Require `X-Admin-Token` header.
 
 ## Caching Strategy
-*   **Public Endpoints**: Support `If-None-Match` / `ETag`.
-*   **Header Policy**:
-    *   `Cache-Control: public, max-age=60`: Responses are cached by browsers/CDNs for 60 seconds.
-    *   `ETag: W/"..."`: Weak ETag based on content hash + query context.
-*   **Behavior**:
-    *   First request: `200 OK` + Headers.
-    *   Subsequent (within 60s): Served from cache (client side).
-    *   Subsequent (after 60s): Client sends `If-None-Match`.
-    *   Server: Returns `304 Not Modified` if data matches (saving bandwidth).
+*   **Public Endpoints**: `Cache-Control: public, max-age=60` + `ETag: W/"..."`.
+*   **Behavior**: 60s client cache -> Conditional Request (304) -> Full Fetch.
 
 ## Endpoints (Summary)
 
@@ -26,5 +19,12 @@
 *   `GET /v1/public/tours?city={slug}`: List tours for a city.
 *   `GET /v1/public/catalog?city={slug}`: List POIs for a city.
 
+### Admin Ingestion
+*   `POST /v1/admin/ingestion/osm/enqueue`: Import OSM Data.
+    *   Auth: `X-Admin-Token`
+    *   Body: `{city_slug, boundary_ref}`
+*   `POST /v1/admin/ingestion/helpers/enqueue`: Import Helpers.
+    *   Auth: `X-Admin-Token`
+
 ### Internal
-*   `POST /v1/internal/jobs/callback`: QStash webhook entrypoint.
+*   `POST /v1/internal/jobs/callback`: QStash webhook entrypoint (Secured via Signature).

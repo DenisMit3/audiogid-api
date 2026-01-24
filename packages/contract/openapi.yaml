@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.1.0
+  version: 1.2.0
   description: "Strict Contract for Audio Guide 2026. Source of truth."
 
 servers:
@@ -23,35 +23,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    enum: [ok]
-                  version:
-                    type: string
+                  status: { type: string }
+                  version: { type: string }
 
+  # --- Public (PR-1) ---
   /public/cities:
     get:
-      summary: List available city tenants (Onboarding)
+      summary: List available city tenants
       operationId: getPublicCities
       responses:
         '200':
           description: List of cities
-          headers:
-            ETag:
-              schema:
-                type: string
-            Cache-Control:
-              schema:
-                type: string
+          headers: { ETag: { schema: { type: string } } }
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CityRead'
-        '304':
-          description: Not Modified
-          
+              schema: { type: array, items: { $ref: '#/components/schemas/CityRead' } }
+        '304': { description: Not Modified }
+
   /public/tours:
     get:
       summary: List tours for a city
@@ -60,52 +48,78 @@ paths:
         - name: city
           in: query
           required: true
-          schema:
-            type: string
-            description: Tenant slug (e.g. kaliningrad_city)
+          schema: { type: string }
       responses:
         '200':
           description: List of tours
-          headers:
-            ETag:
-              schema:
-                type: string
+          headers: { ETag: { schema: { type: string } } }
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TourRead'
-        '304':
-          description: Not Modified
+              schema: { type: array, items: { $ref: '#/components/schemas/TourRead' } }
+        '304': { description: Not Modified }
 
   /public/catalog:
     get:
-      summary: List POIs for a city (Catalog)
+      summary: List POIs for a city
       operationId: getPublicCatalog
       parameters:
         - name: city
           in: query
           required: true
-          schema:
-            type: string
-            description: Tenant slug
+          schema: { type: string }
       responses:
         '200':
           description: List of POIs
-          headers:
-            ETag:
-              schema:
-                type: string
+          headers: { ETag: { schema: { type: string } } }
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PoiRead'
-        '304':
-          description: Not Modified
+              schema: { type: array, items: { $ref: '#/components/schemas/PoiRead' } }
+        '304': { description: Not Modified }
 
+  # --- Ingestion (PR-2) ---
+  /admin/ingestion/osm/enqueue:
+    post:
+      summary: Enqueue OSM Import Job
+      operationId: enqueueOsmImport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city_slug, boundary_ref]
+              properties:
+                city_slug: { type: string }
+                boundary_ref: { type: string }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobEnqueueResponse' }
+        '400': { description: Invalid Request }
+
+  /admin/ingestion/helpers/enqueue:
+    post:
+      summary: Enqueue Helpers Import Job
+      operationId: enqueueHelpersImport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city_slug]
+              properties:
+                city_slug: { type: string }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobEnqueueResponse' }
+
+  # --- Core ---
   /jobs/{jobId}:
     get:
       summary: Get Job Status
@@ -114,18 +128,14 @@ paths:
         - name: jobId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Job Details
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/JobRead'
-        '404':
-          description: Job Not Found
+              schema: { $ref: '#/components/schemas/JobRead' }
+        '404': { description: Job Not Found }
 
   /internal/jobs/callback:
     post:
@@ -140,12 +150,8 @@ paths:
               properties:
                 job_id: { type: string, format: uuid }
       responses:
-        '200':
-          description: Processed
-        '401':
-          description: Invalid Signature
-        '400':
-          description: Invalid Payload
+        '200': { description: Processed }
+        '401': { description: Invalid Signature }
 
 components:
   schemas:
@@ -177,23 +183,18 @@ components:
       type: object
       required: [id, type, status, created_at, updated_at]
       properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-        status:
-          type: string
-          enum: [PENDING, RUNNING, COMPLETED, FAILED]
-        result:
-          type: object
-          nullable: true
-        error:
-          type: string
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
+        id: { type: string, format: uuid }
+        type: { type: string }
+        status: { type: string } # PENDING, RUNNING, COMPLETED, FAILED
+        result: { type: object, nullable: true }
+        error: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    JobEnqueueResponse:
+      type: object
+      required: [job_id, status]
+      properties:
+        job_id: { type: string, format: uuid }
+        status: { type: string }
+        idempotency_key: { type: string, nullable: true }

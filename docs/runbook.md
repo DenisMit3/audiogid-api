@@ -11,24 +11,26 @@
 *   **API Client**: Regenerated on every OpenAPI change.
 
 ## Environment Variables
-(To be populated in Vercel Project Settings)
-*   `DATABASE_URL`: Neon Postgres Connection String.
-*   `BLOB_READ_WRITE_TOKEN`: Vercel Blob.
-*   `QSTASH_TOKEN`: Upstash QStash.
-*   `QSTASH_CURRENT_SIGNING_KEY`: QStash Verify.
-*   `QSTASH_NEXT_SIGNING_KEY`: QStash Verify.
-*   `PUBLIC_APP_BASE_URL`: Public Domain (e.g. api.mambax.app).
+*   `DATABASE_URL`: Neon Postgres.
+*   `QSTASH_TOKEN`: Upstash.
+*   `QSTASH_CURRENT_SIGNING_KEY`: Verify.
+*   `PUBLIC_APP_BASE_URL`: Public Domain.
+*   `OVERPASS_API_URL`: (Optional) Custom Overpass instance for ingest.
 
 ## Validation Procedures
 
 ### ETag / Caching Verification
-(Requires curl or browser dev tools)
-1.  **Initial Fetch**:
-    `curl -i https://<host>/v1/public/cities`
-    *Expect*: `200 OK`, `ETag: "..."`, body with cities.
-2.  **Conditional Fetch**:
-    `curl -i -H "If-None-Match: \"<etag_value>\"" https://<host>/v1/public/cities`
-    *Expect*: `304 Not Modified`, empty body.
+(See PR-1 section)
 
+### Ingestion Triggers
+(Requires Admin Auth in future; currently open)
+1.  **Enqueue`:
+    `POST /v1/admin/ingestion/osm/enqueue`
+    Body: `{"city_slug": "kaliningrad_city", "boundary_ref": "relation/12345"}`
+    *Expect*: `202 Accepted` + `job_id`.
+2.  **Monitor**:
+    `GET /v1/jobs/{job_id}`
+    *Expect*: `PENDING` -> `RUNNING` -> `COMPLETED`.
+    
 ## Disaster Recovery
 *   **Rollback**: Revert git commit + Vercel Instant Rollback.

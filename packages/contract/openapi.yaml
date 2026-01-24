@@ -1,0 +1,199 @@
+openapi: 3.1.0
+info:
+  title: Audio Guide 2026 API
+  version: 1.1.0
+  description: "Strict Contract for Audio Guide 2026. Source of truth."
+
+servers:
+  - url: https://api.mambax.app/v1
+    description: Production
+  - url: https://audiogid-api-preview.vercel.app/v1
+    description: Preview
+
+paths:
+  /health:
+    get:
+      summary: System Health
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  version:
+                    type: string
+
+  /public/cities:
+    get:
+      summary: List available city tenants (Onboarding)
+      operationId: getPublicCities
+      responses:
+        '200':
+          description: List of cities
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CityRead'
+        '304':
+          description: Not Modified
+          
+  /public/tours:
+    get:
+      summary: List tours for a city
+      operationId: getPublicTours
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Tenant slug (e.g. kaliningrad_city)
+      responses:
+        '200':
+          description: List of tours
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TourRead'
+        '304':
+          description: Not Modified
+
+  /public/catalog:
+    get:
+      summary: List POIs for a city (Catalog)
+      operationId: getPublicCatalog
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Tenant slug
+      responses:
+        '200':
+          description: List of POIs
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoiRead'
+        '304':
+          description: Not Modified
+
+  /jobs/{jobId}:
+    get:
+      summary: Get Job Status
+      operationId: getJob
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job Details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobRead'
+        '404':
+          description: Job Not Found
+
+  /internal/jobs/callback:
+    post:
+      summary: QStash Callback (Internal)
+      operationId: handleJobCallback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Processed
+        '401':
+          description: Invalid Signature
+        '400':
+          description: Invalid Payload
+
+components:
+  schemas:
+    CityRead:
+      type: object
+      required: [id, slug, name_ru]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name_ru: { type: string }
+    
+    TourRead:
+      type: object
+      required: [id, city_slug, title_ru]
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        title_ru: { type: string }
+
+    PoiRead:
+      type: object
+      required: [id, city_slug, title_ru]
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        title_ru: { type: string }
+
+    JobRead:
+      type: object
+      required: [id, type, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        result:
+          type: object
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

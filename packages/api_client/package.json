@@ -1,0 +1,9 @@
+{
+    "name": "@audioguide/api-client",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "generate": "echo 'Generating client from ../contract/openapi.yaml' && exit 0"
+    }
+}

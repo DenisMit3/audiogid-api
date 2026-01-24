@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.3.0
+  version: 1.4.0
   description: "Strict Contract for Audio Guide 2026. Source of truth."
 
 servers:
@@ -26,7 +26,7 @@ paths:
                   status: { type: string }
                   version: { type: string }
 
-  # --- Public (PR-1) ---
+  # --- Public (PR-1 & PR-4) ---
   /public/cities:
     get:
       summary: List available city tenants
@@ -74,6 +74,45 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/PoiRead' } }
+        '304': { description: Not Modified }
+  
+  /public/map/attribution:
+    get:
+      summary: Get Map Attribution Config
+      operationId: getMapAttribution
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Attribution Config
+          headers: { ETag: { schema: { type: string } } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MapAttributionRead' }
+        '304': { description: Not Modified }
+
+  /public/helpers:
+    get:
+      summary: List Helper Places
+      operationId: getHelpers
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of Helpers
+          headers: { ETag: { schema: { type: string } } }
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/HelperPlaceRead' } }
         '304': { description: Not Modified }
 
   # --- Ingestion Admin (PR-2/3) ---
@@ -192,6 +231,25 @@ components:
         id: { type: string, format: uuid }
         city_slug: { type: string }
         title_ru: { type: string }
+
+    HelperPlaceRead:
+      type: object
+      required: [id, city_slug, type, lat, lon]
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        type: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        name_ru: { type: string, nullable: true }
+
+    MapAttributionRead:
+      type: object
+      required: [attribution_text, data_provider]
+      properties:
+        attribution_text: { type: string }
+        attribution_url: { type: string, nullable: true }
+        data_provider: { type: string }
 
     JobRead:
       type: object

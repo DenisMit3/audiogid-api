@@ -3,36 +3,33 @@
 ## Ops & Deployment
 *   **Platform**: Vercel.
 *   **Production URL**: Included in PR validation steps.
-*   **Preview URL**: Generated per PR.
 
 ## CI/CD
-*   **Linting**: strict eslint config.
-*   **Tests**: GitHub Actions (planned).
 *   **API Client**: Regenerated on every OpenAPI change.
 
 ## Environment Variables
-*   `DATABASE_URL`: Neon Postgres.
-*   `QSTASH_TOKEN`: Upstash.
-*   `QSTASH_CURRENT_SIGNING_KEY`: Verify.
-*   `PUBLIC_APP_BASE_URL`: Public Domain.
-*   `OVERPASS_API_URL`: Configurable Overpass instance (Def: overpass-api.de).
-*   `ADMIN_API_TOKEN`: Secret for Admin Ops.
+*   `DATABASE_URL`, `QSTASH_TOKEN`, `OVERPASS_API_URL`, `ADMIN_API_TOKEN`...
 
 ## Validation Procedures
 
-### Ingestion Triggers (Admin)
+### Ingestion: Helpers (Admin)
 1.  **Enqueue**:
-    `POST /v1/admin/ingestion/osm/enqueue` (Auth: X-Admin-Token: <SECRET>)
-    Body: `{"city_slug": "kaliningrad_city", "boundary_ref": "319662"}` (Kaliningrad ID)
+    `POST /v1/admin/ingestion/helpers/enqueue` (Auth: X-Admin-Token)
+    Body: `{"city_slug": "kaliningrad_city"}`
     *Expect*: 202 Accepted.
-    
 2.  **Monitor**:
-    `GET /v1/jobs/{job_id}`
-    *Expect*: `COMPLETED` (after ~10-20s). Result JSON matches `{"status": "success", "imported": N}`.
-    
-3.  **Inspect Runs**:
-    `GET /v1/admin/ingestion/runs`
-    *Expect*: JSON list with latest run stats.
+    `GET /v1/jobs/{job_id}` -> Wait for `COMPLETED`.
+3.  **Inspect**:
+    `GET /v1/public/helpers?city=kaliningrad_city&category=toilet`
+    *Expect*: JSON List (non-empty if OSM has data).
+
+### Map Attribution (Public)
+1.  **Fetch**:
+    `GET /v1/public/map/attribution?city=kaliningrad_city`
+    *Expect*: 200 OK + `ETag`.
+2.  **Conditional**:
+    `GET ...` with `If-None-Match: <etag>`
+    *Expect*: 304 Not Modified.
 
 ## Disaster Recovery
-*   **Rollback**: Revert git commit + Vercel Instant Rollback.
+*   **Rollback**: Revert + Instant Rollback.

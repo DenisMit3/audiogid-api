@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from sqlmodel import Session, select
-from upstash_qstash import Receiver
+from qstash import Receiver
 
 from .core.config import config
 # Updated Middleware Import
@@ -38,10 +38,10 @@ app.include_router(admin_tours_router, prefix="/v1")
 app.include_router(purchases_router, prefix="/v1")
 app.include_router(deletion_router, prefix="/v1")
 
-receiver = Receiver({
-    "current_signing_key": config.QSTASH_CURRENT_SIGNING_KEY,
-    "next_signing_key": config.QSTASH_NEXT_SIGNING_KEY,
-})
+receiver = Receiver(
+    current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
+    next_signing_key=config.QSTASH_NEXT_SIGNING_KEY,
+)
 
 @app.get("/api/health")
 def health_check_legacy():
@@ -54,7 +54,11 @@ async def job_callback(request: Request):
     signature = request.headers.get("Upstash-Signature")
     if not signature: raise HTTPException(status_code=401, detail="Missing signature")
     try:
-        receiver.verify({"signature": signature, "body": raw_body.decode("utf-8")})
+        receiver.verify(
+            body=raw_body.decode("utf-8"),
+            signature=signature,
+            url=str(request.url)
+        )
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid signature")
 

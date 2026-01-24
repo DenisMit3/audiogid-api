@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from ..core.database import engine
-from ..core.models import Job, IngestionRun
-from ..core.async_utils import enqueue_job
-from ..core.config import config
+from .core.database import engine
+from .core.models import Job, IngestionRun
+from .core.async_utils import enqueue_job
+from .core.config import config
 
 router = APIRouter()
 

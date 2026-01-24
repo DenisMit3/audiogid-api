@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, text
-from ..core.database import engine
+from .core.database import engine
 
 router = APIRouter()
 

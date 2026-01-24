@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from ..core.database import engine
-from ..core.models import PurchaseIntent, Purchase, Entitlement, Tour
-from ..core.config import config
+from .core.database import engine
+from .core.models import PurchaseIntent, Purchase, Entitlement, Tour
+from .core.config import config
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

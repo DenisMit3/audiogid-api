@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, Query, HTTPException, Header
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from ..core.database import engine
-from ..core.models import Poi, PoiSource, PoiMedia, AuditLog
-from ..core.caching import check_etag
-from ..core.config import config
+from .core.database import engine
+from .core.models import Poi, PoiSource, PoiMedia, AuditLog
+from .core.caching import check_etag
+from .core.config import config
 
 router = APIRouter()
 

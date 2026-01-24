@@ -6,9 +6,9 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 from typing import List
 
-from ..core.database import engine
-from ..core.models import Tour, TourSource, TourMedia, TourItem, Poi, AuditLog
-from ..core.config import config
+from .core.database import engine
+from .core.models import Tour, TourSource, TourMedia, TourItem, Poi, AuditLog
+from .core.config import config
 
 router = APIRouter()
 

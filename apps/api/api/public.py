@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, Response, Query, HTTPException
 from sqlmodel import Session, select, text
 import uuid
 
-from ..core.database import engine
-from ..core.models import City, Tour, Poi, HelperPlace, Entitlement
-from ..core.caching import check_etag
+from .core.database import engine
+from .core.models import City, Tour, Poi, HelperPlace, Entitlement
+from .core.caching import check_etag
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

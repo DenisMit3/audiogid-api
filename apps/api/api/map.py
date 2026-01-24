@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, Response, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from ..core.database import engine
-from ..core.models import HelperPlace
-from ..core.caching import check_etag
+from .core.database import engine
+from .core.models import HelperPlace
+from .core.caching import check_etag
 
 router = APIRouter()
 

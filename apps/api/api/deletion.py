@@ -10,10 +10,10 @@ from fastapi.responses import HTMLResponse
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from ..core.database import engine
-from ..core.models import DeletionRequest, PurchaseIntent, Purchase, Entitlement, Job
-from ..core.config import config
-from ..core.worker import UPSTASH_CLIENT
+from .core.database import engine
+from .core.models import DeletionRequest, PurchaseIntent, Purchase, Entitlement, Job
+from .core.config import config
+from .core.worker import UPSTASH_CLIENT
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

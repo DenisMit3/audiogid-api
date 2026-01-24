@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Response, Query, HTTPException
+from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request
 from sqlmodel import Session, select, text
 import uuid
 
@@ -18,6 +18,7 @@ def get_session():
 @router.get("/public/tours/{tour_id}/manifest")
 def get_tour_manifest(
     response: Response,
+    request: Request,
     tour_id: uuid.UUID,
     city: str = Query(..., description="Tenant slug"),
     device_anon_id: str = Query(..., description="Device binding for entitlement check"),
@@ -79,11 +80,13 @@ def get_tour_manifest(
         "assets": assets
     }
     
-    # Manifests are heavy but stable per tour version.
-    # Cache Control: private because it's entitled content (though content itself is typically same for all entitled users)
-    # We use private to be safe with shared caches not caching paid content.
-    response.headers["Cache-Control"] = "private, max-age=300"
-    check_etag(response.request, response, data)
+    # Manifests contain entitled content links (signed URLs).
+    # Cache Policy: no-store to prevent leakage of paid content URLs on shared/CDN caches.
+    response.headers["Cache-Control"] = "no-store"
+    # ETag checking might still be useful for client-side revalidation if no-store allows it, 
+    # but strictly no-store usually implies no caching. 
+    # Attempt ETag check anyway in case client supports 304 with no-store (rare but possible).
+    check_etag(request, response, data)
     
     return data
 
@@ -94,18 +97,20 @@ def get_tour_manifest(
 @router.get("/public/tours")
 def get_tours(
     response: Response, 
+    request: Request,
     city: str = Query(..., description="Tenant slug"), 
     session: Session = Depends(get_session)
 ):
     tours = session.exec(select(Tour).where(Tour.city_slug == city, Tour.published_at != None)).all()
     data = [tour.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'}) for tour in tours]
     response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/tours/{tour_id}")
 def get_tour_detail(
     response: Response,
+    request: Request,
     tour_id: uuid.UUID,
     city: str = Query(..., description="Tenant slug"),
     session: Session = Depends(get_session)
@@ -120,7 +125,7 @@ def get_tour_detail(
              items_data.append({"id": str(item.id), "order_index": item.order_index, "poi": item.poi.model_dump(include={'id', 'title_ru', 'lat', 'lon'})})
     data = {**tour.model_dump(exclude={'items', 'sources', 'media'}), "items": items_data, "sources": [s.model_dump() for s in tour.sources], "media": [m.model_dump() for m in tour.media]}
     response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/nearby")
@@ -137,42 +142,42 @@ def get_nearby(response: Response, city: str = Query(...), lat: float = Query(..
     return results[:50]
 
 @router.get("/public/cities")
-def get_cities(response: Response, session: Session = Depends(get_session)):
+def get_cities(response: Response, request: Request, session: Session = Depends(get_session)):
     cities = session.exec(select(City).where(City.is_active == True)).all()
     data = [city.model_dump(exclude={'pois', 'tours'}) for city in cities]
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/catalog")
-def get_catalog(response: Response, city: str = Query(...), session: Session = Depends(get_session)):
+def get_catalog(response: Response, request: Request, city: str = Query(...), session: Session = Depends(get_session)):
     pois = session.exec(select(Poi).where(Poi.city_slug == city, Poi.published_at != None)).all()
     data = [poi.model_dump(exclude={'geo'}) for poi in pois] 
     response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/poi/{poi_id}")
-def get_poi_detail(response: Response, poi_id: uuid.UUID, city: str = Query(...), session: Session = Depends(get_session)):
+def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city: str = Query(...), session: Session = Depends(get_session)):
     poi = session.get(Poi, poi_id)
     if not poi or poi.city_slug != city or not poi.published_at: raise HTTPException(status_code=404, detail="Not Found")
     data = {**poi.model_dump(exclude={'geo'}), "sources": [s.model_dump() for s in poi.sources], "media": [m.model_dump() for m in poi.media]}
     response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/map/attribution")
-def get_map_attribution(response: Response, city: str = Query(...)):
+def get_map_attribution(response: Response, request: Request, city: str = Query(...)):
     data = {"attribution_text": "© OpenStreetMap contributors", "attribution_url": "https://www.openstreetmap.org/copyright", "data_provider": "OpenStreetMap", "license": "ODbL 1.0"}
     response.headers["Cache-Control"] = "public, max-age=3600"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data
 
 @router.get("/public/helpers")
-def get_helpers(response: Response, city: str = Query(...), category: Optional[str] = Query(None), session: Session = Depends(get_session)):
+def get_helpers(response: Response, request: Request, city: str = Query(...), category: Optional[str] = Query(None), session: Session = Depends(get_session)):
     q = select(HelperPlace).where(HelperPlace.city_slug == city)
     if category: q = q.where(HelperPlace.type == category)
     helpers = session.exec(q).all()
     data = [helper.model_dump(exclude={'geo'}) for helper in helpers]
     response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(response.request, response, data)
+    check_etag(request, response, data)
     return data

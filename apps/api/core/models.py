@@ -5,18 +5,7 @@ from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
 
-# --- Previous Models ---
-class Job(SQLModel, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    type: str
-    status: str = Field(default="PENDING", index=True)
-    payload: Optional[str] = None
-    result: Optional[str] = None
-    error: Optional[str] = None
-    idempotency_key: Optional[str] = Field(default=None, unique=True, index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
+# --- Poi & Dependencies (Previous) ---
 class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
@@ -27,34 +16,22 @@ class City(CityBase, table=True):
     tours: List["Tour"] = Relationship(back_populates="city")
     pois: List["Poi"] = Relationship(back_populates="city")
 
-class TourBase(SQLModel):
-    title_ru: str
-    city_slug: str = Field(index=True, foreign_key="city.slug")
-    is_published: bool = Field(default=False)
-
-class Tour(TourBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    city: Optional[City] = Relationship(back_populates="tours")
-
-# --- Updated POI (PostGIS Geography) ---
-
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
     published_at: Optional[datetime] = Field(default=None, index=True)
-    
-    # Lat/Lon floats kept for easy REST API I/O & Admin edits
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    # Geo column: Geography type for native meter-based calculations
     geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
 
     city: Optional[City] = Relationship(back_populates="pois")
     sources: List["PoiSource"] = Relationship(back_populates="poi")
     media: List["PoiMedia"] = Relationship(back_populates="poi")
+    # PR-7: Link to Tours
+    tour_items: List["TourItem"] = Relationship(back_populates="poi")
 
 class PoiSource(SQLModel, table=True):
     __tablename__ = "poi_sources"
@@ -74,6 +51,70 @@ class PoiMedia(SQLModel, table=True):
     author: str
     source_page_url: str
     poi: Optional[Poi] = Relationship(back_populates="media")
+
+# --- PR-7: Tours & Catalog ---
+
+class TourBase(SQLModel):
+    title_ru: str
+    city_slug: str = Field(index=True, foreign_key="city.slug")
+    description_ru: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    published_at: Optional[datetime] = Field(default=None, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Tour(TourBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    city: Optional[City] = Relationship(back_populates="tours")
+    
+    items: List["TourItem"] = Relationship(back_populates="tour")
+    sources: List["TourSource"] = Relationship(back_populates="tour")
+    media: List["TourMedia"] = Relationship(back_populates="tour")
+
+class TourItem(SQLModel, table=True):
+    __tablename__ = "tour_items"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
+    poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id") # Optional if we support non-POI stops later
+    order_index: int = Field(default=0)
+    
+    tour: Optional[Tour] = Relationship(back_populates="items")
+    poi: Optional[Poi] = Relationship(back_populates="tour_items")
+
+class TourSource(SQLModel, table=True):
+    __tablename__ = "tour_sources"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
+    name: str
+    url: Optional[str] = None
+    retrieved_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    tour: Optional[Tour] = Relationship(back_populates="sources")
+
+class TourMedia(SQLModel, table=True):
+    __tablename__ = "tour_media"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
+    url: str
+    media_type: str = "image"
+    # Gates
+    license_type: str
+    author: str
+    source_page_url: str
+    
+    tour: Optional[Tour] = Relationship(back_populates="media")
+
+# --- Jobs/Audit/Helpers (Preserved) ---
+class Job(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    type: str
+    status: str = Field(default="PENDING", index=True)
+    payload: Optional[str] = None
+    result: Optional[str] = None
+    error: Optional[str] = None
+    idempotency_key: Optional[str] = Field(default=None, unique=True, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class AuditLog(SQLModel, table=True):
     __tablename__ = "audit_logs"

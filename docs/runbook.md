@@ -1,22 +1,36 @@
 # Audio Guide 2026 — Runbook
 
 ## Ops & Deployment
-*   **Platform**: Vercel + Neon Postgres.
-*   **Extensions**: PostGIS MUST be enabled on the DB.
-*   **Environment**: `ADMIN_API_TOKEN` required.
+*   **Platform**: Vercel + Neon.
+*   **Env**: `ADMIN_API_TOKEN` required.
 
 ## Validation Procedures
 
-### Nearby Discovery (PostGIS)
-1.  **Check Extension**:
-    Query DB: `SELECT postgis_version();` -> Should return version.
+### Publishing Flow (Tours)
+1.  **Create Draft Tour**:
+    `POST /v1/admin/tours` -> Status Draft.
+2.  **Add Item (Unpublished POI)**:
+    `POST /v1/admin/tours/{ID}/items` with unpublished POI.
+3.  **Try Publish (Fail)**:
+    `POST /v1/admin/tours/{ID}/publish`
+    *Expect*: 422 JSON Body:
+    ```json
+    {
+      "error": "TOUR_PUBLISH_BLOCKED",
+      "missing_requirements": ["sources", "media"],
+      "unpublished_poi_ids": ["..."]
+    }
+    ```
+4.  **Fix & Publish**: Match all gates -> 200 OK.
 
-2.  **Query**:
-    `GET /v1/public/nearby?city=kaliningrad_city&lat=54.71&lon=20.50&radius_m=2000`
-    *Expect*: 200 OK. Records sorted by `distance_m`.
-
-3.  **Logs**:
-    Check Vercel Logs. Look for "Nearby Query" entry. Ensure `lat`/`lon` keys are MISSING (Redacted).
+### Caching Check
+1.  **Request Tour Detail**:
+    `GET /v1/public/tours/{ID}?city=...`
+    *Response*: 200 OK, Header `ETag: "..."`, `Cache-Control: public, max-age=60`.
+2.  **Verify 304**:
+    `GET /v1/public/tours/{ID}?city=...`
+    Header `If-None-Match: "..."` (Insert ETag from step 1).
+    *Response*: 304 Not Modified.
 
 ## Disaster Recovery
 *   **Rollback**: Revert + Instant Rollback.

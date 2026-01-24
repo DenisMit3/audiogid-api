@@ -5,8 +5,8 @@ import hashlib
 from sqlmodel import Session, select
 from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
 from .config import config
-from qstash import Client
-UPSTASH_CLIENT = Client(token=config.QSTASH_TOKEN)
+from qstash import QStash
+UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
 
 # ... (Previous imports and process_job dispatcher updated) ...
 

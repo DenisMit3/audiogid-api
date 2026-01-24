@@ -28,6 +28,9 @@ def get_tour_manifest(
     Offline Manifest: Returns full tour usage data (Metadata + POI Details + Asset URLs).
     Gated: Requires active Entitlement.
     """
+    # Enforce no-store policy for ALL outcomes (Success/Error) to protect potentially leaked info
+    response.headers["Cache-Control"] = "no-store"
+
     # 1. Check Entitlement
     entitlement = session.exec(select(Entitlement).where(
         Entitlement.city_slug == city, 
@@ -37,12 +40,21 @@ def get_tour_manifest(
     )).first()
     
     if not entitlement:
-        raise HTTPException(status_code=403, detail="Payment Required: No active entitlement found")
+        # Explicitly attach header to exception to ensure it persists
+        raise HTTPException(
+            status_code=403, 
+            detail="Payment Required: No active entitlement found",
+            headers={"Cache-Control": "no-store"}
+        )
         
     # 2. Get Tour & POIs
     tour = session.get(Tour, tour_id)
     if not tour or tour.city_slug != city or not tour.published_at:
-        raise HTTPException(status_code=404, detail="Tour not found or unpublished")
+        raise HTTPException(
+            status_code=404, 
+            detail="Tour not found or unpublished",
+            headers={"Cache-Control": "no-store"}
+        )
         
     # 3. Construct Manifest
     # Tour Metadata
@@ -80,12 +92,7 @@ def get_tour_manifest(
         "assets": assets
     }
     
-    # Manifests contain entitled content links (signed URLs).
-    # Cache Policy: no-store to prevent leakage of paid content URLs on shared/CDN caches.
-    response.headers["Cache-Control"] = "no-store"
-    # ETag checking might still be useful for client-side revalidation if no-store allows it, 
-    # but strictly no-store usually implies no caching. 
-    # Attempt ETag check anyway in case client supports 304 with no-store (rare but possible).
+    # ETag checking might still be useful for client-side revalidation
     check_etag(request, response, data)
     
     return data

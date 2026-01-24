@@ -7,9 +7,10 @@ class AppConfig:
         self.QSTASH_TOKEN = self._get_required("QSTASH_TOKEN")
         self.QSTASH_CURRENT_SIGNING_KEY = self._get_required("QSTASH_CURRENT_SIGNING_KEY")
         self.QSTASH_NEXT_SIGNING_KEY = self._get_required("QSTASH_NEXT_SIGNING_KEY")
-        
-        # PR-2: Security for Admin Endpoints
         self.ADMIN_API_TOKEN = self._get_required("ADMIN_API_TOKEN")
+        
+        # Optional with default
+        self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter")
         
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)
@@ -21,6 +22,4 @@ try:
     config = AppConfig()
 except RuntimeError as e:
     print(f"Startup Config Error: {e}")
-    # In Vercel build phase, we might mock this or expect it to fail if we try to run app code.
-    # We allow import but execution will fail if config is accessed.
     pass 

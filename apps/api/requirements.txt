@@ -1,0 +1,9 @@
+fastapi==0.104.0
+uvicorn==0.23.2
+sqlmodel==0.0.14
+asyncpg==0.28.0
+psycopg2-binary==2.9.9
+upstash-qstash==0.1.0
+alembic==1.12.1
+python-multipart==0.0.6
+httpx==0.25.0

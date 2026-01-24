@@ -1,11 +1,11 @@
 from datetime import datetime
 import json
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from ..core.database import engine
-from ..core.models import Job
+from ..core.models import Job, IngestionRun
 from ..core.async_utils import enqueue_job
 from ..core.config import config
 
@@ -31,7 +31,6 @@ async def enqueue_osm_import(
     req: OsmImportRequest, 
     session: Session = Depends(get_session)
 ):
-    # Idempotency: {type}|{city}|{boundary_ref}|{date}
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"osm_import|{req.city_slug}|{req.boundary_ref}|{date_str}"
     
@@ -51,7 +50,6 @@ async def enqueue_osm_import(
         payload=payload,
         session=session
     )
-    
     return {
         "job_id": job.id, 
         "status": job.status,
@@ -63,7 +61,6 @@ async def enqueue_helpers_import(
     req: HelpersImportRequest,
     session: Session = Depends(get_session)
 ):
-    # Idempotency: {type}|{city}|{date} (Helpers are city-wide)
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"helpers_import|{req.city_slug}|{date_str}"
     
@@ -76,5 +73,16 @@ async def enqueue_helpers_import(
         payload=json.dumps(req.model_dump()),
         session=session
     )
-    
     return {"job_id": job.id, "status": job.status, "idempotency_key": key}
+
+@router.get("/admin/ingestion/runs", dependencies=[Depends(verify_admin_token)])
+def get_ingestion_runs(
+    city: str = Query(None),
+    session: Session = Depends(get_session)
+):
+    query = select(IngestionRun).order_by(IngestionRun.started_at.desc()).limit(20)
+    if city:
+        query = query.where(IngestionRun.city_slug == city)
+        
+    runs = session.exec(query).all()
+    return runs

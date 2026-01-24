@@ -8,7 +8,7 @@ from alembic import context
 from sqlmodel import SQLModel
 
 # Import models for autogeneration
-from core.models import Job 
+from api.core.models import Job 
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

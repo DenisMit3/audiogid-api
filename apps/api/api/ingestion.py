@@ -32,7 +32,7 @@ async def enqueue_osm_import(
     session: Session = Depends(get_session)
 ):
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    date_str = datetime.utcnow().strftime("%Y-%m-%d-%H-%M")
     key = f"osm_import|{req.city_slug}|{date_str}"
     
     payload_dict = req.model_dump() if hasattr(req, "model_dump") else req.dict()

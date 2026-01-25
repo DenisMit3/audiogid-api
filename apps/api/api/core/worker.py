@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
 from .ingestion.processor import run_ingestion
 from .narration.service import generate_narration_for_poi
+from .preview.service import generate_preview_content
 import asyncio
 from .config import config
 from qstash import QStash
@@ -24,11 +25,33 @@ async def process_job(session: Session, job: Job):
         await _process_deletion(session, job)
     elif job.type == "generate_narration":
         await _process_narration(session, job)
+    elif job.type == "generate_preview":
+        await _process_preview(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"
 
 # ... (Previous _process_osm_import and _process_helpers_import omitted for brevity, assume retained) ...
+
+async def _process_preview(session: Session, job: Job):
+    payload = json.loads(job.payload or "{}")
+    poi_id_str = payload.get("poi_id")
+    if not poi_id_str:
+        job.status = "FAILED"
+        job.error = "Missing poi_id"
+        return
+
+    try:
+        result = await generate_preview_content(session, poi_id_str)
+        if result and "error" in result:
+             job.status = "FAILED"
+             job.error = result["error"]
+        else:
+             job.status = "COMPLETED"
+             job.result = json.dumps(result)
+    except Exception as e:
+        job.status = "FAILED"
+        job.error = str(e)
 
 async def _process_narration(session: Session, job: Job):
     payload = json.loads(job.payload or "{}")

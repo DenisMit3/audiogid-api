@@ -1,6 +1,7 @@
 from typing import Optional, List, Any
 from sqlmodel import Field, SQLModel, Relationship
 from sqlalchemy import Column
+import sqlalchemy as sa
 from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
@@ -26,6 +27,8 @@ class PoiBase(SQLModel):
     osm_id: Optional[str] = Field(default=None, index=True)
     wikidata_id: Optional[str] = Field(default=None, index=True)
     confidence_score: float = Field(default=0.0)
+    preview_audio_url: Optional[str] = None
+    preview_bullets: Optional[List[str]] = Field(default=None, sa_column=Column(sa.JSON))
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

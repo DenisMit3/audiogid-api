@@ -7,6 +7,7 @@ import uuid
 from .core.database import engine
 from .core.models import City, Tour, Poi, HelperPlace, Entitlement
 from .core.caching import check_etag
+from .core.security import sign_asset_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,7 +71,7 @@ def get_tour_manifest(
 
     # Tour Media Assets
     for media in tour.media:
-        add_asset(media.url, media.media_type, tour.id)
+        add_asset(sign_asset_url(media.url), media.media_type, tour.id)
         
     items_sorted = sorted(tour.items, key=lambda i: i.order_index)
     for item in items_sorted:
@@ -82,9 +83,21 @@ def get_tour_manifest(
                 **p_data
             })
             
-            # Add POI Assets (Audio/Image)
+            # Add Narrations (Audio)
+            # Use relationship, lazy loading is acceptable for MVP scale
+            for narr in item.poi.narrations:
+                # Custom asset structure for Audio
+                assets.append({
+                    "url": sign_asset_url(narr.url), 
+                    "type": "audio", 
+                    "owner_id": str(item.poi.id),
+                    "locale": narr.locale,
+                    "duration": narr.duration_seconds
+                })
+            
+            # Add POI Assets (Image/Video)
             for m in item.poi.media:
-                add_asset(m.url, m.media_type, item.poi.id)
+                add_asset(sign_asset_url(m.url), m.media_type, item.poi.id)
     
     data = {
         "tour": manifest_tour,

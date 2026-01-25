@@ -31,6 +31,7 @@ class Poi(PoiBase, table=True):
     tour_items: List["TourItem"] = Relationship(back_populates="poi")
     sources: List["PoiSource"] = Relationship(back_populates="poi")
     media: List["PoiMedia"] = Relationship(back_populates="poi")
+    narrations: List["Narration"] = Relationship(back_populates="poi")
 
 class PoiSource(SQLModel, table=True):
     __tablename__ = "poi_sources"
@@ -50,6 +51,19 @@ class PoiMedia(SQLModel, table=True):
     author: str
     source_page_url: str
     poi: Optional[Poi] = Relationship(back_populates="media")
+
+class Narration(SQLModel, table=True):
+    __tablename__ = "narrations"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True)
+    locale: str = Field(default="ru")
+    url: str
+    duration_seconds: float = Field(default=0.0)
+    voice_id: Optional[str] = None
+    filesize_bytes: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    poi: Optional[Poi] = Relationship(back_populates="narrations")
 
 class TourBase(SQLModel):
     title_ru: str

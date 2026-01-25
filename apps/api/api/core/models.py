@@ -23,6 +23,7 @@ class PoiBase(SQLModel):
     published_at: Optional[datetime] = Field(default=None, index=True)
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
+    osm_id: Optional[str] = Field(default=None, index=True)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

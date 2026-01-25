@@ -4,6 +4,7 @@ import httpx
 import hashlib
 from sqlmodel import Session, select
 from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
+from .ingestion.processor import run_ingestion
 from .config import config
 from qstash import QStash
 UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
@@ -28,50 +29,23 @@ def process_job(session: Session, job: Job):
 # I MUST REWRITE THEM.
 
 def _process_osm_import(session: Session, job: Job):
-    # (Restored from PR-6 context)
+    # Use Processor
     payload = json.loads(job.payload or "{}")
-    city_slug = payload.get("city_slug")
-    boundary_ref = payload.get("boundary_ref")
-
+    city_slug = payload.get("city_slug") or payload.get("city")
+    
     run = IngestionRun(city_slug=city_slug or "unknown", status="RUNNING")
     session.add(run)
     session.commit()
     
     try:
-        if not config.OVERPASS_API_URL: raise ValueError("OVERPASS_API_URL not configured")
-        rel_id = boundary_ref
-        query = f"[out:json][timeout:25]; rel({rel_id}); map_to_area->.a; (node['tourism'](area.a); way['tourism'](area.a); relation['tourism'](area.a);); out center;"
-        
-        transport_timeout = httpx.Timeout(28.0, connect=5.0)
-        try:
-            response = httpx.post(config.OVERPASS_API_URL, data={"data": query}, timeout=transport_timeout)
-        except httpx.TimeoutException as te:
-            raise RuntimeError(f"Overpass Client Timeout: {te}")
+        stats = run_ingestion(session, city_slug)
+        if "error" in stats:
+            raise RuntimeError(stats["error"])
             
-        if response.status_code != 200: raise RuntimeError(f"Overpass API failed: {response.status_code}")
-        
-        data = response.json()
-        elements = data.get("elements", [])
-        count = 0
-        for el in elements:
-            e_id = f"{el.get('type')}/{el.get('id')}"
-            name_ru = el.get("tags", {}).get("name:ru") or el.get("tags", {}).get("name")
-            
-            stmt = select(PoiStaging).where(PoiStaging.city_slug == city_slug, PoiStaging.osm_id == e_id)
-            existing = session.exec(stmt).first()
-            if existing:
-                existing.raw_payload = json.dumps(el, default=str)
-                existing.name_ru = name_ru
-                session.add(existing)
-            else:
-                session.add(PoiStaging(city_slug=city_slug, osm_id=e_id, raw_payload=json.dumps(el, default=str), name_ru=name_ru))
-            count += 1
-            
-        session.commit()
         run.status = "COMPLETED"
         run.finished_at = datetime.utcnow()
-        run.stats_json = json.dumps({"imported": count})
-        job.result = json.dumps({"run_id": str(run.id), "status": "success", "imported": count})
+        run.stats_json = json.dumps(stats)
+        job.result = json.dumps({"run_id": str(run.id), "status": "success", **stats})
         
     except Exception as e:
         run.status = "FAILED"

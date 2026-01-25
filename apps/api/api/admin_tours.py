@@ -172,5 +172,27 @@ def unpublish_tour(tour_id: uuid.UUID, token: str = Depends(verify_admin_token),
     audit = AuditLog(action="UNPUBLISH_TOUR", target_id=tour_id, actor_type="admin_token", actor_fingerprint=fingerprint)
     session.add(audit)
     session.add(tour)
+    session.add(tour)
     session.commit()
     return {"status": "unpublished"}
+
+@router.get("/admin/pois", dependencies=[Depends(verify_admin_token)])
+def list_pois(
+    limit: int = 50,
+    offset: int = 0,
+    has_wikidata: bool = False,
+    session: Session = Depends(get_session)
+):
+    query = select(Poi)
+    if has_wikidata:
+        query = query.where(Poi.wikidata_id != None)
+    
+    query = query.limit(limit).offset(offset)
+    pois = session.exec(query).all()
+    
+    # Return explicit fields including wikidata_id
+    res = []
+    for p in pois:
+        d = p.model_dump(include={"id", "title_ru", "wikidata_id", "confidence_score", "osm_id"})
+        res.append(d)
+    return res

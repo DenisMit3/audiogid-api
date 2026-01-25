@@ -24,6 +24,8 @@ class PoiBase(SQLModel):
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
     osm_id: Optional[str] = Field(default=None, index=True)
+    wikidata_id: Optional[str] = Field(default=None, index=True)
+    confidence_score: float = Field(default=0.0)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

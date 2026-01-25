@@ -62,7 +62,7 @@ def _process_osm_import(session: Session, job: Job):
     session.commit()
     
     try:
-        stats = run_ingestion(session, city_slug)
+        stats = asyncio.run(run_ingestion(session, city_slug))
         if "error" in stats:
             raise RuntimeError(stats["error"])
             

@@ -25,3 +25,8 @@ pass.key
 
 # Logs
 *.log
+
+# Node
+node_modules/
+.npm/
+

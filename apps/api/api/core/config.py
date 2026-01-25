@@ -10,6 +10,11 @@ class AppConfig:
         self.ADMIN_API_TOKEN = self._get_required("ADMIN_API_TOKEN")
         
         # Optional with default
+        self.VERCEL_BLOB_READ_WRITE_TOKEN = os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN")
+        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "openai")
+        self.PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL")
+        self.VERCEL_URL = os.getenv("VERCEL_URL")
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter")
         
     def _get_required(self, key: str) -> str:

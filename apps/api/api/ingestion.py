@@ -35,7 +35,8 @@ async def enqueue_osm_import(
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"osm_import|{req.city_slug}|{date_str}"
     
-    payload = json.dumps(req.model_dump())
+    payload_dict = req.model_dump() if hasattr(req, "model_dump") else req.dict()
+    payload = json.dumps(payload_dict)
     
     existing = session.exec(select(Job).where(Job.idempotency_key == key)).first()
     if existing:
@@ -69,9 +70,10 @@ async def enqueue_helpers_import(
     if existing:
         return {"job_id": existing.id, "status": existing.status, "idempotency_key": key}
 
+    payload_dict = req.model_dump() if hasattr(req, "model_dump") else req.dict()
     job = await enqueue_job(
         job_type="helpers_import",
-        payload=json.dumps(req.model_dump()),
+        payload=json.dumps(payload_dict),
         session=session
     )
     return {"job_id": job.id, "status": job.status, "idempotency_key": key}

@@ -27,3 +27,25 @@ def readiness_check(session: Session = Depends(get_session)):
         return {"status": "ready"}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Database Unavailable: {str(e)}")
+
+import alembic.config
+import alembic.command
+import os
+
+@router.post("/ops/migrate")
+def run_migrations():
+    """
+    Run alembic migrations programmatically.
+    Use with caution in production.
+    """
+    try:
+        # Assume alembic.ini is in current working directory (apps/api)
+        ini_path = "alembic.ini"
+        if not os.path.exists(ini_path):
+             return {"status": "error", "detail": "alembic.ini not found"}
+             
+        alembic_cfg = alembic.config.Config(ini_path)
+        alembic.command.upgrade(alembic_cfg, "head")
+        return {"status": "migrated"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}

@@ -194,5 +194,6 @@ def list_pois(
     res = []
     for p in pois:
         d = p.model_dump(include={"id", "title_ru", "wikidata_id", "confidence_score", "osm_id"})
+        d["media"] = [m.model_dump() for m in p.media]
         res.append(d)
     return res

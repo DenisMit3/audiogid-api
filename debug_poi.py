@@ -6,7 +6,7 @@ import uuid
 def check_poi():
     with Session(engine) as session:
         # ID Канта из логов
-        poi_id = uuid.UUID("9b3a97d4-cb2c-46f0-bee3-61b4bb57eef3")
+        poi_id = uuid.UUID("ea91aa3f-fd4a-4486-a886-4df0a49db8ed")
         poi = session.get(Poi, poi_id)
         print(f"POI Found: {poi.title_ru}")
         print(f"Bullets Type: {type(poi.preview_bullets)}")

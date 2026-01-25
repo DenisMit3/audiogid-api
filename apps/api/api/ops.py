@@ -28,6 +28,15 @@ def readiness_check(session: Session = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Database Unavailable: {str(e)}")
 
+@router.get("/ops/config-check")
+def config_check():
+    from .core.config import config
+    return {
+        "OPENAI_API_KEY": bool(config.OPENAI_API_KEY),
+        "VERCEL_BLOB_READ_WRITE_TOKEN": bool(config.VERCEL_BLOB_READ_WRITE_TOKEN),
+        "AUDIO_PROVIDER": config.AUDIO_PROVIDER
+    }
+
 import alembic.config
 import alembic.command
 import os

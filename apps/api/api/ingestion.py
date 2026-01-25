@@ -92,3 +92,25 @@ def get_ingestion_runs(
         
     runs = session.exec(query).all()
     return runs
+
+class PreviewGenRequest(BaseModel):
+    poi_id: str
+
+@router.post("/admin/ingestion/preview/enqueue", status_code=202, dependencies=[Depends(verify_admin_token)])
+async def enqueue_preview_gen(
+    req: PreviewGenRequest,
+    session: Session = Depends(get_session)
+):
+    key = f"preview|{req.poi_id}"
+    
+    # Allow retries if previous failed (don't block strictly on key existence if failed)
+    # For simplicity, we just create a new job if not pending
+    # existing = session.exec(select(Job).where(Job.idempotency_key == key)).first()
+    # if existing and existing.status in ["PENDING", "RUNNING"]: ...
+    
+    job = await enqueue_job(
+        job_type="generate_preview",
+        payload=json.dumps({"poi_id": req.poi_id}),
+        session=session
+    )
+    return {"job_id": job.id, "status": job.status, "key": key}

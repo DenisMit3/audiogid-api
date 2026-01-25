@@ -85,7 +85,7 @@ async def job_callback(request: Request):
         session.add(job)
         session.commit()
         try:
-            process_job(session, job) 
+            await process_job(session, job) 
             if job.status == "RUNNING": 
                 job.status = "COMPLETED"
         except Exception as e:

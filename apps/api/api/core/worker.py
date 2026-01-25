@@ -9,26 +9,28 @@ from .narration.service import generate_narration_for_poi
 import asyncio
 from .config import config
 from qstash import QStash
+import uuid # Added for _process_narration
 UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
 
 # ... (Previous imports and process_job dispatcher updated) ...
 
-def process_job(session: Session, job: Job):
+
+async def process_job(session: Session, job: Job):
     if job.type == "osm_import":
-        _process_osm_import(session, job)
+        await _process_osm_import(session, job)
     elif job.type == "helpers_import":
-        _process_helpers_import(session, job)
+        await _process_helpers_import(session, job)
     elif job.type == "delete_user_data": # PR-10
-        _process_deletion(session, job)
+        await _process_deletion(session, job)
     elif job.type == "generate_narration":
-        _process_narration(session, job)
+        await _process_narration(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"
 
 # ... (Previous _process_osm_import and _process_helpers_import omitted for brevity, assume retained) ...
 
-def _process_narration(session: Session, job: Job):
+async def _process_narration(session: Session, job: Job):
     payload = json.loads(job.payload or "{}")
     poi_id_str = payload.get("poi_id")
     if not poi_id_str:
@@ -39,7 +41,7 @@ def _process_narration(session: Session, job: Job):
     try:
         poi_id = uuid.UUID(poi_id_str)
         # Run async logic in sync context
-        result = asyncio.run(generate_narration_for_poi(session, poi_id))
+        result = await generate_narration_for_poi(session, poi_id)
         
         if result and "error" in result:
              job.status = "FAILED"
@@ -52,7 +54,7 @@ def _process_narration(session: Session, job: Job):
         job.status = "FAILED"
         job.error = str(e)
 
-def _process_osm_import(session: Session, job: Job):
+async def _process_osm_import(session: Session, job: Job):
     # Use Processor
     payload = json.loads(job.payload or "{}")
     city_slug = payload.get("city_slug") or payload.get("city")
@@ -62,7 +64,7 @@ def _process_osm_import(session: Session, job: Job):
     session.commit()
     
     try:
-        stats = asyncio.run(run_ingestion(session, city_slug))
+        stats = await run_ingestion(session, city_slug)
         if "error" in stats:
             raise RuntimeError(stats["error"])
             
@@ -80,7 +82,7 @@ def _process_osm_import(session: Session, job: Job):
         session.add(run)
         session.commit()
 
-def _process_helpers_import(session: Session, job: Job):
+async def _process_helpers_import(session: Session, job: Job):
     # (Restored from PR-6 context)
     payload = json.loads(job.payload or "{}")
     city_slug = payload.get("city_slug")
@@ -98,18 +100,19 @@ def _process_helpers_import(session: Session, job: Job):
     try:
         query = f"[out:json][timeout:25]; rel({boundary_id}); map_to_area->.a; (node['amenity'~'toilets|drinking_water|cafe'](area.a);); out center;"
         
-        transport_timeout = httpx.Timeout(28.0, connect=5.0)
-        try:
-            response = httpx.post(config.OVERPASS_API_URL, data={"data": query}, timeout=transport_timeout)
-        except httpx.TimeoutException as te:
-            raise RuntimeError(f"Overpass Timeout: {te}")
+        # transport_timeout = httpx.Timeout(28.0, connect=5.0)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                response = await client.post(config.OVERPASS_API_URL, data={"data": query})
+            except httpx.TimeoutException as te:
+                raise RuntimeError(f"Overpass Timeout: {te}")
             
         data = response.json()
         elements = data.get("elements", [])
         count = 0
         
         from geoalchemy2.elements import WKTElement
-        from sqlalchemy import text
+        # from sqlalchemy import text
         
         for el in elements:
             e_id = str(el.get("id"))
@@ -157,7 +160,7 @@ def _process_helpers_import(session: Session, job: Job):
         session.commit()
 
 # --- PR-10 Deletion Logic ---
-def _process_deletion(session: Session, job: Job):
+async def _process_deletion(session: Session, job: Job):
     payload = json.loads(job.payload or "{}")
     req_id = payload.get("deletion_request_id")
     subject_id = payload.get("subject_id")

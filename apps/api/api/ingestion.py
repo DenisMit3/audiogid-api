@@ -47,16 +47,19 @@ async def enqueue_osm_import(
             "message": "Job already exists for today"
         }
         
-    job = await enqueue_job(
-        job_type="osm_import",
-        payload=payload,
-        session=session
-    )
-    return {
-        "job_id": job.id, 
-        "status": job.status,
-        "idempotency_key": key
-    }
+    try:
+        job = await enqueue_job(
+            job_type="osm_import",
+            payload=payload,
+            session=session
+        )
+        return {
+            "job_id": job.id, 
+            "status": job.status,
+            "idempotency_key": key
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Enqueue Failed: {str(e)}")
 
 @router.post("/admin/ingestion/helpers/enqueue", status_code=202, dependencies=[Depends(verify_admin_token)])
 async def enqueue_helpers_import(

@@ -6,7 +6,7 @@ import uuid
 
 from .core.database import engine
 from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant
-from .core.caching import check_etag
+from .core.caching import check_etag_versioned, generate_version_marker
 from .core.security import sign_asset_url
 
 logger = logging.getLogger(__name__)
@@ -17,13 +17,7 @@ def get_session():
         yield session
 
 def check_access(session: Session, city: str, device_anon_id: str, tour_id: Optional[uuid.UUID] = None) -> bool:
-    """
-    Checks if a device has an active EntitlementGrant for the city or specific tour.
-    """
-    if not device_anon_id:
-        return False
-        
-    # Check for specific tour grant first
+    if not device_anon_id: return False
     if tour_id:
         grant = session.exec(select(EntitlementGrant).join(Entitlement).where(
             EntitlementGrant.device_anon_id == device_anon_id,
@@ -32,139 +26,88 @@ def check_access(session: Session, city: str, device_anon_id: str, tour_id: Opti
             Entitlement.ref == str(tour_id)
         )).first()
         if grant: return True
-
-    # Check for city-wide grant
     city_grant = session.exec(select(EntitlementGrant).join(Entitlement).where(
         EntitlementGrant.device_anon_id == device_anon_id,
         EntitlementGrant.revoked_at == None,
         Entitlement.scope == "city",
         Entitlement.ref == city
     )).first()
-    
     return city_grant is not None
 
 @router.get("/public/tours/{tour_id}/manifest")
 def get_tour_manifest(
-    response: Response,
-    request: Request,
-    tour_id: uuid.UUID,
-    city: str = Query(..., description="Tenant slug"),
-    device_anon_id: str = Query(..., description="Device binding for entitlement check"),
-    session: Session = Depends(get_session)
+    response: Response, request: Request, tour_id: uuid.UUID, city: str = Query(...), 
+    device_anon_id: str = Query(...), session: Session = Depends(get_session)
 ):
-    """
-    Offline Manifest: Full tour data. Gated by EntitlementGrant.
-    """
-    response.headers["Cache-Control"] = "no-store"
-
+    """Gated Manifest: private, no-store."""
     if not check_access(session, city, device_anon_id, tour_id):
-        raise HTTPException(status_code=403, detail="Payment Required", headers={"Cache-Control": "no-store"})
-        
+        raise HTTPException(status_code=403, detail="Payment Required", headers={"Cache-Control": "private, no-store"})
+    
     tour = session.get(Tour, tour_id)
     if not tour or tour.city_slug != city or not tour.published_at:
-        raise HTTPException(status_code=404, detail="Tour not found", headers={"Cache-Control": "no-store"})
-        
-    manifest_tour = tour.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'})
-    manifest_pois = []
+        raise HTTPException(status_code=404, detail="Tour not found", headers={"Cache-Control": "private, no-store"})
+    
+    # Manifest is heavy, use no-store to avoid stale local cache of sensitive URLs
+    response.headers["Cache-Control"] = "private, no-store"
+    
+    data = tour.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'})
+    pois_data = []
     assets = []
-    
-    def add_asset(url, type_hint, owner_id):
-        assets.append({"url": url, "type": type_hint, "owner_id": str(owner_id)})
-
-    for media in tour.media:
-        add_asset(sign_asset_url(media.url), media.media_type, tour.id)
-        
-    items_sorted = sorted(tour.items, key=lambda i: i.order_index)
-    for item in items_sorted:
+    for m in tour.media: assets.append({"url": sign_asset_url(m.url), "type": m.media_type, "owner_id": str(tour.id)})
+    for item in sorted(tour.items, key=lambda i: i.order_index):
         if item.poi:
-            p_data = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
-            manifest_pois.append({"order_index": item.order_index, **p_data})
-            for narr in item.poi.narrations:
-                assets.append({
-                    "url": sign_asset_url(narr.url), 
-                    "type": "audio", 
-                    "owner_id": str(item.poi.id),
-                    "locale": narr.locale,
-                    "duration": narr.duration_seconds
-                })
+            p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
+            pois_data.append({"order_index": item.order_index, **p})
+            for n in item.poi.narrations:
+                assets.append({"url": sign_asset_url(n.url), "type": "audio", "owner_id": str(item.poi.id), "locale": n.locale, "duration": n.duration_seconds})
             for m in item.poi.media:
-                add_asset(sign_asset_url(m.url), m.media_type, item.poi.id)
-    
-    return {"tour": manifest_tour, "pois": manifest_pois, "assets": assets}
+                assets.append({"url": sign_asset_url(m.url), "type": m.media_type, "owner_id": str(item.poi.id)})
+    return {"tour": data, "pois": pois_data, "assets": assets}
 
 @router.get("/public/tours")
 def get_tours(response: Response, request: Request, city: str = Query(...), session: Session = Depends(get_session)):
+    etag = generate_version_marker(session, Tour, city)
+    check_etag_versioned(request, response, etag)
     tours = session.exec(select(Tour).where(Tour.city_slug == city, Tour.published_at != None)).all()
-    data = [tour.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'}) for tour in tours]
-    response.headers["Cache-Control"] = "public, max-age=60"
-    check_etag(request, response, data)
-    return data
+    return [t.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'}) for t in tours]
 
 @router.get("/public/tours/{tour_id}")
-def get_tour_detail(
-    response: Response,
-    request: Request,
-    tour_id: uuid.UUID,
-    city: str = Query(...),
-    device_anon_id: Optional[str] = Query(None),
-    session: Session = Depends(get_session)
-):
+def get_tour_detail(response: Response, request: Request, tour_id: uuid.UUID, city: str = Query(...), device_anon_id: Optional[str] = Query(None), session: Session = Depends(get_session)):
     tour = session.get(Tour, tour_id)
-    if not tour or tour.city_slug != city or not tour.published_at:
-        raise HTTPException(status_code=404, detail="Not Found")
+    if not tour or tour.city_slug != city or not tour.published_at: raise HTTPException(status_code=404, detail="Not Found")
     
     has_access = check_access(session, city, device_anon_id, tour_id)
-    items_sorted = sorted(tour.items, key=lambda i: i.order_index)
-    items_data = []
+    etag = f"{SCHEMA_VERSION}|{tour.id}|{tour.updated_at}|{has_access}"
+    check_etag_versioned(request, response, f'W/"{hashlib.md5(etag.encode()).hexdigest()}"', is_public=not has_access)
     
-    for item in items_sorted:
+    items = []
+    for item in sorted(tour.items, key=lambda i: i.order_index):
         if item.poi:
-             poi_data = item.poi.model_dump(include={'id', 'title_ru', 'lat', 'lon', 'preview_audio_url', 'preview_bullets'})
-             items_data.append({"id": str(item.id), "order_index": item.order_index, "poi": poi_data})
-             
-    data = {
-        **tour.model_dump(exclude={'items', 'sources', 'media'}),
-        "items": items_data,
-        "sources": [s.model_dump() for s in tour.sources],
-        "media": [m.model_dump() for m in tour.media],
-        "has_access": has_access
-    }
-    response.headers["Cache-Control"] = "private, max-age=60"
-    check_etag(request, response, data)
-    return data
+             items.append({"id": str(item.id), "order_index": item.order_index, "poi": item.poi.model_dump(include={'id', 'title_ru', 'lat', 'lon', 'preview_audio_url', 'preview_bullets'})})
+    return {**tour.model_dump(exclude={'items', 'sources', 'media'}), "items": items, "sources": [s.model_dump() for s in tour.sources], "media": [m.model_dump() for m in tour.media], "has_access": has_access}
 
 @router.get("/public/poi/{poi_id}")
-def get_poi_detail(
-    response: Response,
-    request: Request,
-    poi_id: uuid.UUID,
-    city: str = Query(...),
-    device_anon_id: Optional[str] = Query(None),
-    session: Session = Depends(get_session)
-):
+def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city: str = Query(...), device_anon_id: Optional[str] = Query(None), session: Session = Depends(get_session)):
     poi = session.get(Poi, poi_id)
-    if not poi or poi.city_slug != city or not poi.published_at:
-        raise HTTPException(status_code=404, detail="Not Found")
+    if not poi or poi.city_slug != city or not poi.published_at: raise HTTPException(status_code=404, detail="Not Found")
     
-    # Check if this POI belongs to any tour the user has access to, or city-wide access
-    # Simpler: check city-wide access only for POI detail if it's not part of a specific tour manifest call
     has_access = check_access(session, city, device_anon_id)
+    # Individual POI might change, but updated_at is the master marker
+    etag = f"{SCHEMA_VERSION}|{poi.id}|{poi.updated_at}|{has_access}"
+    check_etag_versioned(request, response, f'W/"{hashlib.md5(etag.encode()).hexdigest()}"', is_public=not has_access)
     
     data = poi.model_dump(exclude={'geo'})
     data["sources"] = [s.model_dump() for s in poi.sources]
     data["media"] = [m.model_dump() for m in poi.media]
     data["has_access"] = has_access
-    
     if not has_access:
-        # Hide full narrations, keep only preview
         data["narrations"] = [] 
     else:
-        # Sign narration URLs only for entitled users
         data["narrations"] = [{"id": str(n.id), "url": sign_asset_url(n.url), "locale": n.locale} for n in poi.narrations]
-
-    response.headers["Cache-Control"] = "private, max-age=60"
-    check_etag(request, response, data)
     return data
+
+import hashlib
+from .core.caching import SCHEMA_VERSION
 
 @router.get("/public/nearby")
 def get_nearby(response: Response, city: str = Query(...), lat: float = Query(...), lon: float = Query(...), radius_m: int = Query(1000, le=5000), session: Session = Depends(get_session)):
@@ -173,25 +116,26 @@ def get_nearby(response: Response, city: str = Query(...), lat: float = Query(..
     for row in session.exec(poi_sql, params={"city": city, "lat": lat, "lon": lon, "radius": radius_m}).all():
         results.append({"id": row[0], "type": "poi", "title": row[2], "lat": row[3], "lon": row[4], "distance_m": int(row[5])})
     results.sort(key=lambda x: x["distance_m"])
+    response.headers["Cache-Control"] = "public, max-age=10" # Nearby is very reactive
     return results[:50]
 
 @router.get("/public/cities")
 def get_cities(response: Response, request: Request, session: Session = Depends(get_session)):
+    etag = generate_version_marker(session, City)
+    check_etag_versioned(request, response, etag)
     cities = session.exec(select(City).where(City.is_active == True)).all()
-    data = [city.model_dump(exclude={'pois', 'tours'}) for city in cities]
-    check_etag(request, response, data)
-    return data
+    return [city.model_dump(exclude={'pois', 'tours'}) for city in cities]
 
 @router.get("/public/catalog")
 def get_catalog(response: Response, request: Request, city: str = Query(...), session: Session = Depends(get_session)):
-    # Discovery only - no narrations or full data here
+    etag = generate_version_marker(session, Tour, city)
+    check_etag_versioned(request, response, etag)
     tours = session.exec(select(Tour).where(Tour.city_slug == city, Tour.published_at != None)).all()
-    data = [t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes'}) for t in tours]
-    check_etag(request, response, data)
-    return data
+    return [t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes'}) for t in tours]
 
 @router.get("/public/map/attribution")
 def get_map_attribution(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return {"attribution_text": "© OpenStreetMap contributors", "attribution_url": "https://www.openstreetmap.org/copyright"}
 
 @router.get("/public/helpers")
@@ -199,6 +143,4 @@ def get_helpers(response: Response, request: Request, city: str = Query(...), ca
     q = select(HelperPlace).where(HelperPlace.city_slug == city)
     if category: q = q.where(HelperPlace.type == category)
     helpers = session.exec(q).all()
-    data = [h.model_dump(exclude={'geo'}) for h in helpers]
-    check_etag(request, response, data)
-    return data
+    return [h.model_dump(exclude={'geo'}) for h in helpers]

@@ -35,8 +35,13 @@ def config_check():
         "OPENAI_API_KEY": bool(config.OPENAI_API_KEY),
         "VERCEL_BLOB_READ_WRITE_TOKEN": bool(config.VERCEL_BLOB_READ_WRITE_TOKEN),
         "AUDIO_PROVIDER": config.AUDIO_PROVIDER,
-        "YOOKASSA_SHOP_ID": bool(config.YOOKASSA_SHOP_ID),
-        "YOOKASSA_SECRET_KEY": bool(config.YOOKASSA_SECRET_KEY)
+        "YOOKASSA": {
+            "SHOP_ID": bool(config.YOOKASSA_SHOP_ID),
+            "SECRET_KEY": bool(config.YOOKASSA_SECRET_KEY),
+            "WEBHOOK_SECRET": bool(config.YOOKASSA_WEBHOOK_SECRET),
+            "WEBHOOK_PATH": config.PAYMENT_WEBHOOK_BASE_PATH
+        },
+        "PUBLIC_APP_BASE_URL": config.PUBLIC_APP_BASE_URL
     }
 
 import alembic.config

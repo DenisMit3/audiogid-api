@@ -11,6 +11,7 @@ class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
     is_active: bool = Field(default=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class City(CityBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -29,6 +30,7 @@ class PoiBase(SQLModel):
     confidence_score: float = Field(default=0.0)
     preview_audio_url: Optional[str] = None
     preview_bullets: Optional[List[str]] = Field(default=None, sa_column=Column(sa.JSON))
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

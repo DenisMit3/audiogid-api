@@ -17,13 +17,15 @@ class AppConfig:
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter").strip()
         
-        # Billing: YooKassa (P0 Required)
+        # Billing & Platform (P0 Required)
         self.YOOKASSA_SHOP_ID = self._get_required("YOOKASSA_SHOP_ID")
         self.YOOKASSA_SECRET_KEY = self._get_required("YOOKASSA_SECRET_KEY")
         self.YOOKASSA_WEBHOOK_SECRET = self._get_required("YOOKASSA_WEBHOOK_SECRET")
-        self.PAYMENT_WEBHOOK_BASE_PATH = os.getenv("PAYMENT_WEBHOOK_BASE_PATH", "/v1/billing/yookassa/webhook").strip()
         self.PUBLIC_APP_BASE_URL = self._get_required("PUBLIC_APP_BASE_URL")
-        
+        self.PAYMENT_WEBHOOK_BASE_PATH = os.getenv("PAYMENT_WEBHOOK_BASE_PATH", "/v1/billing/yookassa/webhook").strip()
+        if not self.PAYMENT_WEBHOOK_BASE_PATH.startswith("/"):
+            raise RuntimeError("CRITICAL: PAYMENT_WEBHOOK_BASE_PATH must start with '/'")
+            
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)
         if not value:

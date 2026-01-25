@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.11.0
-  description: Canonical API for Audio Guide 2026. Source of truth.
+  version: 1.12.0
+  description: Canonical API for Audio Guide 2026. Includes Serverless NFRs (ETag caching).
 servers:
   - url: https://audiogid-api.vercel.app/v1
     description: Production Server
@@ -11,15 +11,21 @@ paths:
   /public/cities:
     get:
       summary: Get active cities
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
           description: List of active cities
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/City'
+                items: { $ref: '#/components/schemas/City' }
+        '304':
+          $ref: '#/components/responses/NotModified'
 
   /public/catalog:
     get:
@@ -28,70 +34,27 @@ paths:
         - name: city
           in: query
           required: true
-          schema:
-            type: string
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
           description: List of tours
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/TourSnippet'
+                items: { $ref: '#/components/schemas/TourSnippet' }
+        '304':
+          $ref: '#/components/responses/NotModified'
 
   /public/poi/{poi_id}:
     get:
       summary: Get POI details with entitlement check
       parameters:
         - name: poi_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: city
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: device_anon_id
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: POI details. Narrations signed only if entitled.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PoiDetail'
-        '404':
-          description: POI not found
-
-  /public/tours:
-    get:
-      summary: Get tours for a city
-      parameters:
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: List of tours
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/TourSnippet' }
-
-  /public/tours/{tour_id}:
-    get:
-      summary: Get tour details
-      parameters:
-        - name: tour_id
           in: path
           required: true
           schema: { type: string, format: uuid }
@@ -103,98 +66,78 @@ paths:
           in: query
           required: false
           schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
-          description: Detailed tour data
+          description: POI details.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PoiDetail' }
+        '304':
+          $ref: '#/components/responses/NotModified'
         '404':
-          description: Tour not found
+          description: POI not found
 
-  /public/nearby:
+  /public/tours:
     get:
-      summary: Find nearby objects
+      summary: Get tours for a city
       parameters:
         - name: city
           in: query
           required: true
           schema: { type: string }
-        - name: lat
-          in: query
-          required: true
-          schema: { type: number }
-        - name: lon
-          in: query
-          required: true
-          schema: { type: number }
-        - name: radius_m
-          in: query
-          required: false
-          schema: { type: integer, maximum: 5000 }
+        - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
-          description: Nearby objects list
-
-  /public/map/attribution:
-    get:
-      summary: Map data attribution
-      responses:
-        '200':
-          description: Attribution info
-
-  /public/helpers:
-    get:
-      summary: Get helper places (cafes, WC)
-      parameters:
-        - name: city
-          in: query
-          required: true
-          schema: { type: string }
-        - name: category
-          in: query
-          required: false
-          schema: { type: string }
-      responses:
-        '200':
-          description: List of helper places
+          description: List of tours
+        '304':
+          $ref: '#/components/responses/NotModified'
 
   /ops/config-check:
     get:
       summary: Health and config check
       responses:
         '200':
-          description: Config status
-
-  /ops/migrate:
-    post:
-      summary: Run DB migrations
-      responses:
-        '200':
-          description: Migrations result
-
-  /ops/init-skus:
-    post:
-      summary: Initialize product catalog
-      responses:
-        '200':
-          description: SKUs initialized
-
-  /billing/yookassa/webhook:
-    post:
-      summary: YooKassa payment webhook
-      security:
-        - YookassaSignature: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        '200':
-          description: Event processed
-        '401':
-          description: Unauthorized signature
+          description: Config status. Returns booleans for secrets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  YOOKASSA:
+                    type: object
+                    properties:
+                      SHOP_ID: { type: boolean }
+                      SECRET_KEY: { type: boolean }
+                      WEBHOOK_SECRET: { type: boolean }
+                      WEBHOOK_PATH: { type: string }
 
 components:
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      description: ETag for conditional GET
+      schema: { type: string }
+
+  headers:
+    ETag:
+      description: Version marker hash
+      schema: { type: string }
+    CacheControl:
+      description: Caching policy (public/private, max-age)
+      schema: { type: string }
+
+  responses:
+    NotModified:
+      description: Resource not changed
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/CacheControl' }
+
   securitySchemes:
     YookassaSignature:
       type: apiKey
@@ -209,6 +152,7 @@ components:
         slug: { type: string }
         name_ru: { type: string }
         is_active: { type: boolean }
+        updated_at: { type: string, format: date-time }
 
     TourSnippet:
       type: object
@@ -229,14 +173,8 @@ components:
         preview_audio_url: { type: string, nullable: true }
         preview_bullets: { type: array, items: { type: string }, nullable: true }
         has_access: { type: boolean }
-        narrations: 
-          type: array
-          items:
-            $ref: '#/components/schemas/Narration'
-        media:
-          type: array
-          items:
-            $ref: '#/components/schemas/Media'
+        narrations: { type: array, items: { $ref: '#/components/schemas/Narration' } }
+        media: { type: array, items: { $ref: '#/components/schemas/Media' } }
 
     Narration:
       type: object

@@ -5,6 +5,8 @@ import hashlib
 from sqlmodel import Session, select
 from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
 from .ingestion.processor import run_ingestion
+from .narration.service import generate_narration_for_poi
+import asyncio
 from .config import config
 from qstash import QStash
 UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
@@ -18,15 +20,37 @@ def process_job(session: Session, job: Job):
         _process_helpers_import(session, job)
     elif job.type == "delete_user_data": # PR-10
         _process_deletion(session, job)
+    elif job.type == "generate_narration":
+        _process_narration(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"
 
 # ... (Previous _process_osm_import and _process_helpers_import omitted for brevity, assume retained) ...
-# I will paste the previous methods to prevent erasure if overwrite is true.
-# Since I am using `write_to_file` and NOT `replace`, I must provide FULL CONTENT.
-# I will use a placeholder comment for the large OSM methods if I was smart, but "Overwrite: true" means I destroy them.
-# I MUST REWRITE THEM.
+
+def _process_narration(session: Session, job: Job):
+    payload = json.loads(job.payload or "{}")
+    poi_id_str = payload.get("poi_id")
+    if not poi_id_str:
+        job.status = "FAILED"
+        job.error = "Missing poi_id in payload"
+        return
+    
+    try:
+        poi_id = uuid.UUID(poi_id_str)
+        # Run async logic in sync context
+        result = asyncio.run(generate_narration_for_poi(session, poi_id))
+        
+        if result and "error" in result:
+             job.status = "FAILED"
+             job.error = result["error"]
+        else:
+             job.status = "COMPLETED"
+             job.result = json.dumps(result)
+             
+    except Exception as e:
+        job.status = "FAILED"
+        job.error = str(e)
 
 def _process_osm_import(session: Session, job: Job):
     # Use Processor

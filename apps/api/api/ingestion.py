@@ -21,7 +21,7 @@ def verify_admin_token(x_admin_token: str = Header(...)):
 
 class OsmImportRequest(BaseModel):
     city_slug: str
-    boundary_ref: str
+    # boundary_ref removed (using internal config)
 
 class HelpersImportRequest(BaseModel):
     city_slug: str
@@ -32,7 +32,8 @@ async def enqueue_osm_import(
     session: Session = Depends(get_session)
 ):
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    key = f"osm_import|{req.city_slug}|{req.boundary_ref}|{date_str}"
+    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    key = f"osm_import|{req.city_slug}|{date_str}"
     
     payload = json.dumps(req.model_dump())
     

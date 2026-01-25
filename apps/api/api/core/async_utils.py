@@ -27,11 +27,8 @@ async def enqueue_job(job_type: str, payload: str, session: Session) -> Job:
     # In Vercel, this changes per deploy. 
     # For now, we use a configurable base or derive from request if possible.
     # PROD/PREVIEW duality requires strict handling provided by VERSEL_URL or PUBLIC_APP_URL.
-    base_url = os.getenv("VERCEL_URL") or os.getenv("PUBLIC_APP_BASE_URL")
-    if not base_url:
-        # In a real scenario, this might need to optionally fail or fallback during build.
-        # But per policy: Fail-Fast.
-        raise RuntimeError("CRITICAL: Cannot determine App Base URL for QStash Callback.")
+    base_url = os.getenv("VERCEL_URL") or os.getenv("PUBLIC_APP_BASE_URL") or "audiogid-api.vercel.app"
+    # Note: VERCEL_URL is sometimes missing in runtime.
         
     destination = f"https://{base_url}/api/internal/jobs/callback"
     

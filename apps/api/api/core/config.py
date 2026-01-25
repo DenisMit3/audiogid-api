@@ -17,6 +17,10 @@ class AppConfig:
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter").strip()
         
+        # Billing: YooKassa
+        self.YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID", "").strip()
+        self.YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY", "").strip()
+        
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)
         if not value:
@@ -35,5 +39,7 @@ except RuntimeError as e:
         QSTASH_NEXT_SIGNING_KEY = "dummy"
         ADMIN_API_TOKEN = None
         OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
+        YOOKASSA_SHOP_ID = None
+        YOOKASSA_SECRET_KEY = None
     config = DummyConfig()
 

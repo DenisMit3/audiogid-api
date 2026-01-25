@@ -20,6 +20,7 @@ from api.admin_tours import router as admin_tours_router
 from api.purchases import router as purchases_router
 from api.deletion import router as deletion_router
 from api.ops import router as ops_router
+from api.billing.yookassa import router as yookassa_router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
@@ -44,6 +45,7 @@ app.include_router(publish_router, prefix="/v1")
 app.include_router(admin_tours_router, prefix="/v1")
 app.include_router(purchases_router, prefix="/v1")
 app.include_router(deletion_router, prefix="/v1")
+app.include_router(yookassa_router)
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,

@@ -8,3 +8,4 @@ alembic>=1.12.1
 python-multipart>=0.0.6
 httpx>=0.25.0
 geoalchemy2>=0.14.2
+requests>=2.31.0

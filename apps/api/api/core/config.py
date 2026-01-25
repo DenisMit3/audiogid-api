@@ -22,9 +22,10 @@ class AppConfig:
         self.YOOKASSA_SECRET_KEY = self._get_required("YOOKASSA_SECRET_KEY")
         self.YOOKASSA_WEBHOOK_SECRET = self._get_required("YOOKASSA_WEBHOOK_SECRET")
         self.PUBLIC_APP_BASE_URL = self._get_required("PUBLIC_APP_BASE_URL")
-        self.PAYMENT_WEBHOOK_BASE_PATH = os.getenv("PAYMENT_WEBHOOK_BASE_PATH", "/v1/billing/yookassa/webhook").strip()
+        self.PAYMENT_WEBHOOK_BASE_PATH = self._get_required("PAYMENT_WEBHOOK_BASE_PATH")
         if not self.PAYMENT_WEBHOOK_BASE_PATH.startswith("/"):
             raise RuntimeError("CRITICAL: PAYMENT_WEBHOOK_BASE_PATH must start with '/'")
+
             
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)

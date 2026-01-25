@@ -60,7 +60,8 @@ async def yookassa_webhook(
     payment_id = obj.get("id")
     
     # Structured JSON log (simplified for MVP)
-    log_extra = {"payment_id": payment_id, "event": event}
+    # payment_id is redacted from logs per POLICY
+    log_extra = {"event": event}
     logger.info(f"YooKassa Webhook Received", extra=log_extra)
 
     if event == "payment.succeeded":
@@ -130,7 +131,7 @@ async def yookassa_webhook(
             session.add(audit)
 
             session.commit()
-            logger.info("EntitlementGrant successful", extra={"grant_id": str(grant.id), **log_extra})
+            logger.info("EntitlementGrant successful", extra={"grant_id": str(grant.id), "event": event})
             return {"status": "accepted"}
 
         except IntegrityError:

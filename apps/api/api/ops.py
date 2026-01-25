@@ -68,11 +68,14 @@ def init_skus(session: Session = Depends(get_session)):
     return {"status": "exists", "slug": slug}
 
 @router.post("/ops/migrate")
-def run_migrations():
+def run_migrations(admin_token: str = Depends(lambda r: r.headers.get("X-Admin-Token"))):
     """
     Run alembic migrations programmatically.
-    Use with caution in production.
+    Secured by ADMIN_API_TOKEN.
     """
+    from .core.config import config
+    if admin_token != config.ADMIN_API_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     try:
         # Assume alembic.ini is in current working directory (apps/api)
         ini_path = "alembic.ini"

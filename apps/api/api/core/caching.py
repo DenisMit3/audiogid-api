@@ -40,8 +40,10 @@ def check_etag_versioned(request: Request, response: Response, etag: str, is_pub
     else:
         # Private: Entitlement gated content must not be cached by shared caches
         cache_control = "private, no-store"
+        response.headers["Vary"] = "Authorization, X-Admin-Token"
         
     if_none_match = request.headers.get("if-none-match")
+
     
     if if_none_match == etag:
         raise HTTPException(

@@ -43,6 +43,25 @@ import alembic.config
 import alembic.command
 import os
 
+@router.post("/ops/init-skus")
+def init_skus(session: Session = Depends(get_session)):
+    from .core.models import Entitlement
+    # Create Kaliningrad City Access SKU
+    slug = "kaliningrad_city_access"
+    existing = session.exec(select(Entitlement).where(Entitlement.slug == slug)).first()
+    if not existing:
+        ent = Entitlement(
+            slug=slug,
+            scope="city",
+            ref="kaliningrad_city",
+            title_ru="Доступ к Калининграду (Все туры)",
+            price_amount=499.0
+        )
+        session.add(ent)
+        session.commit()
+        return {"status": "created", "slug": slug}
+    return {"status": "exists", "slug": slug}
+
 @router.post("/ops/migrate")
 def run_migrations():
     """

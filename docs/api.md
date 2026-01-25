@@ -1,23 +1,23 @@
-# API Contract
+# API Contract & Caching Policy
 
-## OpenAPI Specification
-The source of truth for the Audio Guide 2026 API is the [openapi.yaml](../apps/api/openapi.yaml) file.
+## Каноническая спецификация
+Файл [openapi.yaml](../apps/api/openapi.yaml) является единственным источником истины.
 
-## Порядок внесения изменений (STRICT)
-Соблюдение этого порядка обязательно для прохождения проверок в CI:
-1. **OpenAPI Change**: Внесите изменения в [openapi.yaml](../apps/api/openapi.yaml).
-2. **SDK Regeneration**: Запустите генератор (см. раздел Tools ниже) для обновления `packages/api_client`.
-3. **Commit**: Закоммитьте спецификацию и сгенерированный SDK в одном коммите.
-4. **Backend Implementation**: Реализуйте изменения в FastAPI (в `apps/api/api/public.py` и др.).
-5. **Mobile Integration**: Используйте обновленные методы SDK в мобильном приложении.
+## Политика кеширования (Caching Safety)
+Для обеспечения производительности и безопасности в Serverless среде применяются следующие правила:
 
-## Интерпретация ошибок CI
-Если пайплайн `API Contract Sync Check` завершился ошибкой:
-- Это означает, что код в `packages/api_client` не соответствует спецификации в `apps/api/openapi.yaml`.
-- На вкладке "Files changed" в GitHub вы увидите разницу (diff).
-- **Решение**: Запустите команду генерации локально, проверьте изменения и закоммитьте их.
+1. **Public Read-Only (Общедоступные данные)**
+   - Применяется для: `/public/cities`, `/public/catalog`, `/public/tours`.
+   - Заголовки: `Cache-Control: public, max-age=60, s-maxage=3600, stale-while-revalidate=86400`.
+   - Механизм: ETag на основе версионных маркеров БД. Поддерживается `304 Not Modified`.
 
-## Инструменты
-- Генератор: `@openapitools/openapi-generator-cli`
-- Команда для запуска: `npx @openapitools/openapi-generator-cli generate -i apps/api/openapi.yaml -g dart -o packages/api_client --additional-properties=pubName=api_client`
+2. **Gated/User-Specific (Защищенный контент)**
+   - Применяется для: `/public/poi/{id}` (полные детали), `/manifest`, любая выдача с `signed_asset_url`.
+   - Заголовки: `Cache-Control: private, no-store`.
+   - Безопасность: Добавляется заголовок `Vary: Authorization` (или аналог), чтобы кеши не смешивали контент разных пользователей.
 
+## Порядок внесения изменений
+1. Обновить `openapi.yaml`.
+2. Перегенерировать SDK в `packages/api_client`.
+3. Закоммитить изменения.
+4. CI проверит соответствие через `fail-on-diff`.

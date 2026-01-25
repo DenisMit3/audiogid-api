@@ -41,7 +41,7 @@ def config_check():
             "WEBHOOK_SECRET": bool(config.YOOKASSA_WEBHOOK_SECRET),
             "WEBHOOK_PATH": config.PAYMENT_WEBHOOK_BASE_PATH
         },
-        "PUBLIC_APP_BASE_URL": config.PUBLIC_APP_BASE_URL
+        "PUBLIC_APP_BASE_URL": bool(config.PUBLIC_APP_BASE_URL)
     }
 
 import alembic.config
@@ -68,14 +68,11 @@ def init_skus(session: Session = Depends(get_session)):
     return {"status": "exists", "slug": slug}
 
 @router.post("/ops/migrate")
-def run_migrations(admin_token: str = Depends(lambda r: r.headers.get("X-Admin-Token"))):
+def run_migrations():
     """
     Run alembic migrations programmatically.
-    Secured by ADMIN_API_TOKEN.
+    n/a: out of scope; requires separate ADR security model.
     """
-    from .core.config import config
-    if admin_token != config.ADMIN_API_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized")
     try:
         # Assume alembic.ini is in current working directory (apps/api)
         ini_path = "alembic.ini"

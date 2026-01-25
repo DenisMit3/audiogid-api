@@ -1,23 +1,42 @@
 # Operations Runbook
 
-## Deployment
-All apps are deployed to Vercel via `vercel deploy --prod`.
+## Валидация конфигурации (Cloud/CI Only)
+Для проверки готовности платформы используйте следующие инструменты:
 
-## Database
-Migrations are handled by Alembic in `apps/api`.
-Command: `alembic upgrade head` (Run in CI or via `/v1/ops/migrate` if safe).
+### 1. Проверка конфигурации биллинга
+Вызовите эндпоинт `GET /v1/ops/config-check`. 
+- Ожидаемый результат: JSON со списком ключей и значениями `true/false`.
+- Все 5 параметров YooKassa должны быть `true`.
+- Поле `WEBHOOK_PATH` должно отображать канонический путь.
+
+### 2. Тестирование кеширования (ETag/304)
+Используйте `curl` или браузерную консоль:
+```bash
+# Первый запрос - получаем ETag
+curl -I https://audiogid-api.vercel.app/v1/public/cities
+
+# Второй запрос с заголовком If-None-Match
+curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" https://audiogid-api.vercel.app/v1/public/cities
+```
+- Ожидаемый результат: `HTTP/1.1 304 Not Modified`.
+
+### 3. Проверка безопасности (Gated Cache)
+Вызовите детальный эндпоинт POI.
+- Ожидаемый результат: `Cache-Control: private, no-store`.
+
+## Working with Antigravity (Context Pack)
+Каждая рабочая сессия с AI-ассистентом Antigravity должна начинаться со следующих шагов:
+1. Выполнить `view_file` для `AG_CONTEXT.md` для понимания текущих ограничений и стадии проекта.
+2. Выполнить `view_file` для `AG_TODO_NOW.md` для получения текущей задачи.
+3. Любое архитектурное решение должно проверяться на соответствие разделу "Non-negotiables".
+
+### Branch Reset Procedure
+1. После каждого успешного Merge в `main` и прохождения CI, создается Git Tag `checkpoint-N`.
+2. Новые фичи стартуют ТОЛЬКО от `main` или актуального `checkpoint`.
+3. Обязательное обновление `AG_TODO_NOW.md` после завершения задачи.
 
 ## Синхронизация контракта API (Contract Sync)
-Если CI упал с ошибкой "API Client SDK is out of sync":
-1. **Проверьте логи CI**: В шаге "Check for Diff" будет выведен список изменившихся файлов.
-2. **Как исправить**:
-   - При наличии локального окружения (Java 11+): Выполните команду генерации.
-   - Если окружения нет: Вы можете скачать сгенерированный SDK из артефактов GitHub Actions (если настроено сохранение) или скопировать изменения из вывода команды `git diff` в логах.
-   - Закоммитьте новые файлы и пушьте в ветку PR.
-
-Команда генерации (pinned version):
-```bash
-npx @openapitools/openapi-generator-cli@2.15.0 generate -i apps/api/openapi.yaml -g dart -o packages/api_client --additional-properties=pubName=api_client
-```
-
-
+Если пайплайн `API Contract Sync Check` упал:
+- Перегенерируйте SDK локально с помощью `openapi-generator-cli`.
+- Закоммитьте изменения в папке `packages/api_client`.
+- В логах Vercel ищите `trace_id` для отладки конкретных запросов. Логи никогда не содержат секреты или полные подписанные URL.

@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.12.0
-  description: Canonical API for Audio Guide 2026. Includes Serverless NFRs (ETag caching).
+  version: 1.13.0
+  description: Canonical API for Audio Guide 2026. Includes fail-closed caching rules.
 servers:
   - url: https://audiogid-api.vercel.app/v1
     description: Production Server
@@ -69,10 +69,11 @@ paths:
         - $ref: '#/components/parameters/IfNoneMatch'
       responses:
         '200':
-          description: POI details.
+          description: POI details. Cache-Control depends on entitlement.
           headers:
             ETag: { $ref: '#/components/headers/ETag' }
             Cache-Control: { $ref: '#/components/headers/CacheControl' }
+            Vary: { $ref: '#/components/headers/Vary' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PoiDetail' }
@@ -93,15 +94,18 @@ paths:
       responses:
         '200':
           description: List of tours
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
         '304':
           $ref: '#/components/responses/NotModified'
 
   /ops/config-check:
     get:
-      summary: Health and config check
+      summary: Health and config check (Safe monitor)
       responses:
         '200':
-          description: Config status. Returns booleans for secrets.
+          description: Config status flags
           content:
             application/json:
               schema:
@@ -114,6 +118,7 @@ paths:
                       SECRET_KEY: { type: boolean }
                       WEBHOOK_SECRET: { type: boolean }
                       WEBHOOK_PATH: { type: string }
+                  PUBLIC_APP_BASE_URL: { type: boolean }
 
 components:
   parameters:
@@ -128,7 +133,10 @@ components:
       description: Version marker hash
       schema: { type: string }
     CacheControl:
-      description: Caching policy (public/private, max-age)
+      description: Caching policy (e.g. public, max-age=60 or private, no-store)
+      schema: { type: string }
+    Vary:
+      description: Varied by Authorization for gated content
       schema: { type: string }
 
   responses:
@@ -137,6 +145,7 @@ components:
       headers:
         ETag: { $ref: '#/components/headers/ETag' }
         Cache-Control: { $ref: '#/components/headers/CacheControl' }
+        Vary: { $ref: '#/components/headers/Vary' }
 
   securitySchemes:
     YookassaSignature:

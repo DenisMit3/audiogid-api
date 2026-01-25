@@ -1,5 +1,6 @@
 import httpx
 import logging
+import re
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -39,9 +40,14 @@ async def fetch_wikidata_data(wikidata_id: str) -> Optional[Dict[str, Any]]:
                 "website": _extract_claim_value(entity, "P856"), # Ticket/Official site
             }
             
-            # Resolve image URL if filename exists
+            # Resolve image URL & Meta if filename exists
             if result["image_filename"]:
-                result["image_url"] = await _resolve_commons_image_url(client, result["image_filename"])
+                meta = await _resolve_commons_image_url(client, result["image_filename"])
+                if meta:
+                    result["image_url"] = meta.get("url")
+                    result["image_license"] = meta.get("license")
+                    result["image_author"] = meta.get("author")
+                    result["source_page_url"] = meta.get("source_page_url")
             
             return result
 
@@ -71,18 +77,12 @@ def _extract_claim_value(entity: dict, prop_id: str) -> Optional[str]:
     if datavalue.get("type") == "string":
         return datavalue.get("value")
     
-    # For images (P18), the type is string (filename)
-    # For others it might be 'wikibase-entityid' or 'monolingualtext'
-    # We focus on P18 (string) and P856 (string/url)
-    
     return datavalue.get("value")
 
-async def _resolve_commons_image_url(client: httpx.AsyncClient, filename: str) -> Optional[str]:
+async def _resolve_commons_image_url(client: httpx.AsyncClient, filename: str) -> Optional[Dict[str, str]]:
     """
-    Resolves a Commons filename to a direct URL.
-    Uses MediaWiki API action=query&titles=File:...&prop=imageinfo&iiprop=url
+    Resolves a Commons filename to metadata.
     """
-    # Filename needs to be cleared of "File:" prefix if present, but usually it's just name
     normalized_name = f"File:{filename}" if not filename.startswith("File:") else filename
     
     api_url = "https://commons.wikimedia.org/w/api.php"
@@ -105,11 +105,26 @@ async def _resolve_commons_image_url(client: httpx.AsyncClient, filename: str) -
             if "imageinfo" in page:
                 info = page["imageinfo"][0]
                 url = info.get("url")
+                desc_url = info.get("descriptionurl")
                 
-                # Metadata for license/author could be extracted here too in future
-                # meta = info.get("extmetadata", {})
+                meta_out = {
+                    "url": url,
+                    "source_page_url": desc_url or f"https://commons.wikimedia.org/wiki/{normalized_name}"
+                }
                 
-                return url
+                ext = info.get("extmetadata", {})
+                
+                # License
+                license_name = ext.get("LicenseShortName", {}).get("value", "Unknown")
+                meta_out["license"] = license_name
+                
+                # Author (strip HTML)
+                artist_html = ext.get("Artist", {}).get("value", "Unknown")
+                # Simple strip tags
+                artist_clean = re.sub('<[^<]+?>', '', artist_html).strip()
+                meta_out["author"] = artist_clean
+                
+                return meta_out
     except Exception:
         return None
     return None

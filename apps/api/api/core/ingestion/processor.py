@@ -127,11 +127,16 @@ async def run_ingestion(session: Session, city_slug: str):
                      poi_id=poi.id,
                      url=img_url,
                      media_type="image",
-                     license_type="Commons", # Placeholder, we need real license from metadata
-                     author="WikiCommons",
-                     source_page_url=f"https://commons.wikimedia.org/wiki/File:{wd_data['image_filename']}"
+                     license_type=wd_data.get("image_license", "Unknown"),
+                     author=wd_data.get("image_author", "WikiCommons"),
+                     source_page_url=wd_data.get("source_page_url", f"https://commons.wikimedia.org/wiki/File:{wd_data['image_filename']}")
                  )
                  session.add(media)
+             elif exists_media.license_type == "Commons":
+                 exists_media.license_type = wd_data.get("image_license", "Unknown")
+                 exists_media.author = wd_data.get("image_author", "WikiCommons")
+                 exists_media.source_page_url = wd_data.get("source_page_url", exists_media.source_page_url)
+                 session.add(exists_media)
         
         if is_new:
             count_poi += 1

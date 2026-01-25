@@ -10,18 +10,18 @@ class AppConfig:
         self.ADMIN_API_TOKEN = self._get_required("ADMIN_API_TOKEN")
         
         # Optional with default
-        self.VERCEL_BLOB_READ_WRITE_TOKEN = os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN")
-        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "openai")
-        self.PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL")
-        self.VERCEL_URL = os.getenv("VERCEL_URL")
-        self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter")
+        self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
+        self.OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip()
+        self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "openai").strip()
+        self.PUBLIC_APP_BASE_URL = (os.getenv("PUBLIC_APP_BASE_URL") or "").strip()
+        self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
+        self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL", "https://overpass-api.de/api/interpreter").strip()
         
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)
         if not value:
             raise RuntimeError(f"CRITICAL: Missing environment variable '{key}'. App cannot start.")
-        return value
+        return value.strip()
 
 try:
     config = AppConfig()

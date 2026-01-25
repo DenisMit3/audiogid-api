@@ -1,0 +1,256 @@
+openapi: 3.1.0
+info:
+  title: Audio Guide 2026 API
+  version: 1.11.0
+  description: Canonical API for Audio Guide 2026. Source of truth.
+servers:
+  - url: https://audiogid-api.vercel.app/v1
+    description: Production Server
+
+paths:
+  /public/cities:
+    get:
+      summary: Get active cities
+      responses:
+        '200':
+          description: List of active cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
+
+  /public/catalog:
+    get:
+      summary: Get tours catalog for a city
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of tours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TourSnippet'
+
+  /public/poi/{poi_id}:
+    get:
+      summary: Get POI details with entitlement check
+      parameters:
+        - name: poi_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: city
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: device_anon_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: POI details. Narrations signed only if entitled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PoiDetail'
+        '404':
+          description: POI not found
+
+  /public/tours:
+    get:
+      summary: Get tours for a city
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of tours
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TourSnippet' }
+
+  /public/tours/{tour_id}:
+    get:
+      summary: Get tour details
+      parameters:
+        - name: tour_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: device_anon_id
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detailed tour data
+        '404':
+          description: Tour not found
+
+  /public/nearby:
+    get:
+      summary: Find nearby objects
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: radius_m
+          in: query
+          required: false
+          schema: { type: integer, maximum: 5000 }
+      responses:
+        '200':
+          description: Nearby objects list
+
+  /public/map/attribution:
+    get:
+      summary: Map data attribution
+      responses:
+        '200':
+          description: Attribution info
+
+  /public/helpers:
+    get:
+      summary: Get helper places (cafes, WC)
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of helper places
+
+  /ops/config-check:
+    get:
+      summary: Health and config check
+      responses:
+        '200':
+          description: Config status
+
+  /ops/migrate:
+    post:
+      summary: Run DB migrations
+      responses:
+        '200':
+          description: Migrations result
+
+  /ops/init-skus:
+    post:
+      summary: Initialize product catalog
+      responses:
+        '200':
+          description: SKUs initialized
+
+  /billing/yookassa/webhook:
+    post:
+      summary: YooKassa payment webhook
+      security:
+        - YookassaSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Event processed
+        '401':
+          description: Unauthorized signature
+
+components:
+  securitySchemes:
+    YookassaSignature:
+      type: apiKey
+      in: header
+      name: X-Yookassa-Signature
+
+  schemas:
+    City:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name_ru: { type: string }
+        is_active: { type: boolean }
+
+    TourSnippet:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        title_ru: { type: string }
+        duration_minutes: { type: integer }
+
+    PoiDetail:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title_ru: { type: string }
+        description_ru: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        preview_audio_url: { type: string, nullable: true }
+        preview_bullets: { type: array, items: { type: string }, nullable: true }
+        has_access: { type: boolean }
+        narrations: 
+          type: array
+          items:
+            $ref: '#/components/schemas/Narration'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+
+    Narration:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        locale: { type: string }
+        duration_seconds: { type: number }
+
+    Media:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        media_type: { type: string }
+        author: { type: string }
+        source_page_url: { type: string }

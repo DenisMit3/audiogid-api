@@ -12,14 +12,13 @@ import asyncio
 from .config import config
 from qstash import QStash
 import uuid # Added for _process_narration
-# Lazy imports to avoid circular deps if needed, but here we need service functions
 # from ..billing.service import grant_entitlement 
 # from ..billing.apple import restore_apple_receipt
 # from ..billing.google import verify_google_purchase
 # Since worker is in core, we import from sibling
-from apps.api.api.billing.service import grant_entitlement
-from apps.api.api.billing.apple import restore_apple_receipt
-from apps.api.api.billing.google import verify_google_purchase
+# MOVED INSIDE FUNCTION SCOPE to prevent import-time crashes on Serverless boot
+# from apps.api.api.billing.service import grant_entitlement
+# ...
 UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
 
 # ... (Previous imports and process_job dispatcher updated) ...
@@ -274,6 +273,11 @@ async def _process_billing_restore(session: Session, job: Job):
     
     stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "errors": []}
     
+    # Lazy Import inside handler to avoid startup crash
+    from apps.api.api.billing.service import grant_entitlement
+    from apps.api.api.billing.apple import restore_apple_receipt
+    from apps.api.api.billing.google import verify_google_purchase
+
     try:
         # APPLE PATH
         if (platform == "apple" or platform == "auto") and apple_receipt:

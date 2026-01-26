@@ -13,7 +13,9 @@ from .core.middleware_security import SecurityMiddleware # security headers + re
 
 from .core.models import Job
 from .core.database import engine
-from .core.worker import process_job
+from .core.models import Job
+from .core.database import engine
+# worker import moved to callback to prevent ImportErrors crashing app boot
 
 import logging
 logger = logging.getLogger("api")
@@ -148,8 +150,15 @@ async def job_callback(request: Request):
         session.add(job)
         session.commit()
         try:
+            from .core.worker import process_job
             process_job(session, job) 
             if job.status == "RUNNING": job.status = "COMPLETED"
+        except ImportError as ie:
+            logger.error(f"Worker Import Error: {ie}")
+            # Do NOT crash. Fail the job gracefully.
+            job.status = "FAILED"
+            job.error = f"Worker Import Failed: {str(ie)}"
+            # Also consider 503 if critical? But callback should ack.
         except Exception as e:
             job.status = "FAILED"
             job.error = str(e)

@@ -16,6 +16,11 @@ void main() {
   // final instance = OfflineJobReadResult();
 
   group('test OfflineJobReadResult', () {
+    // String bundleUrl
+    test('to test the property `bundleUrl`', () async {
+      // TODO
+    });
+
     // String manifestUrl
     test('to test the property `manifestUrl`', () async {
       // TODO
@@ -23,6 +28,11 @@ void main() {
 
     // String contentHash
     test('to test the property `contentHash`', () async {
+      // TODO
+    });
+
+    // int zipSizeBytes
+    test('to test the property `zipSizeBytes`', () async {
       // TODO
     });
 

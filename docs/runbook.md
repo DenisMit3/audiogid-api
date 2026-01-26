@@ -3,7 +3,18 @@
 ## Валидация конфигурации (Cloud/CI Only)
 Для проверки готовности платформы используйте следующие инструменты:
 
-### 1. Проверка конфигурации биллинга
+### 1. Prerequisites / Environment Variables
+#### Core & Billing (Strict Startup)
+Эти переменные обязательны для старта API (Fail-fast).
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon Postgres Connection String |
+| `PUBLIC_APP_BASE_URL` | Базовый URL для генерации абсолютных ссылок (webhooks, sharing) |
+| `YOOKASSA_*` | Учетные данные YooKassa (Shop ID, Secret Key, Webhook Secret) |
+| `PAYMENT_WEBHOOK_BASE_PATH` | Путь вебхука (must start with `/`) |
+
+### 2. Проверка конфигурации биллинга
 Вызовите эндпоинт `GET /v1/ops/config-check`. 
 - Ожидаемый результат: JSON со списком ключей и значениями `true/false`.
 - Все 5 параметров YooKassa должны быть `true`.

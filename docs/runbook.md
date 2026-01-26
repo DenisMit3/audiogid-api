@@ -59,3 +59,10 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 - Перегенерируйте SDK локально с помощью `openapi-generator-cli`.
 - Закоммитьте изменения в папке `packages/api_client`.
 - В логах Vercel ищите `trace_id` для отладки конкретных запросов. Логи никогда не содержат секреты или полные подписанные URL.
+## Ingestion Troubleshooting
+
+### Диагностика
+1. Получите список запусков через Admin API: `GET /v1/admin/ingestion/runs`.
+2. В ответе найдите поле `trace_id` для интересующего запуска.
+3. Используйте `trace_id` в логах Vercel (Functions Tab) для фильтрации всех событий, связанных с этим запуском.
+   - Ищите события: `job_started`, `osm_import_success`, `osm_import_failed`.

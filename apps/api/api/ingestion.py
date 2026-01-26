@@ -104,21 +104,28 @@ def get_ingestion_runs(
         
     run_ids = [r.id for r in runs]
     
-    # Fetch all audits related to these runs
-    # We select AuditLog entries that match our runs
-    audits = session.exec(select(AuditLog).where(AuditLog.target_id.in_(run_ids))).all()
+    # P0: Fetch all ingestion audits related to these runs, ORDERED BY timestamp DESC
+    # Restrict to known Ingestion Actions (Whitelist)
+    ingestion_actions = ["OSM_IMPORT_SUCCESS", "OSM_IMPORT_FAILED", "HELPERS_IMPORT_SUCCESS", "HELPERS_IMPORT_FAILED"]
     
-    # Map run_id -> audit info
-    # We prioritize SUCCESS/FAILED events to show the final state
+    stmt = (
+        select(AuditLog)
+        .where(AuditLog.target_id.in_(run_ids))
+        .where(AuditLog.action.in_(ingestion_actions))
+        .order_by(AuditLog.timestamp.desc())
+    )
+    audits = session.exec(stmt).all()
+    
+    # Map run_id -> audit info (Latest Only)
     audit_map = {}
     for a in audits:
-        # If we already have a definitive status for this run, keep it? 
-        # Or just overwrite. Let's process valid ones.
-        if a.action and (a.action.endswith("_SUCCESS") or a.action.endswith("_FAILED")):
-             audit_map[a.target_id] = {"trace_id": a.trace_id, "action": a.action}
-        elif a.target_id not in audit_map and a.trace_id:
-             # Fallback: capture any trace_id if no success/fail event yet
-             audit_map[a.target_id] = {"trace_id": a.trace_id, "action": a.action}
+        # Since we ordered DESC, the first time we see a target_id, it is the latest.
+        if a.target_id not in audit_map:
+             audit_map[a.target_id] = {
+                 "trace_id": a.trace_id, 
+                 "action": a.action, 
+                 "created_at": a.timestamp
+             }
     
     # Construct response
     result = []
@@ -127,6 +134,7 @@ def get_ingestion_runs(
         r_dict = r.model_dump()
         r_dict["trace_id"] = meta.get("trace_id")
         r_dict["last_audit_action"] = meta.get("action")
+        r_dict["last_audit_at"] = meta.get("created_at")
         result.append(r_dict)
         
     return result

@@ -125,6 +125,41 @@ paths:
                       WEBHOOK_PATH: { type: string }
                   PUBLIC_APP_BASE_URL: { type: boolean }
 
+  /ops/commit:
+    get:
+      summary: Get deployed commit info
+      operationId: getOpsCommit
+      tags: [Ops]
+      responses:
+        '200':
+          description: Commit Metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commit_sha: { type: string }
+                  commit_msg: { type: string }
+                  timestamp: { type: string }
+
+  /ops/health:
+    get:
+      summary: Liveness and diagnostics probe
+      description: Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
+      operationId: getOpsHealth
+      tags: [Ops]
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpsHealthResponse' }
+        '503':
+          description: Unhealthy (Partial failure)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpsHealthResponse' }
+
   # --- Deletion ---
   /public/account/delete/request:
     post:
@@ -500,5 +535,12 @@ components:
           nullable: true
         last_error: { type: string, nullable: true }
         trace_id: { type: string }
+
+    OpsHealthResponse:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, fail] }
+        checks: { type: array, items: { type: string } }
+        error: { type: string, nullable: true }
 
 

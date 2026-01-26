@@ -24,6 +24,22 @@ void main() {
       // TODO
     });
 
+    // Get Restore Job Status
+    //
+    //Future<RestoreJobRead> getRestoreJobStatus(String jobId) async
+    test('test getRestoreJobStatus', () async {
+      // TODO
+    });
+
+    // Enqueue Restore Purchases (Async)
+    //
+    // Initiates server-side reconcile with Apple/Google to recover grants.
+    //
+    //Future<JobEnqueueResponse> restorePurchases(RestorePurchasesRequest restorePurchasesRequest) async
+    test('test restorePurchases', () async {
+      // TODO
+    });
+
     // Verify Apple App Store Receipt
     //
     //Future<PurchaseVerifyResponse> verifyAppleReceipt(VerifyAppleReceiptRequest verifyAppleReceiptRequest) async

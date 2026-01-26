@@ -73,3 +73,50 @@ async def verify_apple_receipt(receipt_data: str, product_id: str) -> Dict:
         except Exception as e:
             logger.error(f"Apple verification network error: {e}")
             raise e
+
+async def restore_apple_receipt(receipt_data: str) -> Dict:
+    """
+    Verifies receipt and returns ALL valid transactions for restore.
+    """
+    if not config.APPLE_SHARED_SECRET:
+        raise RuntimeError("Missing APPLE_SHARED_SECRET")
+
+    payload = {
+        "receipt-data": receipt_data,
+        "password": config.APPLE_SHARED_SECRET,
+        "exclude-old-transactions": False # We want full history
+    }
+    
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        # 1. Try Prod
+        try:
+            resp = await client.post(APPLE_PROD_URL, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            
+            if data.get("status") == 21007:
+                resp = await client.post(APPLE_SANDBOX_URL, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                
+            if data.get("status") != 0:
+                return {"verified": False, "error": f"Apple Status {data.get('status')}"}
+                
+            # Combine 'in_app' from receipt and 'latest_receipt_info' (if subscription)
+            receipt_info = data.get("receipt", {})
+            transactions = receipt_info.get("in_app", [])
+            
+            if "latest_receipt_info" in data:
+                transactions.extend(data["latest_receipt_info"])
+                
+            # Deduplicate by transaction_id
+            unique_txs = {tx["transaction_id"]: tx for tx in transactions}.values()
+            
+            return {
+                "verified": True,
+                "transactions": list(unique_txs)
+            }
+            
+        except Exception as e:
+             logger.error(f"Apple restore error: {e}")
+             raise e

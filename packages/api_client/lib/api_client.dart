@@ -194,6 +194,8 @@ class ApiClient {
           return GetDeletionStatus200Response.fromJson(value);
         case 'IngestionRunRead':
           return IngestionRunRead.fromJson(value);
+        case 'JobEnqueueResponse':
+          return JobEnqueueResponse.fromJson(value);
         case 'Media':
           return Media.fromJson(value);
         case 'Narration':
@@ -214,6 +216,12 @@ class ApiClient {
           return RequestDeletion202Response.fromJson(value);
         case 'RequestDeletionRequest':
           return RequestDeletionRequest.fromJson(value);
+        case 'RestoreJobRead':
+          return RestoreJobRead.fromJson(value);
+        case 'RestoreJobReadResult':
+          return RestoreJobReadResult.fromJson(value);
+        case 'RestorePurchasesRequest':
+          return RestorePurchasesRequest.fromJson(value);
         case 'TourSnippet':
           return TourSnippet.fromJson(value);
         case 'VerifyAppleReceiptRequest':

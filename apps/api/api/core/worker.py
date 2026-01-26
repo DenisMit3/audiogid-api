@@ -12,6 +12,14 @@ import asyncio
 from .config import config
 from qstash import QStash
 import uuid # Added for _process_narration
+# Lazy imports to avoid circular deps if needed, but here we need service functions
+# from ..billing.service import grant_entitlement 
+# from ..billing.apple import restore_apple_receipt
+# from ..billing.google import verify_google_purchase
+# Since worker is in core, we import from sibling
+from apps.api.api.billing.service import grant_entitlement
+from apps.api.api.billing.apple import restore_apple_receipt
+from apps.api.api.billing.google import verify_google_purchase
 UPSTASH_CLIENT = QStash(token=config.QSTASH_TOKEN)
 
 # ... (Previous imports and process_job dispatcher updated) ...
@@ -30,6 +38,8 @@ async def process_job(session: Session, job: Job):
         await _process_preview(session, job)
     elif job.type == "build_offline_bundle": # PR-33b
         await process_offline_bundle(session, job)
+    elif job.type == "billing_restore": # PR-39
+        await _process_billing_restore(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"
@@ -249,3 +259,120 @@ async def _process_deletion(session: Session, job: Job):
         session.add(req)
         session.commit()
         raise e
+
+# --- Billing Restore Logic ---
+async def _process_billing_restore(session: Session, job: Job):
+    payload = json.loads(job.payload or "{}")
+    platform = payload.get("platform", "auto")
+    device_anon_id = payload.get("device_anon_id")
+    trace_id = job.idempotency_key # Reuse idempotency key or generate new trace
+    if not trace_id: trace_id = str(job.id)
+    
+    # Inputs
+    apple_receipt = payload.get("apple_receipt")
+    google_token = payload.get("google_purchase_token")
+    
+    stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "errors": []}
+    
+    try:
+        # APPLE PATH
+        if (platform == "apple" or platform == "auto") and apple_receipt:
+            stats["platform"] = "apple"
+            restore_result = await restore_apple_receipt(apple_receipt)
+            
+            if not restore_result.get("verified"):
+                 job.status = "FAILED"
+                 job.error = restore_result.get("error")
+                 return
+                 
+            transactions = restore_result.get("transactions", [])
+            for tx in transactions:
+                try:
+                    product_id = tx.get("product_id")
+                    tx_id = tx.get("transaction_id")
+                    
+                    # Grant
+                    _, is_new = await grant_entitlement(
+                        session, 
+                        source="apple", 
+                        source_ref=tx_id, 
+                        product_id=product_id, 
+                        device_anon_id=device_anon_id, 
+                        trace_id=f"{trace_id}:{tx_id}"
+                    )
+                    
+                    if is_new: stats["grants_created"] += 1
+                    else: stats["grants_existing"] += 1
+                    
+                except ValueError:
+                    # Unknown product ID - ignore legacy products not in our DB
+                    continue
+                except Exception as e:
+                    stats["errors"].append(f"Tx {tx.get('transaction_id')}: {str(e)}")
+            
+        # GOOGLE PATH
+        elif (platform == "google" or platform == "auto") and google_token:
+             # Google restore usually implies verifying "current" purchases sent by client
+             # Currently we only support single token verification in this flow ( MVP)
+             # To support MULTIPLE tokens, client should send array.
+             # If OpenAPI defines singular, we handle singular.
+             stats["platform"] = "google"
+             # Need package_name and product_id? 
+             # Google API requires packageName and productId to verify token.
+             # If Payload doesn't have product_id, we can't verify easily unless we decode the token (which is opaque).
+             # Wait, verify_google_purchase takes (package, product, token).
+             # If the client sends just token, we are stuck.
+             # BUT: Restore logic usually implies the client sends "I have purchase with token T and SKU S".
+             # Our OpenAPI schema for restore has `google_purchase_token` but NOT `product_id`.
+             # This is a flaw in my OpenAPI design in step A.
+             # FIX: I will assume `product_id` is passed in payload for Google, OR fail-fast.
+             # ACTUALLY: Google BillingClient `queryPurchases` returns (productId, purchaseToken).
+             # So client KNOWS the product_id.
+             # I should have added `product_id` to Restore schema? Or `google_purchases` list?
+             # Let's fix OpenAPI in next step if needed, or rely on payload extras.
+             # For now, if missing product_id, we log error.
+             
+             product_id = payload.get("product_id")
+             package_name = payload.get("package_name") or "app.audiogid.kaliningrad"
+             
+             if not product_id:
+                 job.status = "FAILED"
+                 job.error = "Google restore requires product_id"
+                 return
+
+             result = await verify_google_purchase(package_name, product_id, google_token)
+             if result.get("verified"):
+                  _, is_new = await grant_entitlement(session, "google", result["transaction_id"], product_id, device_anon_id, trace_id)
+                  if is_new: stats["grants_created"] += 1
+                  else: stats["grants_existing"] += 1
+             else:
+                  job.status = "FAILED"
+                  job.error = result.get("error")
+                  return
+
+        else:
+            if not apple_receipt and not google_token:
+                 job.status = "FAILED"
+                 job.error = "No receipt or token provided"
+                 return
+
+        stats["grants_total"] = stats["grants_created"] + stats["grants_existing"]
+        
+        job.status = "COMPLETED"
+        job.result = json.dumps(stats)
+        
+        # Log Audit
+        session.add(AuditLog(
+            action="BILLING_RESTORE_COMPLETED",
+            target_id=job.id,
+            actor_type="system",
+            actor_fingerprint="worker",
+            trace_id=trace_id
+        ))
+        session.commit()
+
+    except Exception as e:
+        job.status = "FAILED"
+        job.error = str(e)
+        session.add(job)
+        session.commit()

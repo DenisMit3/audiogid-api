@@ -10,6 +10,8 @@ All URIs are relative to *https://audiogid-api.vercel.app/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getEntitlements**](BillingApi.md#getentitlements) | **GET** /billing/entitlements | Get current user entitlements
+[**getRestoreJobStatus**](BillingApi.md#getrestorejobstatus) | **GET** /billing/restore/{job_id} | Get Restore Job Status
+[**restorePurchases**](BillingApi.md#restorepurchases) | **POST** /billing/restore | Enqueue Restore Purchases (Async)
 [**verifyAppleReceipt**](BillingApi.md#verifyapplereceipt) | **POST** /billing/apple/verify | Verify Apple App Store Receipt
 [**verifyGooglePurchase**](BillingApi.md#verifygooglepurchase) | **POST** /billing/google/verify | Verify Google Play Purchase
 
@@ -51,6 +53,90 @@ No authorization required
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getRestoreJobStatus**
+> RestoreJobRead getRestoreJobStatus(jobId)
+
+Get Restore Job Status
+
+### Example
+```dart
+import 'package:api_client/api.dart';
+
+final api_instance = BillingApi();
+final jobId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final result = api_instance.getRestoreJobStatus(jobId);
+    print(result);
+} catch (e) {
+    print('Exception when calling BillingApi->getRestoreJobStatus: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **jobId** | **String**|  | 
+
+### Return type
+
+[**RestoreJobRead**](RestoreJobRead.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **restorePurchases**
+> JobEnqueueResponse restorePurchases(restorePurchasesRequest)
+
+Enqueue Restore Purchases (Async)
+
+Initiates server-side reconcile with Apple/Google to recover grants.
+
+### Example
+```dart
+import 'package:api_client/api.dart';
+
+final api_instance = BillingApi();
+final restorePurchasesRequest = RestorePurchasesRequest(); // RestorePurchasesRequest | 
+
+try {
+    final result = api_instance.restorePurchases(restorePurchasesRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling BillingApi->restorePurchases: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **restorePurchasesRequest** | [**RestorePurchasesRequest**](RestorePurchasesRequest.md)|  | 
+
+### Return type
+
+[**JobEnqueueResponse**](JobEnqueueResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

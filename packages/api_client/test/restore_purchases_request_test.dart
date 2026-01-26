@@ -43,6 +43,18 @@ void main() {
       // TODO
     });
 
+    // Product ID (Required for Google single-token verify)
+    // String productId
+    test('to test the property `productId`', () async {
+      // TODO
+    });
+
+    // Package Name (Optional, defaults to app)
+    // String packageName
+    test('to test the property `packageName`', () async {
+      // TODO
+    });
+
 
   });
 

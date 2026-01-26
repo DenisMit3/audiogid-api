@@ -18,6 +18,8 @@ class RestorePurchasesRequest {
     required this.deviceAnonId,
     this.appleReceipt,
     this.googlePurchaseToken,
+    this.productId,
+    this.packageName,
   });
 
   RestorePurchasesRequestPlatformEnum platform;
@@ -44,13 +46,33 @@ class RestorePurchasesRequest {
   ///
   String? googlePurchaseToken;
 
+  /// Product ID (Required for Google single-token verify)
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? productId;
+
+  /// Package Name (Optional, defaults to app)
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? packageName;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is RestorePurchasesRequest &&
     other.platform == platform &&
     other.idempotencyKey == idempotencyKey &&
     other.deviceAnonId == deviceAnonId &&
     other.appleReceipt == appleReceipt &&
-    other.googlePurchaseToken == googlePurchaseToken;
+    other.googlePurchaseToken == googlePurchaseToken &&
+    other.productId == productId &&
+    other.packageName == packageName;
 
   @override
   int get hashCode =>
@@ -59,10 +81,12 @@ class RestorePurchasesRequest {
     (idempotencyKey.hashCode) +
     (deviceAnonId.hashCode) +
     (appleReceipt == null ? 0 : appleReceipt!.hashCode) +
-    (googlePurchaseToken == null ? 0 : googlePurchaseToken!.hashCode);
+    (googlePurchaseToken == null ? 0 : googlePurchaseToken!.hashCode) +
+    (productId == null ? 0 : productId!.hashCode) +
+    (packageName == null ? 0 : packageName!.hashCode);
 
   @override
-  String toString() => 'RestorePurchasesRequest[platform=$platform, idempotencyKey=$idempotencyKey, deviceAnonId=$deviceAnonId, appleReceipt=$appleReceipt, googlePurchaseToken=$googlePurchaseToken]';
+  String toString() => 'RestorePurchasesRequest[platform=$platform, idempotencyKey=$idempotencyKey, deviceAnonId=$deviceAnonId, appleReceipt=$appleReceipt, googlePurchaseToken=$googlePurchaseToken, productId=$productId, packageName=$packageName]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -78,6 +102,16 @@ class RestorePurchasesRequest {
       json[r'google_purchase_token'] = this.googlePurchaseToken;
     } else {
       json[r'google_purchase_token'] = null;
+    }
+    if (this.productId != null) {
+      json[r'product_id'] = this.productId;
+    } else {
+      json[r'product_id'] = null;
+    }
+    if (this.packageName != null) {
+      json[r'package_name'] = this.packageName;
+    } else {
+      json[r'package_name'] = null;
     }
     return json;
   }
@@ -106,6 +140,8 @@ class RestorePurchasesRequest {
         deviceAnonId: mapValueOfType<String>(json, r'device_anon_id')!,
         appleReceipt: mapValueOfType<String>(json, r'apple_receipt'),
         googlePurchaseToken: mapValueOfType<String>(json, r'google_purchase_token'),
+        productId: mapValueOfType<String>(json, r'product_id'),
+        packageName: mapValueOfType<String>(json, r'package_name'),
       );
     }
     return null;

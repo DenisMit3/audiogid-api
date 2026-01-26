@@ -1,12 +1,13 @@
 import logging
+import uuid
+import hashlib
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request
 from sqlmodel import Session, select, text
-import uuid
 
 from .core.database import engine
 from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant
-from .core.caching import check_etag_versioned, generate_version_marker
+from .core.caching import check_etag_versioned, generate_version_marker, SCHEMA_VERSION
 from .core.security import sign_asset_url
 
 logger = logging.getLogger(__name__)
@@ -106,8 +107,7 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city
         data["narrations"] = [{"id": str(n.id), "url": sign_asset_url(n.url), "locale": n.locale} for n in poi.narrations]
     return data
 
-import hashlib
-from .core.caching import SCHEMA_VERSION
+
 
 @router.get("/public/nearby")
 def get_nearby(response: Response, city: str = Query(...), lat: float = Query(...), lon: float = Query(...), radius_m: int = Query(1000, le=5000), session: Session = Depends(get_session)):

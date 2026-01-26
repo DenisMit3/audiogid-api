@@ -3,7 +3,7 @@ import json
 import httpx
 import hashlib
 from sqlmodel import Session, select
-from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, PurchaseIntent, Purchase, AuditLog
+from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest, Entitlement, EntitlementGrant, PurchaseIntent, Purchase, AuditLog
 from .ingestion.processor import run_ingestion
 from .narration.service import generate_narration_for_poi
 from .preview.service import generate_preview_content
@@ -201,8 +201,8 @@ async def _process_deletion(session: Session, job: Job):
         
         log_summary = {"revoked_entitlements": 0, "anonymized_intents": 0, "anonymized_purchases": 0}
         
-        # 1. Entitlements -> Revoke
-        ents = session.exec(select(Entitlement).where(Entitlement.device_anon_id == subject_id)).all()
+        # 1. Entitlements -> Revoke (EntitlementGrant)
+        ents = session.exec(select(EntitlementGrant).where(EntitlementGrant.device_anon_id == subject_id)).all()
         for e in ents:
             e.revoked_at = datetime.utcnow()
             session.add(e)

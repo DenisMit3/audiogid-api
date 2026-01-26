@@ -66,3 +66,20 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 2. В ответе найдите поле `trace_id` для интересующего запуска.
 3. Используйте `trace_id` в логах Vercel (Functions Tab) для фильтрации всех событий, связанных с этим запуском.
    - Ищите события: `job_started`, `osm_import_success`, `osm_import_failed`.
+
+## Store Reviewability Plan (Mobile)
+Для прохождения ревью в Apple App Store и Google Play, ревьюеры должны иметь возможность бесплатно протестировать платный контент.
+
+### Стратегия A: Sandbox (Основная)
+Ревью проводится в "песочнице" (Sandbox environment).
+1. Приложение на девайсе ревьюера определяет, что оно запущено в TestFlight/Sandbox.
+2. Покупка совершается через тестовый аккаунт (без списания денег).
+3. Приложение отправляет чек (receipt) на `POST /v1/billing/apple/verify`.
+4. Сервер пробует проверить чек на Prod URL. Если получает статус `21007` (Sandbox receipt used in production), он **автоматически** переключается на Sandbox Verify URL.
+5. Результат: `verified: true`, `environment: Sandbox`.
+6. Грант создается как обычно.
+
+### Настройка переменных
+Для работы биллинга требуются переменные окружения Vercel (Production & Preview):
+*   `APPLE_SHARED_SECRET`: Секрет для валидации чеков (App Store Connect -> Users and Access -> Shared Secret).
+*   `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64`: JSON-ключ Service Account с правами на Android Publisher API (в base64).

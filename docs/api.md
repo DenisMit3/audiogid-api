@@ -16,6 +16,13 @@
    - Заголовки: `Cache-Control: private, no-store`.
    - Безопасность: Добавляется заголовок `Vary: Authorization` (или аналог), чтобы кеши не смешивали контент разных пользователей.
 
+## Биллинг (Stores)
+Реализована серверная верификация чеков (Receipt Server Verify) для iOS и Android.
+*   **Apple**: `POST /billing/apple/verify` — проверяет чек через Apple Verify API.
+*   **Google**: `POST /billing/google/verify` — проверяет токен через Google Play Developer API.
+*   **Entitlements**: `GET /billing/entitlements` — возвращает активные покупки пользователя.
+При успешной проверке чека сервер **атомарно** создает запись `EntitlementGrant`.
+
 ## Порядок внесения изменений
 1. Обновить `openapi.yaml`.
 2. Перегенерировать SDK в `packages/api_client`.

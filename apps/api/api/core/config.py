@@ -27,6 +27,10 @@ class AppConfig:
         self.PAYMENT_WEBHOOK_BASE_PATH = self._get_required("PAYMENT_WEBHOOK_BASE_PATH")
         self.PUBLIC_APP_BASE_URL = self._get_required("PUBLIC_APP_BASE_URL")
         
+        # Stores (Apple/Google) - Optional at startup (fail-fast at endpoint)
+        self.APPLE_SHARED_SECRET = os.getenv("APPLE_SHARED_SECRET")
+        self.GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_BASE64") # Base64 encoded
+        
         if not self.PAYMENT_WEBHOOK_BASE_PATH.startswith("/"):
             raise RuntimeError("CRITICAL: PAYMENT_WEBHOOK_BASE_PATH must start with '/'")
 

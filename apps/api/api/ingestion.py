@@ -1,5 +1,7 @@
 from datetime import datetime
 import json
+import uuid
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
@@ -87,7 +89,21 @@ async def enqueue_helpers_import(
     )
     return {"job_id": job.id, "status": job.status, "idempotency_key": key}
 
-@router.get("/admin/ingestion/runs", dependencies=[Depends(verify_admin_token)])
+# Define Response Model
+class IngestionRunRead(BaseModel):
+    id: uuid.UUID
+    city_slug: str
+    started_at: datetime
+    finished_at: Optional[datetime] = None
+    status: str
+    stats_json: Optional[str] = None
+    last_error: Optional[str] = None
+    # Enrichment fields
+    trace_id: Optional[str] = None
+    last_audit_action: Optional[str] = None
+    last_audit_at: Optional[datetime] = None
+
+@router.get("/admin/ingestion/runs", response_model=List[IngestionRunRead], dependencies=[Depends(verify_admin_token)])
 def get_ingestion_runs(
     city: str = Query(None),
     session: Session = Depends(get_session)
@@ -127,15 +143,23 @@ def get_ingestion_runs(
                  "created_at": a.timestamp
              }
     
-    # Construct response
+    # Construct response objects
     result = []
     for r in runs:
         meta = audit_map.get(r.id, {})
-        r_dict = r.model_dump()
-        r_dict["trace_id"] = meta.get("trace_id")
-        r_dict["last_audit_action"] = meta.get("action")
-        r_dict["last_audit_at"] = meta.get("created_at")
-        result.append(r_dict)
+        # Map fields manually or via simple dict
+        result.append(IngestionRunRead(
+            id=r.id,
+            city_slug=r.city_slug,
+            started_at=r.started_at,
+            finished_at=r.finished_at,
+            status=r.status,
+            stats_json=r.stats_json,
+            last_error=r.last_error,
+            trace_id=meta.get("trace_id"),
+            last_audit_action=meta.get("action"),
+            last_audit_at=meta.get("created_at")
+        ))
         
     return result
 

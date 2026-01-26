@@ -8,6 +8,12 @@ from .wikidata import fetch_wikidata_data
 logger = logging.getLogger(__name__)
 
 async def run_ingestion(session: Session, city_slug: str):
+    from ..config import config
+    
+    # Fail-fast: check config before any work
+    if not config.OVERPASS_API_URL or not config.OVERPASS_API_URL.startswith("http"):
+         raise RuntimeError("Missing or invalid OVERPASS_API_URL configuration")
+
     logger.info(f"Starting ingestion for {city_slug}")
     
     # Check city exists

@@ -31,6 +31,9 @@ async def enqueue_osm_import(
     req: OsmImportRequest, 
     session: Session = Depends(get_session)
 ):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     date_str = datetime.utcnow().strftime("%Y-%m-%d-%H-%M")
     key = f"osm_import|{req.city_slug}|{date_str}"
@@ -66,6 +69,9 @@ async def enqueue_helpers_import(
     req: HelpersImportRequest,
     session: Session = Depends(get_session)
 ):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"helpers_import|{req.city_slug}|{date_str}"
     
@@ -101,6 +107,9 @@ async def enqueue_preview_gen(
     req: PreviewGenRequest,
     session: Session = Depends(get_session)
 ):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
     key = f"preview|{req.poi_id}"
     
     # Allow retries if previous failed (don't block strictly on key existence if failed)

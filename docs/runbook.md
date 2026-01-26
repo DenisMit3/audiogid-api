@@ -7,9 +7,17 @@
 Вызовите эндпоинт `GET /v1/ops/config-check`. 
 - Ожидаемый результат: JSON со списком ключей и значениями `true/false`.
 - Все 5 параметров YooKassa должны быть `true`.
-- Поле `WEBHOOK_PATH` должно отображать канонический путь.
+- Поле `PAYMENT_WEBHOOK_BASE_PATH` должно быть `true` (путь не раскрывается).
 
-### 2. Тестирование кеширования (ETag/304)
+### 2. Проверка Ingestion (Strategy A: Readiness)
+API стартует без обязательных переменных `QSTASH_TOKEN` и `OVERPASS_API_URL`.
+Их состояние видно в `GET /v1/ops/config-check`.
+
+**Поведение при отсутствии:**
+- Если `QSTASH_TOKEN: false`: попытка Enqueue (`POST /admin/ingestion/...`) вернет **503 Service Unavailable**.
+- Если `OVERPASS_API_URL: false`: Job начнется, но упадет с ошибкой `FAILED` (RuntimeError).
+
+### 3. Тестирование кеширования (ETag/304)
 Используйте `curl` или браузерную консоль:
 ```bash
 # Первый запрос - получаем ETag
@@ -20,7 +28,7 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 ```
 - Ожидаемый результат: `HTTP/1.1 304 Not Modified`.
 
-### 3. Проверка безопасности (Gated Cache)
+### 4. Проверка безопасности (Gated Cache)
 Вызовите детальный эндпоинт POI.
 - Ожидаемый результат: `Cache-Control: private, no-store`.
 

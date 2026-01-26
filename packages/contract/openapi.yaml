@@ -92,6 +92,21 @@ paths:
      post: { summary: Add Tour Media, operationId: addTourMedia, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
   /admin/tours/{tourId}/publish:
      post: { summary: Publish Tour, operationId: publishTour, parameters: [{name: tourId, in: path}], responses: { '200': {} } }
+  /admin/ingestion/runs:
+    get:
+      summary: List Ingestion Runs
+      operationId: getIngestionRuns
+      parameters:
+        - {name: city, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngestionRunRead'
   # ... (other admin endpoints) ...
 
 components:
@@ -123,3 +138,34 @@ components:
     MapAttributionRead:
        type: object
        properties: { attribution_text: { type: string } }
+    IngestionRunRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        status: { type: string }
+        stats_json: { type: string, nullable: true }
+        last_error: { type: string, nullable: true }
+        trace_id: { type: string, nullable: true }
+        last_audit_action: { type: string, nullable: true }
+        last_audit_at: { type: string, format: date-time, nullable: true }
+
+paths:
+  # ... (existing admin paths)
+  /admin/ingestion/runs:
+    get:
+      summary: List Ingestion Runs
+      operationId: getIngestionRuns
+      parameters:
+        - {name: city, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngestionRunRead'

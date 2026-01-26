@@ -10,7 +10,7 @@ class AppConfig:
         self.QSTASH_CURRENT_SIGNING_KEY = os.getenv("QSTASH_CURRENT_SIGNING_KEY")
         self.QSTASH_NEXT_SIGNING_KEY = os.getenv("QSTASH_NEXT_SIGNING_KEY")
         
-        # ADMIN_API_TOKEN is OPTIONAL at startup (fail-closed level at endpoint)
+        # ADMIN_API_TOKEN is OPTIONAL at startup (fail-closed check at endpoint level)
         self.ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN")
         
         # Optional with default

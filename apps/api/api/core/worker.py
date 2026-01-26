@@ -7,6 +7,7 @@ from .models import Job, IngestionRun, PoiStaging, HelperPlace, DeletionRequest,
 from .ingestion.processor import run_ingestion
 from .narration.service import generate_narration_for_poi
 from .preview.service import generate_preview_content
+from ..offline.worker import process_offline_bundle # PR-33b
 import asyncio
 from .config import config
 from qstash import QStash
@@ -27,6 +28,8 @@ async def process_job(session: Session, job: Job):
         await _process_narration(session, job)
     elif job.type == "generate_preview":
         await _process_preview(session, job)
+    elif job.type == "build_offline_bundle": # PR-33b
+        await process_offline_bundle(session, job)
     else:
         job.error = f"Unknown job type: {job.type}"
         job.status = "FAILED"

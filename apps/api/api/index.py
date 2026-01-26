@@ -18,6 +18,7 @@ from .admin_tours import router as admin_tours_router
 from .purchases import router as purchases_router
 from .deletion import router as deletion_router
 from .ops import router as ops_router # PR-11
+from .offline.router import router as offline_router # PR-33b
 
 app = FastAPI(
     title="Audio Guide 2026 API",
@@ -37,6 +38,7 @@ app.include_router(publish_router, prefix="/v1")
 app.include_router(admin_tours_router, prefix="/v1")
 app.include_router(purchases_router, prefix="/v1")
 app.include_router(deletion_router, prefix="/v1")
+app.include_router(offline_router, prefix="/v1")
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,

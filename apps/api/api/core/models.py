@@ -194,6 +194,9 @@ class Job(SQLModel, table=True):
 
 class AuditLog(SQLModel, table=True):
     __tablename__ = "audit_logs"
+    __table_args__ = (
+        sa.Index("ix_audit_logs_target_ts", "target_id", sa.text("timestamp DESC")),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     action: str 
     target_id: uuid.UUID = Field(index=True)

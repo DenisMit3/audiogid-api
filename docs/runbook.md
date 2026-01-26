@@ -86,7 +86,9 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 
 ### Восстановление покупок (Restore Purchases)
 App Store Review Guideline 3.1.1 требует наличия функции "Restore Purchases".
-1. Приложение вызывает `POST /v1/billing/restore` с `apple_receipt` (latest) или `google_purchase_token`.
+1. Приложение вызывает `POST /v1/billing/restore`.
+   - Apple: передать `apple_receipt` (latest).
+   - Google: передать `google_purchase_token` и `product_id` (так как Google Restore требует токен для каждой покупки).
 2. Сервер ставит задачу в очередь (Async Job).
 3. Воркер проверяет Receipt/Token в сторе, запрашивает **полную историю транзакций** (для Apple).
 4. Создает гранты для *всех* найденных валидных покупок (используя идемпотентность для пропуска существующих).

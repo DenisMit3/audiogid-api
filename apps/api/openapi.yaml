@@ -319,6 +319,8 @@ paths:
                 device_anon_id: { type: string }
                 apple_receipt: { type: string, description: "Latest Apple App Store receipt (base64)" }
                 google_purchase_token: { type: string, description: "A Google purchase token (optional if server has none)" }
+                product_id: { type: string, description: "Product ID (Required for Google single-token verify)" }
+                package_name: { type: string, description: "Package Name (Optional, defaults to app)" }
       responses:
         '202':
           description: Accepted

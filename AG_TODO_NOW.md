@@ -1,22 +1,36 @@
 # Antigravity TODO NOW
 
-## Next PR: PR #24 — Extension: Ingestion Pipeline Polish
-**Цель**: Оптимизация процесса импорта данных из внешних источников (OSM/Wikidata) с поддержкой новых NFR.
+## Current State: checkpoint-9-store-billing
+Платформа готова к релизу в App Store / Google Play.
 
-## Non-goals
-- Изменение моделей данных (только логика обработки).
-- Изменение UI/Мобильного клиента.
+## Next PRs (Priority Order)
 
-## Target Files
-- `apps/api/api/ingestion.py`
-- `apps/api/api/core/worker.py`
+### PR #37 — Mobile SDK Integration (Flutter/Dart Billing Wrapper)
+**Цель**: Интеграция сгенерированного Dart API Client с нативным биллингом Flutter.
+- Обертка над `BillingApi` для удобного вызова верификации.
+- Локальное кеширование entitlements.
+- Обработка ошибок сети и повторные попытки.
 
-## Acceptance Criteria
-- [ ] Ingestion сохраняет `updated_at` для корректной работы ETag.
-- [ ] Ошибки импорта пишутся в `AuditLog` с `trace_id`.
-- [ ] Процесс не блокирует API (Serverless timeouts).
-- [ ] Добавлен мониторинг прогресса в `ops.py`.
+### PR #38 — Growth & Attribution (Deep Links + Partner Campaigns)
+**Цель**: Трекинг источников установок и партнерских кампаний.
+- Таблица `partner_campaigns` и `attributions`.
+- Эндпоинт `POST /v1/growth/attribute`.
+- Интеграция с UTM-параметрами и Deep Links.
 
-## Validation
-- **Logs**: Проверка Vercel Logs на отсутствие секретов при импорте.
-- **URL**: `GET /v1/ops/config-check` должен показывать статус интеграций.
+### PR #39 — Push Notifications (FCM/APNS)
+**Цель**: Возможность отправки уведомлений пользователям.
+- Регистрация device tokens.
+- Эндпоинт для массовой рассылки (admin).
+- Интеграция с Firebase Cloud Messaging.
+
+## Completed Today (2026-01-26)
+- [x] PR #33b: Offline Manifests
+- [x] PR #34: Launch Hardening (Rate Limit + Security Headers)
+- [x] PR #35: Geo Strategy (Oblast Support)
+- [x] PR #33c: Offline Assets ZIP
+- [x] PR #36: Store Billing (Apple/Google Server Verify)
+
+## Validation URLs
+- Production: https://audiogid-api.vercel.app/v1/ops/config-check
+- Billing: POST /v1/billing/apple/verify, POST /v1/billing/google/verify
+- Entitlements: GET /v1/billing/entitlements?device_anon_id=...

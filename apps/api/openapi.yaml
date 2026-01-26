@@ -231,6 +231,75 @@ paths:
 
 
 
+  # --- Billing (Stores) ---
+  /billing/apple/verify:
+    post:
+      tags: [Billing]
+      summary: Verify Apple App Store Receipt
+      operationId: verifyAppleReceipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receipt, product_id, idempotency_key]
+              properties:
+                receipt: { type: string, description: "Base64 receipt or JWS transaction" }
+                product_id: { type: string }
+                idempotency_key: { type: string }
+                device_anon_id: { type: string }
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseVerifyResponse' }
+
+  /billing/google/verify:
+    post:
+      tags: [Billing]
+      summary: Verify Google Play Purchase
+      operationId: verifyGooglePurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [package_name, product_id, purchase_token, idempotency_key]
+              properties:
+                package_name: { type: string }
+                product_id: { type: string }
+                purchase_token: { type: string }
+                idempotency_key: { type: string }
+                device_anon_id: { type: string }
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseVerifyResponse' }
+
+  /billing/entitlements:
+    get:
+      tags: [Billing]
+      summary: Get current user entitlements
+      operationId: getEntitlements
+      parameters:
+        - name: device_anon_id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Active entitlements
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EntitlementGrantRead' }
+
 components:
   parameters:
     IfNoneMatch:
@@ -335,9 +404,33 @@ components:
         result:
           type: object
           properties:
+            bundle_url: { type: string }
             manifest_url: { type: string }
             content_hash: { type: string }
+            zip_size_bytes: { type: integer }
           nullable: true
         last_error: { type: string, nullable: true }
+
+    PurchaseVerifyResponse:
+      type: object
+      required: [verified, granted, trace_id]
+      properties:
+        verified: { type: boolean }
+        granted: { type: boolean }
+        entitlement_grant_id: { type: string, format: uuid, nullable: true }
+        order_id: { type: string, nullable: true }
+        trace_id: { type: string }
+        error: { type: string, nullable: true }
+
+    EntitlementGrantRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        entitlement_slug: { type: string }
+        scope: { type: string }
+        ref: { type: string }
+        granted_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+        is_active: { type: boolean }
 
 

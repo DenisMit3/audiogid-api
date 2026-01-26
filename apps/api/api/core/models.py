@@ -11,6 +11,7 @@ class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
     is_active: bool = Field(default=True)
+    osm_relation_id: Optional[int] = Field(default=None)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class City(CityBase, table=True):

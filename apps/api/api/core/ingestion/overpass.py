@@ -5,35 +5,18 @@ from ..config import config
 
 logger = logging.getLogger(__name__)
 
-# Configuration for cities (hardcoded for MVP)
-CITY_CONFIG = {
-    "kaliningrad_city": {
-        "area_name": "Калининград",
-        "osm_id": 1674442, # Gorodskoy okrug gorod Kaliningrad
-    },
-    "kaliningrad_oblast": {
-        "area_name": "Калининградская область",
-        "osm_id": 103906
-    }
-}
-
-def fetch_params_from_config(city_slug: str):
-    return CITY_CONFIG.get(city_slug)
-
-def query_osm(city_slug: str) -> List[Dict[str, Any]]:
-    city_conf = fetch_params_from_config(city_slug)
-    if not city_conf:
-        logger.error(f"No configuration for city: {city_slug}")
+def query_osm(osm_id: int = None, area_name: str = None) -> List[Dict[str, Any]]:
+    if not osm_id and not area_name:
+        logger.error("No osm_id or area_name provided for OSM query")
         return []
     
     # Query logic:
     # Use Relation ID for area -> map_to_area (much faster than name search)
-    osm_id = city_conf.get("osm_id")
     if osm_id:
         area_filter = f"rel({osm_id});map_to_area->.searchArea;"
     else:
         # Fallback to name (inefficient)
-        area_filter = f'area["name"="{city_conf["area_name"]}"]->.searchArea;'
+        area_filter = f'area["name"="{area_name}"]->.searchArea;'
     
     # Timeout 45s (must align with Vercel function limits if synchronous, 
     # but here we rely on Overpass responding fast or async worker handling it)

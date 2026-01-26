@@ -129,7 +129,7 @@ def get_cities(response: Response, request: Request, session: Session = Depends(
     etag = generate_version_marker(session, City)
     check_etag_versioned(request, response, etag)
     cities = session.exec(select(City).where(City.is_active == True)).all()
-    return [city.model_dump(exclude={'pois', 'tours'}) for city in cities]
+    return [city.model_dump(exclude={'pois', 'tours', 'osm_relation_id'}) for city in cities]
 
 @router.get("/public/catalog")
 def get_catalog(response: Response, request: Request, city: str = Query(...), session: Session = Depends(get_session)):

@@ -24,7 +24,7 @@ async def run_ingestion(session: Session, city_slug: str):
 
     try:
         # Sync call is fine here for now
-        elements = query_osm(city_slug)
+        elements = query_osm(osm_id=city.osm_relation_id, area_name=city.name_ru)
     except Exception as e:
         return {"error": str(e)}
         

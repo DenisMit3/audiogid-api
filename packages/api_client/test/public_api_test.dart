@@ -12,34 +12,11 @@ import 'package:api_client/api.dart';
 import 'package:test/test.dart';
 
 
-/// tests for DefaultApi
+/// tests for PublicApi
 void main() {
-  // final instance = DefaultApi();
+  // final instance = PublicApi();
 
-  group('tests for DefaultApi', () {
-    // Check Deletion Status
-    //
-    //Future<GetDeletionStatus200Response> getDeletionStatus(String deletionRequestId) async
-    test('test getDeletionStatus', () async {
-      // TODO
-    });
-
-    // Get Ingestion Runs
-    //
-    // Returns a list of recent ingestion runs with enrichment.
-    //
-    //Future<List<IngestionRunRead>> getIngestionRuns({ String city }) async
-    test('test getIngestionRuns', () async {
-      // TODO
-    });
-
-    // Health and config check (Safe monitor)
-    //
-    //Future<OpsConfigCheckGet200Response> opsConfigCheckGet() async
-    test('test opsConfigCheckGet', () async {
-      // TODO
-    });
-
+  group('tests for PublicApi', () {
     // Get tours catalog for a city
     //
     //Future<List<TourSnippet>> publicCatalogGet(String city, { String ifNoneMatch }) async
@@ -65,15 +42,6 @@ void main() {
     //
     //Future publicToursGet(String city, { String ifNoneMatch }) async
     test('test publicToursGet', () async {
-      // TODO
-    });
-
-    // Request Account Deletion
-    //
-    // Initiates async deletion of user data.
-    //
-    //Future<RequestDeletion202Response> requestDeletion(RequestDeletionRequest requestDeletionRequest) async
-    test('test requestDeletion', () async {
       // TODO
     });
 

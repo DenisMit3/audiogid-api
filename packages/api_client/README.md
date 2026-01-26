@@ -40,14 +40,14 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:api_client/api.dart';
 
 
-final api_instance = DefaultApi();
+final api_instance = AccountApi();
 final deletionRequestId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
 
 try {
     final result = api_instance.getDeletionStatus(deletionRequestId);
     print(result);
 } catch (e) {
-    print('Exception when calling DefaultApi->getDeletionStatus: $e\n');
+    print('Exception when calling AccountApi->getDeletionStatus: $e\n');
 }
 
 ```
@@ -58,14 +58,14 @@ All URIs are relative to *https://audiogid-api.vercel.app/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*DefaultApi* | [**getDeletionStatus**](doc//DefaultApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
-*DefaultApi* | [**getIngestionRuns**](doc//DefaultApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
-*DefaultApi* | [**opsConfigCheckGet**](doc//DefaultApi.md#opsconfigcheckget) | **GET** /ops/config-check | Health and config check (Safe monitor)
-*DefaultApi* | [**publicCatalogGet**](doc//DefaultApi.md#publiccatalogget) | **GET** /public/catalog | Get tours catalog for a city
-*DefaultApi* | [**publicCitiesGet**](doc//DefaultApi.md#publiccitiesget) | **GET** /public/cities | Get active cities
-*DefaultApi* | [**publicPoiPoiIdGet**](doc//DefaultApi.md#publicpoipoiidget) | **GET** /public/poi/{poi_id} | Get POI details with entitlement check
-*DefaultApi* | [**publicToursGet**](doc//DefaultApi.md#publictoursget) | **GET** /public/tours | Get tours for a city
-*DefaultApi* | [**requestDeletion**](doc//DefaultApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
+*AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
+*AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
+*IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
+*OpsApi* | [**opsConfigCheckGet**](doc//OpsApi.md#opsconfigcheckget) | **GET** /ops/config-check | Health and config check (Safe monitor)
+*PublicApi* | [**publicCatalogGet**](doc//PublicApi.md#publiccatalogget) | **GET** /public/catalog | Get tours catalog for a city
+*PublicApi* | [**publicCitiesGet**](doc//PublicApi.md#publiccitiesget) | **GET** /public/cities | Get active cities
+*PublicApi* | [**publicPoiPoiIdGet**](doc//PublicApi.md#publicpoipoiidget) | **GET** /public/poi/{poi_id} | Get POI details with entitlement check
+*PublicApi* | [**publicToursGet**](doc//PublicApi.md#publictoursget) | **GET** /public/tours | Get tours for a city
 
 
 ## Documentation For Models

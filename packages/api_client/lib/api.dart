@@ -28,7 +28,10 @@ part 'auth/oauth.dart';
 part 'auth/http_basic_auth.dart';
 part 'auth/http_bearer_auth.dart';
 
-part 'api/default_api.dart';
+part 'api/account_api.dart';
+part 'api/ingestion_api.dart';
+part 'api/ops_api.dart';
+part 'api/public_api.dart';
 
 part 'model/city.dart';
 part 'model/get_deletion_status200_response.dart';

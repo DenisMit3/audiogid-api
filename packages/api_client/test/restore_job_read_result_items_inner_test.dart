@@ -11,13 +11,13 @@
 import 'package:api_client/api.dart';
 import 'package:test/test.dart';
 
-// tests for RestoreJobRead
+// tests for RestoreJobReadResultItemsInner
 void main() {
-  // final instance = RestoreJobRead();
+  // final instance = RestoreJobReadResultItemsInner();
 
-  group('test RestoreJobRead', () {
-    // String id
-    test('to test the property `id`', () async {
+  group('test RestoreJobReadResultItemsInner', () {
+    // String productId
+    test('to test the property `productId`', () async {
       // TODO
     });
 
@@ -26,18 +26,19 @@ void main() {
       // TODO
     });
 
-    // RestoreJobReadResult result
-    test('to test the property `result`', () async {
+    // String error
+    test('to test the property `error`', () async {
       // TODO
     });
 
-    // String lastError
-    test('to test the property `lastError`', () async {
+    // String orderId
+    test('to test the property `orderId`', () async {
       // TODO
     });
 
-    // String traceId
-    test('to test the property `traceId`', () async {
+    // SHA256 prefix of token for debug
+    // String tokenHash
+    test('to test the property `tokenHash`', () async {
       // TODO
     });
 

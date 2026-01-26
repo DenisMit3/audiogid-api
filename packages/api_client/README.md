@@ -61,6 +61,8 @@ Class | Method | HTTP request | Description
 *AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
 *AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
 *IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
+*OfflineApi* | [**buildOfflineBundle**](doc//OfflineApi.md#buildofflinebundle) | **POST** /offline/bundles:build | Enqueue Offline Bundle Build
+*OfflineApi* | [**getOfflineBundleStatus**](doc//OfflineApi.md#getofflinebundlestatus) | **GET** /offline/bundles/{job_id} | Get Bundle Job Status
 *OpsApi* | [**opsConfigCheckGet**](doc//OpsApi.md#opsconfigcheckget) | **GET** /ops/config-check | Health and config check (Safe monitor)
 *PublicApi* | [**publicCatalogGet**](doc//PublicApi.md#publiccatalogget) | **GET** /public/catalog | Get tours catalog for a city
 *PublicApi* | [**publicCitiesGet**](doc//PublicApi.md#publiccitiesget) | **GET** /public/cities | Get active cities
@@ -70,11 +72,15 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [BuildOfflineBundle202Response](doc//BuildOfflineBundle202Response.md)
+ - [BuildOfflineBundleRequest](doc//BuildOfflineBundleRequest.md)
  - [City](doc//City.md)
  - [GetDeletionStatus200Response](doc//GetDeletionStatus200Response.md)
  - [IngestionRunRead](doc//IngestionRunRead.md)
  - [Media](doc//Media.md)
  - [Narration](doc//Narration.md)
+ - [OfflineJobRead](doc//OfflineJobRead.md)
+ - [OfflineJobReadResult](doc//OfflineJobReadResult.md)
  - [OpsConfigCheckGet200Response](doc//OpsConfigCheckGet200Response.md)
  - [OpsConfigCheckGet200ResponseYOOKASSA](doc//OpsConfigCheckGet200ResponseYOOKASSA.md)
  - [PoiDetail](doc//PoiDetail.md)

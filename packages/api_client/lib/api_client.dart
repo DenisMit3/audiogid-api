@@ -182,6 +182,10 @@ class ApiClient {
           return valueString == 'true' || valueString == '1';
         case 'DateTime':
           return value is DateTime ? value : DateTime.tryParse(value);
+        case 'BuildOfflineBundle202Response':
+          return BuildOfflineBundle202Response.fromJson(value);
+        case 'BuildOfflineBundleRequest':
+          return BuildOfflineBundleRequest.fromJson(value);
         case 'City':
           return City.fromJson(value);
         case 'GetDeletionStatus200Response':
@@ -192,6 +196,10 @@ class ApiClient {
           return Media.fromJson(value);
         case 'Narration':
           return Narration.fromJson(value);
+        case 'OfflineJobRead':
+          return OfflineJobRead.fromJson(value);
+        case 'OfflineJobReadResult':
+          return OfflineJobReadResult.fromJson(value);
         case 'OpsConfigCheckGet200Response':
           return OpsConfigCheckGet200Response.fromJson(value);
         case 'OpsConfigCheckGet200ResponseYOOKASSA':

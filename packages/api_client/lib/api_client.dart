@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.18
+// @dart=2.12
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -220,12 +220,8 @@ class ApiClient {
           return RestoreJobRead.fromJson(value);
         case 'RestoreJobReadResult':
           return RestoreJobReadResult.fromJson(value);
-        case 'RestoreJobReadResultItemsInner':
-          return RestoreJobReadResultItemsInner.fromJson(value);
         case 'RestorePurchasesRequest':
           return RestorePurchasesRequest.fromJson(value);
-        case 'RestorePurchasesRequestGooglePurchasesInner':
-          return RestorePurchasesRequestGooglePurchasesInner.fromJson(value);
         case 'TourSnippet':
           return TourSnippet.fromJson(value);
         case 'VerifyAppleReceiptRequest':

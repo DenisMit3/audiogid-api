@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.18
+// @dart=2.12
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -37,25 +37,19 @@ void main() {
       // TODO
     });
 
-    // List of Google purchases to verify
-    // List<RestorePurchasesRequestGooglePurchasesInner> googlePurchases (default value: const [])
-    test('to test the property `googlePurchases`', () async {
-      // TODO
-    });
-
-    // Legacy single token
+    // A Google purchase token (optional if server has none)
     // String googlePurchaseToken
     test('to test the property `googlePurchaseToken`', () async {
       // TODO
     });
 
-    // Legacy product ID for single token
+    // Product ID (Required for Google single-token verify)
     // String productId
     test('to test the property `productId`', () async {
       // TODO
     });
 
-    // Legacy package name for single token
+    // Package Name (Optional, defaults to app)
     // String packageName
     test('to test the property `packageName`', () async {
       // TODO

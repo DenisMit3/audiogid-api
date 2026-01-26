@@ -48,17 +48,11 @@ class EntitlementGrantRead(BaseModel):
     expires_at: datetime.datetime | None
     is_active: bool
 
-class GooglePurchaseItem(BaseModel):
-    package_name: str
-    product_id: str
-    purchase_token: str
-
 class RestoreRequest(BaseModel):
     platform: str = "auto"
     idempotency_key: str
     device_anon_id: str
     apple_receipt: str | None = None
-    google_purchases: List[GooglePurchaseItem] | None = None
     google_purchase_token: str | None = None
     product_id: str | None = None # Optional, helps Google single token verification
     package_name: str | None = None

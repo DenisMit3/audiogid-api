@@ -12,16 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Generate SDK (npx)
+      - name: Generate SDK (Docker)
         run: |
+          # Clean directory to avoid drift
           rm -rf packages/api_client/lib
           rm -rf packages/api_client/test
-          npx @openapitools/openapi-generator-cli generate -i apps/api/openapi.yaml -g dart -o packages/api_client --additional-properties=pubName=api_client
+          
+          # Generate using Docker
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.2.0 generate \
+            -i /local/apps/api/openapi.yaml \
+            -g dart \
+            -o /local/packages/api_client \
+            --additional-properties=pubName=api_client
 
       - name: Check for Diff
         run: |

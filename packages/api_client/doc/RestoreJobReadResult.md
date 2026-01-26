@@ -12,7 +12,6 @@ Name | Type | Description | Notes
 **grantsCreated** | **int** |  | [optional] 
 **grantsExisting** | **int** |  | [optional] 
 **grantsTotal** | **int** |  | [optional] 
-**items** | [**List<RestoreJobReadResultItemsInner>**](RestoreJobReadResultItemsInner.md) |  | [optional] [default to const []]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

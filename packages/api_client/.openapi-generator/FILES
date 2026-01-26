@@ -27,9 +27,7 @@ doc/RequestDeletion202Response.md
 doc/RequestDeletionRequest.md
 doc/RestoreJobRead.md
 doc/RestoreJobReadResult.md
-doc/RestoreJobReadResultItemsInner.md
 doc/RestorePurchasesRequest.md
-doc/RestorePurchasesRequestGooglePurchasesInner.md
 doc/TourSnippet.md
 doc/VerifyAppleReceiptRequest.md
 doc/VerifyGooglePurchaseRequest.md
@@ -68,9 +66,7 @@ lib/model/request_deletion202_response.dart
 lib/model/request_deletion_request.dart
 lib/model/restore_job_read.dart
 lib/model/restore_job_read_result.dart
-lib/model/restore_job_read_result_items_inner.dart
 lib/model/restore_purchases_request.dart
-lib/model/restore_purchases_request_google_purchases_inner.dart
 lib/model/tour_snippet.dart
 lib/model/verify_apple_receipt_request.dart
 lib/model/verify_google_purchase_request.dart
@@ -98,10 +94,8 @@ test/public_api_test.dart
 test/purchase_verify_response_test.dart
 test/request_deletion202_response_test.dart
 test/request_deletion_request_test.dart
-test/restore_job_read_result_items_inner_test.dart
 test/restore_job_read_result_test.dart
 test/restore_job_read_test.dart
-test/restore_purchases_request_google_purchases_inner_test.dart
 test/restore_purchases_request_test.dart
 test/tour_snippet_test.dart
 test/verify_apple_receipt_request_test.dart

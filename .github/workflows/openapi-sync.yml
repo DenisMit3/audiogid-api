@@ -16,18 +16,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Generate SDK (Docker)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate SDK (npx)
         run: |
-          # Clean old files
           rm -rf packages/api_client/lib
           rm -rf packages/api_client/test
-          
-          # Generate using Docker
-          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.2.0 generate \
-            -i /local/apps/api/openapi.yaml \
-            -g dart \
-            -o /local/packages/api_client \
-            --additional-properties=pubName=api_client
+          npx @openapitools/openapi-generator-cli generate -i apps/api/openapi.yaml -g dart -o packages/api_client --additional-properties=pubName=api_client
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4

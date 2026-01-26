@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -17,6 +17,7 @@ class RestorePurchasesRequest {
     required this.idempotencyKey,
     required this.deviceAnonId,
     this.appleReceipt,
+    this.googlePurchases = const [],
     this.googlePurchaseToken,
     this.productId,
     this.packageName,
@@ -37,7 +38,10 @@ class RestorePurchasesRequest {
   ///
   String? appleReceipt;
 
-  /// A Google purchase token (optional if server has none)
+  /// List of Google purchases to verify
+  List<RestorePurchasesRequestGooglePurchasesInner> googlePurchases;
+
+  /// Legacy single token
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
   /// does not include a default value (using the "default:" property), however, the generated
@@ -46,7 +50,7 @@ class RestorePurchasesRequest {
   ///
   String? googlePurchaseToken;
 
-  /// Product ID (Required for Google single-token verify)
+  /// Legacy product ID for single token
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
   /// does not include a default value (using the "default:" property), however, the generated
@@ -55,7 +59,7 @@ class RestorePurchasesRequest {
   ///
   String? productId;
 
-  /// Package Name (Optional, defaults to app)
+  /// Legacy package name for single token
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
   /// does not include a default value (using the "default:" property), however, the generated
@@ -70,6 +74,7 @@ class RestorePurchasesRequest {
     other.idempotencyKey == idempotencyKey &&
     other.deviceAnonId == deviceAnonId &&
     other.appleReceipt == appleReceipt &&
+    _deepEquality.equals(other.googlePurchases, googlePurchases) &&
     other.googlePurchaseToken == googlePurchaseToken &&
     other.productId == productId &&
     other.packageName == packageName;
@@ -81,12 +86,13 @@ class RestorePurchasesRequest {
     (idempotencyKey.hashCode) +
     (deviceAnonId.hashCode) +
     (appleReceipt == null ? 0 : appleReceipt!.hashCode) +
+    (googlePurchases.hashCode) +
     (googlePurchaseToken == null ? 0 : googlePurchaseToken!.hashCode) +
     (productId == null ? 0 : productId!.hashCode) +
     (packageName == null ? 0 : packageName!.hashCode);
 
   @override
-  String toString() => 'RestorePurchasesRequest[platform=$platform, idempotencyKey=$idempotencyKey, deviceAnonId=$deviceAnonId, appleReceipt=$appleReceipt, googlePurchaseToken=$googlePurchaseToken, productId=$productId, packageName=$packageName]';
+  String toString() => 'RestorePurchasesRequest[platform=$platform, idempotencyKey=$idempotencyKey, deviceAnonId=$deviceAnonId, appleReceipt=$appleReceipt, googlePurchases=$googlePurchases, googlePurchaseToken=$googlePurchaseToken, productId=$productId, packageName=$packageName]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -98,6 +104,7 @@ class RestorePurchasesRequest {
     } else {
       json[r'apple_receipt'] = null;
     }
+      json[r'google_purchases'] = this.googlePurchases;
     if (this.googlePurchaseToken != null) {
       json[r'google_purchase_token'] = this.googlePurchaseToken;
     } else {
@@ -139,6 +146,7 @@ class RestorePurchasesRequest {
         idempotencyKey: mapValueOfType<String>(json, r'idempotency_key')!,
         deviceAnonId: mapValueOfType<String>(json, r'device_anon_id')!,
         appleReceipt: mapValueOfType<String>(json, r'apple_receipt'),
+        googlePurchases: RestorePurchasesRequestGooglePurchasesInner.listFromJson(json[r'google_purchases']),
         googlePurchaseToken: mapValueOfType<String>(json, r'google_purchase_token'),
         productId: mapValueOfType<String>(json, r'product_id'),
         packageName: mapValueOfType<String>(json, r'package_name'),

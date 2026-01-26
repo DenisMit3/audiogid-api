@@ -11,14 +11,13 @@
 import 'package:api_client/api.dart';
 import 'package:test/test.dart';
 
-// tests for VerifyAppleReceiptRequest
+// tests for RestorePurchasesRequestGooglePurchasesInner
 void main() {
-  // final instance = VerifyAppleReceiptRequest();
+  // final instance = RestorePurchasesRequestGooglePurchasesInner();
 
-  group('test VerifyAppleReceiptRequest', () {
-    // Base64 receipt or JWS transaction
-    // String receipt
-    test('to test the property `receipt`', () async {
+  group('test RestorePurchasesRequestGooglePurchasesInner', () {
+    // String packageName
+    test('to test the property `packageName`', () async {
       // TODO
     });
 
@@ -27,13 +26,8 @@ void main() {
       // TODO
     });
 
-    // String idempotencyKey
-    test('to test the property `idempotencyKey`', () async {
-      // TODO
-    });
-
-    // String deviceAnonId
-    test('to test the property `deviceAnonId`', () async {
+    // String purchaseToken
+    test('to test the property `purchaseToken`', () async {
       // TODO
     });
 

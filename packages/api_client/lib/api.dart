@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -54,7 +54,9 @@ part 'model/request_deletion202_response.dart';
 part 'model/request_deletion_request.dart';
 part 'model/restore_job_read.dart';
 part 'model/restore_job_read_result.dart';
+part 'model/restore_job_read_result_items_inner.dart';
 part 'model/restore_purchases_request.dart';
+part 'model/restore_purchases_request_google_purchases_inner.dart';
 part 'model/tour_snippet.dart';
 part 'model/verify_apple_receipt_request.dart';
 part 'model/verify_google_purchase_request.dart';

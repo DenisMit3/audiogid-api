@@ -1,4 +1,4 @@
-# api_client.model.RestoreJobReadResult
+# api_client.model.RestoreJobReadResultItemsInner
 
 ## Load the model package
 ```dart
@@ -8,11 +8,11 @@ import 'package:api_client/api.dart';
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**platform** | **String** |  | [optional] 
-**grantsCreated** | **int** |  | [optional] 
-**grantsExisting** | **int** |  | [optional] 
-**grantsTotal** | **int** |  | [optional] 
-**items** | [**List<RestoreJobReadResultItemsInner>**](RestoreJobReadResultItemsInner.md) |  | [optional] [default to const []]
+**productId** | **String** |  | [optional] 
+**status** | **String** |  | [optional] 
+**error** | **String** |  | [optional] 
+**orderId** | **String** |  | [optional] 
+**tokenHash** | **String** | SHA256 prefix of token for debug | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

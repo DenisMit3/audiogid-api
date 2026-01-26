@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -17,6 +17,7 @@ class RestoreJobReadResult {
     this.grantsCreated,
     this.grantsExisting,
     this.grantsTotal,
+    this.items = const [],
   });
 
   ///
@@ -51,12 +52,15 @@ class RestoreJobReadResult {
   ///
   int? grantsTotal;
 
+  List<RestoreJobReadResultItemsInner> items;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is RestoreJobReadResult &&
     other.platform == platform &&
     other.grantsCreated == grantsCreated &&
     other.grantsExisting == grantsExisting &&
-    other.grantsTotal == grantsTotal;
+    other.grantsTotal == grantsTotal &&
+    _deepEquality.equals(other.items, items);
 
   @override
   int get hashCode =>
@@ -64,10 +68,11 @@ class RestoreJobReadResult {
     (platform == null ? 0 : platform!.hashCode) +
     (grantsCreated == null ? 0 : grantsCreated!.hashCode) +
     (grantsExisting == null ? 0 : grantsExisting!.hashCode) +
-    (grantsTotal == null ? 0 : grantsTotal!.hashCode);
+    (grantsTotal == null ? 0 : grantsTotal!.hashCode) +
+    (items.hashCode);
 
   @override
-  String toString() => 'RestoreJobReadResult[platform=$platform, grantsCreated=$grantsCreated, grantsExisting=$grantsExisting, grantsTotal=$grantsTotal]';
+  String toString() => 'RestoreJobReadResult[platform=$platform, grantsCreated=$grantsCreated, grantsExisting=$grantsExisting, grantsTotal=$grantsTotal, items=$items]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -91,6 +96,7 @@ class RestoreJobReadResult {
     } else {
       json[r'grants_total'] = null;
     }
+      json[r'items'] = this.items;
     return json;
   }
 
@@ -117,6 +123,7 @@ class RestoreJobReadResult {
         grantsCreated: mapValueOfType<int>(json, r'grants_created'),
         grantsExisting: mapValueOfType<int>(json, r'grants_existing'),
         grantsTotal: mapValueOfType<int>(json, r'grants_total'),
+        items: RestoreJobReadResultItemsInner.listFromJson(json[r'items']),
       );
     }
     return null;

@@ -1,19 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlmodel import Session, select
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 import logging
 import datetime
 import uuid
+import json
+from qstash import QStash
 
 from ..core.database import engine
-from ..core.models import EntitlementGrant, Entitlement, AuditLog
+from ..core.models import EntitlementGrant, Entitlement, AuditLog, Job
 from ..core.config import config
 from .apple import verify_apple_receipt
 from .google import verify_google_purchase
+from .service import grant_entitlement as _grant_entitlement
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+qstash = QStash(token=config.QSTASH_TOKEN)
 
 def get_session():
     with Session(engine) as session:
@@ -43,89 +48,17 @@ class EntitlementGrantRead(BaseModel):
     expires_at: datetime.datetime | None
     is_active: bool
 
+class RestoreRequest(BaseModel):
+    platform: str = "auto"
+    idempotency_key: str
+    device_anon_id: str
+    apple_receipt: str | None = None
+    google_purchase_token: str | None = None
+    product_id: str | None = None # Optional, helps Google single token verification
+    package_name: str | None = None
+
 # --- Helper Logic ---
-
-async def _grant_entitlement(
-    session: Session, 
-    source: str, 
-    source_ref: str, 
-    product_id: str, 
-    device_anon_id: str,
-    trace_id: str
-) -> tuple[EntitlementGrant, bool]:
-    """
-    Maps SKU -> Entitlement and grants it. Idempotent and race-safe.
-    Returns: (grant, is_new) - is_new=False means idempotent hit.
-    """
-    from sqlalchemy.exc import IntegrityError
-    
-    # 1. Resolve SKU to Entitlement
-    entitlement = session.exec(select(Entitlement).where(Entitlement.slug == product_id)).first()
-    if not entitlement:
-        # Fallback mapping for store SKUs
-        if "kaliningrad_city" in product_id:
-             entitlement = session.exec(select(Entitlement).where(Entitlement.slug == "kaliningrad_city_access")).first()
-        
-    if not entitlement:
-        logger.error(f"[{trace_id}] Unknown Product ID: {product_id}")
-        raise ValueError(f"Unknown Product ID: {product_id}")
-
-    # 2. Try to create grant (race-safe via DB unique constraint)
-    grant = EntitlementGrant(
-        device_anon_id=device_anon_id,
-        entitlement_id=entitlement.id,
-        source=source,
-        source_ref=source_ref,
-        granted_at=datetime.datetime.utcnow()
-    )
-    
-    try:
-        session.add(grant)
-        session.flush()  # Trigger constraint check before commit
-        
-        # Success: new grant created
-        audit = AuditLog(
-            action="ENTITLEMENT_GRANTED",
-            target_id=grant.id,
-            actor_type=source,
-            actor_fingerprint=source_ref[:10],
-            trace_id=trace_id
-        )
-        session.add(audit)
-        session.commit()
-        session.refresh(grant)
-        logger.info(f"[{trace_id}] New grant created: {grant.id}")
-        return grant, True
-        
-    except IntegrityError:
-        # Unique constraint violation: grant already exists
-        session.rollback()
-        
-        # Fetch existing grant
-        existing = session.exec(select(EntitlementGrant).where(
-            EntitlementGrant.source == source,
-            EntitlementGrant.source_ref == source_ref
-        )).first()
-        
-        if existing:
-            # Audit idempotent hit
-            audit = AuditLog(
-                action="ENTITLEMENT_GRANT_IDEMPOTENT_HIT",
-                target_id=existing.id,
-                actor_type=source,
-                actor_fingerprint=source_ref[:10],
-                trace_id=trace_id
-            )
-            session.add(audit)
-            session.commit()
-            logger.info(f"[{trace_id}] Idempotent hit, existing grant: {existing.id}")
-            return existing, False
-        else:
-            # Should not happen, but fail-safe
-            logger.error(f"[{trace_id}] Integrity error but no existing grant found")
-            raise ValueError("Grant conflict but no existing record")
-
-
+# (Moved to service.py)
 
 # --- Endpoints ---
 
@@ -219,4 +152,80 @@ def get_user_entitlements(device_anon_id: str = Query(...), session: Session = D
                 "expires_at": None, # Future: subscription support
                 "is_active": True
             })
+    return res
+
+# --- Restore ---
+
+@router.post("/billing/restore")
+async def restore_purchases(req: RestoreRequest, request: Request, session: Session = Depends(get_session)):
+    trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
+    
+    # Check Idempotency (if job with this idempotency key already exists)
+    existing_job = session.exec(select(Job).where(Job.idempotency_key == req.idempotency_key)).first()
+    
+    job_id = str(uuid.uuid4())
+    
+    if existing_job:
+        job_id = str(existing_job.id)
+        # If job failed, we might want to allow retry?
+        # Standard idempotency says return same processing resource.
+        # Check if we should re-enqueue? No, let's keep simple.
+        return {"job_id": job_id, "status": existing_job.status, "trace_id": trace_id}
+        
+    # Create Job
+    job = Job(
+        id=uuid.UUID(job_id),
+        type="billing_restore",
+        status="PENDING",
+        idempotency_key=req.idempotency_key,
+        payload=json.dumps(req.model_dump())
+    )
+    session.add(job)
+    session.commit()
+    
+    # Enqueue
+    if config.QSTASH_TOKEN and config.PUBLIC_APP_BASE_URL:
+        # If QStash configured, send async
+        try:
+            callback_url = f"{config.PUBLIC_APP_BASE_URL}/api/internal/jobs/callback"
+            qstash.message(
+                url=callback_url,
+                body={"job_id": job_id},
+                headers={"Content-Type": "application/json"}
+            )
+        except Exception as e:
+            logger.error(f"Failed to enqueue restore job: {e}")
+            job.status = "FAILED"
+            job.error = "Queue Error"
+            session.add(job)
+            session.commit()
+            raise HTTPException(status_code=500, detail="Failed to enqueue job")
+    else:
+        # Fallback/Dev: we can't run async reliably without QStash in this architecture easily.
+        # But we could just fail or warn.
+        logger.warning("QStash not configured, job created but not enqueued automatically.")
+        # In Ops check we warn about this.
+        
+    return {"job_id": job_id, "status": "PENDING", "trace_id": trace_id}
+
+@router.get("/billing/restore/{job_id}")
+def get_restore_status(job_id: uuid.UUID, session: Session = Depends(get_session)):
+    job = session.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    res = {
+        "id": job.id,
+        "status": job.status,
+        "result": None,
+        "last_error": job.error,
+        "trace_id": job.idempotency_key or "unknown"
+    }
+    
+    if job.result:
+        try:
+             res["result"] = json.loads(job.result)
+        except:
+             res["result"] = job.result
+             
     return res

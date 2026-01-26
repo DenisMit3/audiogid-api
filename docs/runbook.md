@@ -83,3 +83,11 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 Для работы биллинга требуются переменные окружения Vercel (Production & Preview):
 *   `APPLE_SHARED_SECRET`: Секрет для валидации чеков (App Store Connect -> Users and Access -> Shared Secret).
 *   `GOOGLE_SERVICE_ACCOUNT_JSON_BASE64`: JSON-ключ Service Account с правами на Android Publisher API (в base64).
+
+### Восстановление покупок (Restore Purchases)
+App Store Review Guideline 3.1.1 требует наличия функции "Restore Purchases".
+1. Приложение вызывает `POST /v1/billing/restore` с `apple_receipt` (latest) или `google_purchase_token`.
+2. Сервер ставит задачу в очередь (Async Job).
+3. Воркер проверяет Receipt/Token в сторе, запрашивает **полную историю транзакций** (для Apple).
+4. Создает гранты для *всех* найденных валидных покупок (используя идемпотентность для пропуска существующих).
+5. Результат доступен через поллинг `GET /v1/billing/restore/{job_id}`.

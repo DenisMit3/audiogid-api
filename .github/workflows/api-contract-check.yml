@@ -1,0 +1,42 @@
+name: API Contract Check (Fail Fast)
+
+on:
+  pull_request:
+
+jobs:
+  api-diff-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # We need Java for the generator
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Generator
+        run: npm install -g @openapitools/openapi-generator-cli
+
+      - name: Generate Client (Dry Run)
+        run: |
+          npx @openapitools/openapi-generator-cli generate \
+            -i packages/contract/openapi.yaml \
+            -g dart \
+            -o packages/api_client \
+            --additional-properties=pubName=api_client
+
+      - name: Verify No Diff
+        run: |
+          git add packages/api_client
+          if ! git diff --staged --quiet; then
+            echo "::error::packages/api_client is out of sync with openapi.yaml!"
+            echo "::error::The auto-sync workflow should have fixed this. If not, please run generation locally or check logs."
+            exit 1
+          fi

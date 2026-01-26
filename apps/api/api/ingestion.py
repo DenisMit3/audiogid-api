@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from .core.database import engine
-from .core.models import Job, IngestionRun
+from .core.models import Job, IngestionRun, AuditLog
 from .core.async_utils import enqueue_job
 from .core.config import config
 
@@ -97,7 +97,39 @@ def get_ingestion_runs(
         query = query.where(IngestionRun.city_slug == city)
         
     runs = session.exec(query).all()
-    return runs
+    
+    # Enrich with Trace ID from Audit Logs (Batch fetch)
+    if not runs:
+        return []
+        
+    run_ids = [r.id for r in runs]
+    
+    # Fetch all audits related to these runs
+    # We select AuditLog entries that match our runs
+    audits = session.exec(select(AuditLog).where(AuditLog.target_id.in_(run_ids))).all()
+    
+    # Map run_id -> audit info
+    # We prioritize SUCCESS/FAILED events to show the final state
+    audit_map = {}
+    for a in audits:
+        # If we already have a definitive status for this run, keep it? 
+        # Or just overwrite. Let's process valid ones.
+        if a.action and (a.action.endswith("_SUCCESS") or a.action.endswith("_FAILED")):
+             audit_map[a.target_id] = {"trace_id": a.trace_id, "action": a.action}
+        elif a.target_id not in audit_map and a.trace_id:
+             # Fallback: capture any trace_id if no success/fail event yet
+             audit_map[a.target_id] = {"trace_id": a.trace_id, "action": a.action}
+    
+    # Construct response
+    result = []
+    for r in runs:
+        meta = audit_map.get(r.id, {})
+        r_dict = r.model_dump()
+        r_dict["trace_id"] = meta.get("trace_id")
+        r_dict["last_audit_action"] = meta.get("action")
+        result.append(r_dict)
+        
+    return result
 
 class PreviewGenRequest(BaseModel):
     poi_id: str

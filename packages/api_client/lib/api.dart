@@ -30,14 +30,19 @@ part 'auth/http_bearer_auth.dart';
 
 part 'api/account_api.dart';
 part 'api/ingestion_api.dart';
+part 'api/offline_api.dart';
 part 'api/ops_api.dart';
 part 'api/public_api.dart';
 
+part 'model/build_offline_bundle202_response.dart';
+part 'model/build_offline_bundle_request.dart';
 part 'model/city.dart';
 part 'model/get_deletion_status200_response.dart';
 part 'model/ingestion_run_read.dart';
 part 'model/media.dart';
 part 'model/narration.dart';
+part 'model/offline_job_read.dart';
+part 'model/offline_job_read_result.dart';
 part 'model/ops_config_check_get200_response.dart';
 part 'model/ops_config_check_get200_response_yookassa.dart';
 part 'model/poi_detail.dart';

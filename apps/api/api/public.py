@@ -4,6 +4,8 @@ import hashlib
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request
 from sqlmodel import Session, select, text
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from .core.database import engine
 from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant
@@ -12,6 +14,7 @@ from .core.security import sign_asset_url
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address) # Local instance for decorators
 
 def get_session():
     with Session(engine) as session:
@@ -36,6 +39,7 @@ def check_access(session: Session, city: str, device_anon_id: str, tour_id: Opti
     return city_grant is not None
 
 @router.get("/public/tours/{tour_id}/manifest")
+@limiter.limit("20/minute") # Heavy bundle data
 def get_tour_manifest(
     response: Response, request: Request, tour_id: uuid.UUID, city: str = Query(...), 
     device_anon_id: str = Query(...), session: Session = Depends(get_session)
@@ -110,6 +114,7 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city
 
 
 @router.get("/public/nearby")
+@limiter.limit("50/minute") # Geo-postgis is somewhat expensive
 def get_nearby(response: Response, city: str = Query(...), lat: float = Query(...), lon: float = Query(...), radius_m: int = Query(1000, le=5000), session: Session = Depends(get_session)):
     poi_sql = text("SELECT id, 'poi' as type, title_ru, lat, lon, ST_Distance(geo, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography) as dist FROM poi WHERE city_slug = :city AND published_at IS NOT NULL AND ST_DWithin(geo, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, :radius)")
     results = []

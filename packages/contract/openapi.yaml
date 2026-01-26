@@ -1,18 +1,166 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.10.0
-
+  version: 1.13.0
+  description: Canonical API for Audio Guide 2026. Includes fail-closed caching rules.
 servers:
-  - url: https://api.mambax.app/v1
-  - url: https://audiogid-api-preview.vercel.app/v1
+  - url: https://audiogid-api.vercel.app/v1
+    description: Production Server
 
 paths:
-  # ... (Previous paths retained) ...
-  /health:
-     get: { summary: System Health, operationId: getHealth, responses: { '200': { description: OK } } }
+  /public/cities:
+    get:
+      summary: Get active cities
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
+      responses:
+        '200':
+          description: List of active cities
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/City' }
+        '304':
+          $ref: '#/components/responses/NotModified'
 
-  # --- Deletion (PR-10) ---
+  /public/catalog:
+    get:
+      summary: Get tours catalog for a city
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
+      responses:
+        '200':
+          description: List of tours
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TourSnippet' }
+        '304':
+          $ref: '#/components/responses/NotModified'
+
+  /public/poi/{poi_id}:
+    get:
+      summary: Get POI details with entitlement check
+      parameters:
+        - name: poi_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - name: device_anon_id
+          in: query
+          required: false
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
+      responses:
+        '200':
+          description: POI details. Cache-Control depends on entitlement.
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+            Vary: { $ref: '#/components/headers/Vary' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PoiDetail' }
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '404':
+          description: POI not found
+
+  /public/tours:
+    get:
+      summary: Get tours for a city
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
+      responses:
+        '200':
+          description: List of tours
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+        '304':
+          $ref: '#/components/responses/NotModified'
+
+  /ops/config-check:
+    get:
+      summary: Health and config check (Safe monitor)
+      tags: [Ops]
+      responses:
+        '200':
+          description: Config status flags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  YOOKASSA:
+                    type: object
+                    properties:
+                      SHOP_ID: { type: boolean }
+                      SECRET_KEY: { type: boolean }
+                      WEBHOOK_SECRET: { type: boolean }
+                      WEBHOOK_PATH: { type: string }
+                  PUBLIC_APP_BASE_URL: { type: boolean }
+
+  /ops/commit:
+    get:
+      summary: Get deployed commit info
+      operationId: getOpsCommit
+      tags: [Ops]
+      responses:
+        '200':
+          description: Commit Metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commit_sha: { type: string }
+                  commit_msg: { type: string }
+                  timestamp: { type: string }
+
+  /ops/health:
+    get:
+      summary: Liveness and diagnostics probe
+      description: Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
+      operationId: getOpsHealth
+      tags: [Ops]
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpsHealthResponse' }
+        '503':
+          description: Unhealthy (Partial failure)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OpsHealthResponse' }
+
+  # --- Deletion ---
   /public/account/delete/request:
     post:
       summary: Request Account Deletion
@@ -28,6 +176,7 @@ paths:
               properties:
                 subject_id: { type: string, description: "Device Anon ID" }
                 idempotency_key: { type: string }
+      tags: [Account]
       responses:
         '202':
           description: Accepted
@@ -44,6 +193,7 @@ paths:
           in: query
           required: true
           schema: { type: string, format: uuid }
+      tags: [Account]
       responses:
         '200':
           description: Status
@@ -51,75 +201,346 @@ paths:
             application/json:
               schema: { type: object, properties: { id: { type: string }, status: { type: string }, completed_at: { type: string, format: date-time } } }
 
-  /delete:
+  # --- Ingestion (Admin) ---
+  /admin/ingestion/runs:
     get:
-      summary: Web Deletion Form
-      operationId: getWebDeletionForm
+      tags: [Ingestion]
+      summary: Get Ingestion Runs
+      description: Returns a list of recent ingestion runs with enrichment.
+      operationId: getIngestionRuns
+      parameters:
+        - name: city
+          in: query
+          required: false
+          schema: { type: string }
       responses:
         '200':
-          description: HTML Form
+          description: List of runs
           content:
-            text/html: { schema: { type: string } }
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/IngestionRunRead' }
 
-  # --- Tours ---
-  /public/tours:
-    get: { summary: List Tours, operationId: getPublicTours, parameters: [{name: city, in: query, required: true, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/TourRead' } } } } } } } 
-  /public/tours/{tourId}:
-    get: { summary: Tour Detail, operationId: getPublicTourDetail, parameters: [{name: tourId, in: path, schema: {type: string, format: uuid}}, {name: city, in: query, schema: {type: string}}], responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/TourDetail' } } } } } } }
-  /public/tours/{tourId}/manifest:
+  # --- Offline Bundles (ADR-013) ---
+  /offline/bundles:build:
+    post:
+      tags: [Offline]
+      summary: Enqueue Offline Bundle Build
+      description: Initiates async generation of an offline bundle manifest.
+      operationId: buildOfflineBundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city_slug, idempotency_key]
+              properties:
+                city_slug: { type: string }
+                idempotency_key: { type: string }
+                type: { type: string, default: "full_city" }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema: { type: object, properties: { job_id: { type: string }, status: { type: string } } }
+
+  /offline/bundles/{job_id}:
     get:
-      summary: Download Tour Manifest
-      operationId: getTourManifest
-      parameters: [{name: tourId, in: path}, {name: city, in: query}, {name: device_anon_id, in: query}]
-      responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/TourManifest' } } } } }
+      tags: [Offline]
+      summary: Get Bundle Job Status
+      operationId: getOfflineBundleStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Job Status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OfflineJobRead' }
 
-  # --- Purchases ---
-  /public/purchases/tours/intent:
-    post: { summary: Create Intent, operationId: createPurchaseIntent, requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
-  /public/purchases/tours/confirm:
-    post: { summary: Confirm, operationId: confirmPurchase, requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '200': {} } }
-  /public/entitlements:
-    get: { summary: Get Entitlements, operationId: getEntitlements, parameters: [{name: city, in: query}, {name: device_anon_id, in: query}], responses: { '200': {} } }
 
-  # --- Admin ---
-  /admin/tours:
-     post: { summary: Create Draft Tour, operationId: createTour, requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
-  /admin/tours/{tourId}/items:
-     post: { summary: Add Tour Item, operationId: addTourItem, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
-  /admin/tours/{tourId}/sources:
-     post: { summary: Add Tour Source, operationId: addTourSource, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
-  /admin/tours/{tourId}/media:
-     post: { summary: Add Tour Media, operationId: addTourMedia, parameters: [{name: tourId, in: path}], requestBody: { content: { application/json: { schema: { type: object } } } }, responses: { '201': {} } }
-  /admin/tours/{tourId}/publish:
-     post: { summary: Publish Tour, operationId: publishTour, parameters: [{name: tourId, in: path}], responses: { '200': {} } }
-  # ... (other admin endpoints) ...
+
+  # --- Billing (Stores) ---
+  /billing/apple/verify:
+    post:
+      tags: [Billing]
+      summary: Verify Apple App Store Receipt
+      operationId: verifyAppleReceipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [receipt, product_id, idempotency_key]
+              properties:
+                receipt: { type: string, description: "Base64 receipt or JWS transaction" }
+                product_id: { type: string }
+                idempotency_key: { type: string }
+                device_anon_id: { type: string }
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseVerifyResponse' }
+
+  /billing/google/verify:
+    post:
+      tags: [Billing]
+      summary: Verify Google Play Purchase
+      operationId: verifyGooglePurchase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [package_name, product_id, purchase_token, idempotency_key]
+              properties:
+                package_name: { type: string }
+                product_id: { type: string }
+                purchase_token: { type: string }
+                idempotency_key: { type: string }
+                device_anon_id: { type: string }
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseVerifyResponse' }
+
+  /billing/entitlements:
+    get:
+      tags: [Billing]
+      summary: Get current user entitlements
+      operationId: getEntitlements
+      parameters:
+        - name: device_anon_id
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Active entitlements
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EntitlementGrantRead' }
+
+  /billing/restore:
+    post:
+      tags: [Billing]
+      summary: Enqueue Restore Purchases (Async)
+      operationId: restorePurchases
+      description: Initiates server-side reconcile with Apple/Google to recover grants.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idempotency_key, device_anon_id]
+              properties:
+                platform: { type: string, enum: [apple, google, auto], default: auto }
+                idempotency_key: { type: string }
+                device_anon_id: { type: string }
+                apple_receipt: { type: string, description: "Latest Apple App Store receipt (base64)" }
+                google_purchase_token: { type: string, description: "A Google purchase token (optional if server has none)" }
+                product_id: { type: string, description: "Product ID (Required for Google single-token verify)" }
+                package_name: { type: string, description: "Package Name (Optional, defaults to app)" }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobEnqueueResponse' }
+
+  /billing/restore/{job_id}:
+    get:
+      tags: [Billing]
+      summary: Get Restore Job Status
+      operationId: getRestoreJobStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RestoreJobRead' }
 
 components:
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      description: ETag for conditional GET
+      schema: { type: string }
+
+  headers:
+    ETag:
+      description: Version marker hash
+      schema: { type: string }
+    CacheControl:
+      description: Caching policy (e.g. public, max-age=60 or private, no-store)
+      schema: { type: string }
+    Vary:
+      description: Varied by Authorization for gated content
+      schema: { type: string }
+
+  responses:
+    NotModified:
+      description: Resource not changed
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/CacheControl' }
+        Vary: { $ref: '#/components/headers/Vary' }
+
+  securitySchemes:
+    YookassaSignature:
+      type: apiKey
+      in: header
+      name: X-Yookassa-Signature
+
   schemas:
-    TourRead:
+    City:
       type: object
-      properties: { id: { type: string } }
-    TourDetail:
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name_ru: { type: string }
+        is_active: { type: boolean }
+        updated_at: { type: string, format: date-time }
+
+    TourSnippet:
       type: object
-      properties: { id: { type: string } }
-    TourManifest:
-      type: object
-      properties: { tour: { type: object }, pois: { type: array }, assets: { type: array } }
-    PoiRead:
-      type: object
-      properties: { id: { type: string } }
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        title_ru: { type: string }
+        duration_minutes: { type: integer }
+
     PoiDetail:
-       type: object
-       properties: { id: { type: string } }
-    NearbyItem:
-       type: object
-       properties: { id: { type: string } }
-    CityRead:
-       type: object
-       properties: { id: { type: string } }
-    HelperPlaceRead:
-       type: object
-       properties: { id: { type: string } }
-    MapAttributionRead:
-       type: object
-       properties: { attribution_text: { type: string } }
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title_ru: { type: string }
+        description_ru: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+        preview_audio_url: { type: string, nullable: true }
+        preview_bullets: { type: array, items: { type: string }, nullable: true }
+        has_access: { type: boolean }
+        narrations: { type: array, items: { $ref: '#/components/schemas/Narration' } }
+        media: { type: array, items: { $ref: '#/components/schemas/Media' } }
+
+    Narration:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        locale: { type: string }
+        duration_seconds: { type: number }
+
+    Media:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string }
+        media_type: { type: string }
+        author: { type: string }
+        source_page_url: { type: string }
+
+    IngestionRunRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        status: { type: string }
+        stats_json: { type: string, nullable: true }
+        last_error: { type: string, nullable: true }
+        trace_id: { type: string, nullable: true }
+        last_audit_action: { type: string, nullable: true }
+        last_audit_at: { type: string, format: date-time, nullable: true }
+
+    OfflineJobRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        result:
+          type: object
+          properties:
+            bundle_url: { type: string }
+            manifest_url: { type: string }
+            content_hash: { type: string }
+            zip_size_bytes: { type: integer }
+          nullable: true
+        last_error: { type: string, nullable: true }
+
+    PurchaseVerifyResponse:
+      type: object
+      required: [verified, granted, trace_id]
+      properties:
+        verified: { type: boolean }
+        granted: { type: boolean }
+        entitlement_grant_id: { type: string, format: uuid, nullable: true }
+        order_id: { type: string, nullable: true }
+        trace_id: { type: string }
+        error: { type: string, nullable: true }
+
+    EntitlementGrantRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        entitlement_slug: { type: string }
+        scope: { type: string }
+        ref: { type: string }
+        granted_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+        is_active: { type: boolean }
+
+    JobEnqueueResponse:
+      type: object
+      properties:
+        job_id: { type: string, format: uuid }
+        status: { type: string }
+        trace_id: { type: string }
+
+    RestoreJobRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED] }
+        result:
+          type: object
+          properties:
+            platform: { type: string }
+            grants_created: { type: integer }
+            grants_existing: { type: integer }
+            grants_total: { type: integer }
+          nullable: true
+        last_error: { type: string, nullable: true }
+        trace_id: { type: string }
+
+    OpsHealthResponse:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, fail] }
+        checks: { type: array, items: { type: string } }
+        error: { type: string, nullable: true }
+
+

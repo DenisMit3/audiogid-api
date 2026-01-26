@@ -15,16 +15,73 @@ from .core.models import Job
 from .core.database import engine
 from .core.worker import process_job
 
-from .public import router as public_router
-from .ingestion import router as ingestion_router
-from .map import router as map_router
-from .publish import router as publish_router
-from .admin_tours import router as admin_tours_router
-from .purchases import router as purchases_router
-from .deletion import router as deletion_router
-from .ops import router as ops_router # PR-11
-from .offline.router import router as offline_router # PR-33b
-from .billing.router import router as billing_router # PR-36c
+import logging
+logger = logging.getLogger("api")
+
+# Lazy Import Safe
+try:
+    from .public import router as public_router
+except Exception as e:
+    logger.error(f"Failed to import public router: {e}")
+    public_router = None
+
+try:
+    from .ingestion import router as ingestion_router
+except Exception as e:
+    logger.error(f"Failed to import ingestion router: {e}")
+    ingestion_router = None
+
+try:
+    from .map import router as map_router
+except Exception as e:
+    logger.error(f"Failed to import map router: {e}")
+    map_router = None
+
+try:
+    from .publish import router as publish_router
+except Exception as e:
+    logger.error(f"Failed to import publish router: {e}")
+    publish_router = None
+
+try:
+    from .admin_tours import router as admin_tours_router
+except Exception as e:
+    logger.error(f"Failed to import admin_tours router: {e}")
+    admin_tours_router = None
+
+try:
+    from .purchases import router as purchases_router
+except Exception as e:
+    logger.error(f"Failed to import purchases router: {e}")
+    purchases_router = None
+
+try:
+    from .deletion import router as deletion_router
+except Exception as e:
+    logger.error(f"Failed to import deletion router: {e}")
+    deletion_router = None
+
+try:
+    from .ops import router as ops_router # PR-11
+except Exception as e:
+    logger.error(f"Failed to import ops router: {e}")
+    # Ops router MUST work for diagnostics; define minimal fallback locally
+    from fastapi import APIRouter
+    ops_router = APIRouter()
+    @ops_router.get("/v1/ops/health")
+    def fallback_health(): return {"status": "fallback", "error": str(e)}
+
+try:
+    from .offline.router import router as offline_router # PR-33b
+except Exception as e:
+    logger.error(f"Failed to import offline router: {e}")
+    offline_router = None
+
+try:
+    from .billing.router import router as billing_router # PR-36c
+except Exception as e:
+    logger.error(f"Failed to import billing router: {e}")
+    billing_router = None
 
 app = FastAPI(
     title="Audio Guide 2026 API",
@@ -44,15 +101,15 @@ app.add_middleware(SlowApiMiddleware)
 app.add_middleware(SecurityMiddleware)
 
 app.include_router(ops_router, prefix="/v1") # Ops first
-app.include_router(public_router, prefix="/v1")
-app.include_router(ingestion_router, prefix="/v1")
-app.include_router(map_router, prefix="/v1")
-app.include_router(publish_router, prefix="/v1")
-app.include_router(admin_tours_router, prefix="/v1")
-app.include_router(purchases_router, prefix="/v1")
-app.include_router(deletion_router, prefix="/v1")
-app.include_router(offline_router, prefix="/v1")
-app.include_router(billing_router, prefix="/v1")
+if public_router: app.include_router(public_router, prefix="/v1")
+if ingestion_router: app.include_router(ingestion_router, prefix="/v1")
+if map_router: app.include_router(map_router, prefix="/v1")
+if publish_router: app.include_router(publish_router, prefix="/v1")
+if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
+if purchases_router: app.include_router(purchases_router, prefix="/v1")
+if deletion_router: app.include_router(deletion_router, prefix="/v1")
+if offline_router: app.include_router(offline_router, prefix="/v1")
+if billing_router: app.include_router(billing_router, prefix="/v1")
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,

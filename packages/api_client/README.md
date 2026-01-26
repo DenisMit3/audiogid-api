@@ -68,6 +68,8 @@ Class | Method | HTTP request | Description
 *IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
 *OfflineApi* | [**buildOfflineBundle**](doc//OfflineApi.md#buildofflinebundle) | **POST** /offline/bundles:build | Enqueue Offline Bundle Build
 *OfflineApi* | [**getOfflineBundleStatus**](doc//OfflineApi.md#getofflinebundlestatus) | **GET** /offline/bundles/{job_id} | Get Bundle Job Status
+*OpsApi* | [**getOpsCommit**](doc//OpsApi.md#getopscommit) | **GET** /ops/commit | Get deployed commit info
+*OpsApi* | [**getOpsHealth**](doc//OpsApi.md#getopshealth) | **GET** /ops/health | Liveness and diagnostics probe
 *OpsApi* | [**opsConfigCheckGet**](doc//OpsApi.md#opsconfigcheckget) | **GET** /ops/config-check | Health and config check (Safe monitor)
 *PublicApi* | [**publicCatalogGet**](doc//PublicApi.md#publiccatalogget) | **GET** /public/catalog | Get tours catalog for a city
 *PublicApi* | [**publicCitiesGet**](doc//PublicApi.md#publiccitiesget) | **GET** /public/cities | Get active cities
@@ -82,6 +84,7 @@ Class | Method | HTTP request | Description
  - [City](doc//City.md)
  - [EntitlementGrantRead](doc//EntitlementGrantRead.md)
  - [GetDeletionStatus200Response](doc//GetDeletionStatus200Response.md)
+ - [GetOpsCommit200Response](doc//GetOpsCommit200Response.md)
  - [IngestionRunRead](doc//IngestionRunRead.md)
  - [JobEnqueueResponse](doc//JobEnqueueResponse.md)
  - [Media](doc//Media.md)
@@ -90,6 +93,7 @@ Class | Method | HTTP request | Description
  - [OfflineJobReadResult](doc//OfflineJobReadResult.md)
  - [OpsConfigCheckGet200Response](doc//OpsConfigCheckGet200Response.md)
  - [OpsConfigCheckGet200ResponseYOOKASSA](doc//OpsConfigCheckGet200ResponseYOOKASSA.md)
+ - [OpsHealthResponse](doc//OpsHealthResponse.md)
  - [PoiDetail](doc//PoiDetail.md)
  - [PurchaseVerifyResponse](doc//PurchaseVerifyResponse.md)
  - [RequestDeletion202Response](doc//RequestDeletion202Response.md)

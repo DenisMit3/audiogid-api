@@ -17,6 +17,22 @@ void main() {
   // final instance = OpsApi();
 
   group('tests for OpsApi', () {
+    // Get deployed commit info
+    //
+    //Future<GetOpsCommit200Response> getOpsCommit() async
+    test('test getOpsCommit', () async {
+      // TODO
+    });
+
+    // Liveness and diagnostics probe
+    //
+    // Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
+    //
+    //Future<OpsHealthResponse> getOpsHealth() async
+    test('test getOpsHealth', () async {
+      // TODO
+    });
+
     // Health and config check (Safe monitor)
     //
     //Future<OpsConfigCheckGet200Response> opsConfigCheckGet() async

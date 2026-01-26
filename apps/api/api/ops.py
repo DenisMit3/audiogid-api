@@ -13,7 +13,29 @@ def health_check():
     """
     Liveness probe. Always 200 if app is running.
     """
-    return {"status": "ok", "timestamp": "now"}
+    checks = []
+    error = None
+    status = "ok"
+
+    # Lazy check config imports to diagnose env
+    try:
+        from .core.config import config
+        checks.append("config_import")
+    except Exception as e:
+        status = "fail"
+        error = f"Config Error: {str(e)}"
+
+    return {"status": status, "checks": checks, "error": error}
+
+@router.get("/ops/commit")
+def get_commit():
+    import os
+    import datetime
+    return {
+        "commit_sha": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown"),
+        "commit_msg": os.getenv("VERCEL_GIT_COMMIT_MESSAGE", "unknown"),
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
 
 @router.get("/ops/ready")
 def readiness_check(session: Session = Depends(get_session)):

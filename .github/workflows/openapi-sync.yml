@@ -1,0 +1,71 @@
+name: API Contract Sync & Commit
+
+on:
+  pull_request:
+    # Trigger on changes to contract or client
+    paths:
+      - 'packages/contract/openapi.yaml'
+      - 'packages/api_client/**'
+
+jobs:
+  sync-client:
+    # Only run on PRs from the same repo (not forks) for security/token access
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push commits
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }} # Checkout the PR branch specifically
+
+      - name: Setup Java (Optimized for OpenAPI Generator)
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Generator
+        run: npm install -g @openapitools/openapi-generator-cli
+
+      - name: Debug File Structure
+        run: |
+          pwd
+          ls -R packages
+          cat packages/contract/openapi.yaml | head -n 5
+
+      - name: Generate Dart Client
+        run: |
+          # Ensure clean state
+          # Generate client using the CLI directly to avoid package.json complexity dependencies
+          npx @openapitools/openapi-generator-cli generate \
+            -i packages/contract/openapi.yaml \
+            -g dart \
+            -o packages/api_client \
+            --additional-properties=pubName=api_client
+            
+      - name: Check for Diff
+        id: check_diff
+        run: |
+          git add packages/api_client
+          if git diff --staged --quiet; then
+            echo "No changes detected."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in api_client."
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit & Push Changes
+        if: steps.check_diff.outputs.changed == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(contract): auto-sync api_client from openapi.yaml [skip ci]"
+          file_pattern: 'packages/api_client/**'
+          # Prevent infinite loops if possible via skip ci, though standard GHA prevents recursive triggers anyway

@@ -318,9 +318,19 @@ paths:
                 idempotency_key: { type: string }
                 device_anon_id: { type: string }
                 apple_receipt: { type: string, description: "Latest Apple App Store receipt (base64)" }
-                google_purchase_token: { type: string, description: "A Google purchase token (optional if server has none)" }
-                product_id: { type: string, description: "Product ID (Required for Google single-token verify)" }
-                package_name: { type: string, description: "Package Name (Optional, defaults to app)" }
+                google_purchases:
+                  type: array
+                  items:
+                    type: object
+                    required: [package_name, product_id, purchase_token]
+                    properties:
+                      package_name: { type: string }
+                      product_id: { type: string }
+                      purchase_token: { type: string }
+                  description: "List of Google purchases to verify"
+                google_purchase_token: { type: string, deprecated: true, description: "Legacy single token" }
+                product_id: { type: string, deprecated: true, description: "Legacy product ID for single token" }
+                package_name: { type: string, deprecated: true, description: "Legacy package name for single token" }
       responses:
         '202':
           description: Accepted
@@ -497,6 +507,16 @@ components:
             grants_created: { type: integer }
             grants_existing: { type: integer }
             grants_total: { type: integer }
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  product_id: { type: string }
+                  status: { type: string, enum: [restored, existing, failed] }
+                  error: { type: string, nullable: true }
+                  order_id: { type: string, nullable: true }
+                  token_hash: { type: string, description: "SHA256 prefix of token for debug" }
           nullable: true
         last_error: { type: string, nullable: true }
         trace_id: { type: string }

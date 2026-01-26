@@ -61,6 +61,8 @@ Class | Method | HTTP request | Description
 *AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
 *AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
 *BillingApi* | [**getEntitlements**](doc//BillingApi.md#getentitlements) | **GET** /billing/entitlements | Get current user entitlements
+*BillingApi* | [**getRestoreJobStatus**](doc//BillingApi.md#getrestorejobstatus) | **GET** /billing/restore/{job_id} | Get Restore Job Status
+*BillingApi* | [**restorePurchases**](doc//BillingApi.md#restorepurchases) | **POST** /billing/restore | Enqueue Restore Purchases (Async)
 *BillingApi* | [**verifyAppleReceipt**](doc//BillingApi.md#verifyapplereceipt) | **POST** /billing/apple/verify | Verify Apple App Store Receipt
 *BillingApi* | [**verifyGooglePurchase**](doc//BillingApi.md#verifygooglepurchase) | **POST** /billing/google/verify | Verify Google Play Purchase
 *IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
@@ -81,6 +83,7 @@ Class | Method | HTTP request | Description
  - [EntitlementGrantRead](doc//EntitlementGrantRead.md)
  - [GetDeletionStatus200Response](doc//GetDeletionStatus200Response.md)
  - [IngestionRunRead](doc//IngestionRunRead.md)
+ - [JobEnqueueResponse](doc//JobEnqueueResponse.md)
  - [Media](doc//Media.md)
  - [Narration](doc//Narration.md)
  - [OfflineJobRead](doc//OfflineJobRead.md)
@@ -91,6 +94,9 @@ Class | Method | HTTP request | Description
  - [PurchaseVerifyResponse](doc//PurchaseVerifyResponse.md)
  - [RequestDeletion202Response](doc//RequestDeletion202Response.md)
  - [RequestDeletionRequest](doc//RequestDeletionRequest.md)
+ - [RestoreJobRead](doc//RestoreJobRead.md)
+ - [RestoreJobReadResult](doc//RestoreJobReadResult.md)
+ - [RestorePurchasesRequest](doc//RestorePurchasesRequest.md)
  - [TourSnippet](doc//TourSnippet.md)
  - [VerifyAppleReceiptRequest](doc//VerifyAppleReceiptRequest.md)
  - [VerifyGooglePurchaseRequest](doc//VerifyGooglePurchaseRequest.md)

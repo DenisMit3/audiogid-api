@@ -73,6 +73,115 @@ class BillingApi {
     return null;
   }
 
+  /// Get Restore Job Status
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [String] jobId (required):
+  Future<Response> getRestoreJobStatusWithHttpInfo(String jobId,) async {
+    // ignore: prefer_const_declarations
+    final path = r'/billing/restore/{job_id}'
+      .replaceAll('{job_id}', jobId);
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get Restore Job Status
+  ///
+  /// Parameters:
+  ///
+  /// * [String] jobId (required):
+  Future<RestoreJobRead?> getRestoreJobStatus(String jobId,) async {
+    final response = await getRestoreJobStatusWithHttpInfo(jobId,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'RestoreJobRead',) as RestoreJobRead;
+    
+    }
+    return null;
+  }
+
+  /// Enqueue Restore Purchases (Async)
+  ///
+  /// Initiates server-side reconcile with Apple/Google to recover grants.
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [RestorePurchasesRequest] restorePurchasesRequest (required):
+  Future<Response> restorePurchasesWithHttpInfo(RestorePurchasesRequest restorePurchasesRequest,) async {
+    // ignore: prefer_const_declarations
+    final path = r'/billing/restore';
+
+    // ignore: prefer_final_locals
+    Object? postBody = restorePurchasesRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Enqueue Restore Purchases (Async)
+  ///
+  /// Initiates server-side reconcile with Apple/Google to recover grants.
+  ///
+  /// Parameters:
+  ///
+  /// * [RestorePurchasesRequest] restorePurchasesRequest (required):
+  Future<JobEnqueueResponse?> restorePurchases(RestorePurchasesRequest restorePurchasesRequest,) async {
+    final response = await restorePurchasesWithHttpInfo(restorePurchasesRequest,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'JobEnqueueResponse',) as JobEnqueueResponse;
+    
+    }
+    return null;
+  }
+
   /// Verify Apple App Store Receipt
   ///
   /// Note: This method returns the HTTP [Response].

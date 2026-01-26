@@ -13,6 +13,7 @@ paths:
       summary: Get active cities
       parameters:
         - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
       responses:
         '200':
           description: List of active cities
@@ -36,6 +37,7 @@ paths:
           required: true
           schema: { type: string }
         - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
       responses:
         '200':
           description: List of tours
@@ -67,6 +69,7 @@ paths:
           required: false
           schema: { type: string }
         - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
       responses:
         '200':
           description: POI details. Cache-Control depends on entitlement.
@@ -91,6 +94,7 @@ paths:
           required: true
           schema: { type: string }
         - $ref: '#/components/parameters/IfNoneMatch'
+      tags: [Public]
       responses:
         '200':
           description: List of tours
@@ -103,6 +107,7 @@ paths:
   /ops/config-check:
     get:
       summary: Health and config check (Safe monitor)
+      tags: [Ops]
       responses:
         '200':
           description: Config status flags
@@ -119,6 +124,69 @@ paths:
                       WEBHOOK_SECRET: { type: boolean }
                       WEBHOOK_PATH: { type: string }
                   PUBLIC_APP_BASE_URL: { type: boolean }
+
+  # --- Deletion ---
+  /public/account/delete/request:
+    post:
+      summary: Request Account Deletion
+      description: Initiates async deletion of user data.
+      operationId: requestDeletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject_id, idempotency_key]
+              properties:
+                subject_id: { type: string, description: "Device Anon ID" }
+                idempotency_key: { type: string }
+      tags: [Account]
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema: { type: object, properties: { id: { type: string }, status: { type: string } } }
+
+  /public/account/delete/status:
+    get:
+      summary: Check Deletion Status
+      operationId: getDeletionStatus
+      parameters:
+        - name: deletion_request_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      tags: [Account]
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema: { type: object, properties: { id: { type: string }, status: { type: string }, completed_at: { type: string, format: date-time } } }
+
+  # --- Ingestion (Admin) ---
+  /admin/ingestion/runs:
+    get:
+      tags: [Ingestion]
+      summary: Get Ingestion Runs
+      description: Returns a list of recent ingestion runs with enrichment.
+      operationId: getIngestionRuns
+      parameters:
+        - name: city
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/IngestionRunRead' }
+
 
 components:
   parameters:
@@ -201,3 +269,18 @@ components:
         media_type: { type: string }
         author: { type: string }
         source_page_url: { type: string }
+
+    IngestionRunRead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        city_slug: { type: string }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        status: { type: string }
+        stats_json: { type: string, nullable: true }
+        last_error: { type: string, nullable: true }
+        trace_id: { type: string, nullable: true }
+        last_audit_action: { type: string, nullable: true }
+        last_audit_at: { type: string, format: date-time, nullable: true }
+

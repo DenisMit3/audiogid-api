@@ -1,0 +1,36 @@
+name: OpenAPI Auto Sync
+
+on:
+  push:
+    paths:
+      - 'apps/api/openapi.yaml'
+  workflow_dispatch:
+
+jobs:
+  sync-client:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Generate SDK (Docker)
+        run: |
+          # Clean old files
+          rm -rf packages/api_client/lib
+          rm -rf packages/api_client/test
+          
+          # Generate using Docker
+          docker run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli:v7.2.0 generate \
+            -i /local/apps/api/openapi.yaml \
+            -g dart \
+            -o /local/packages/api_client \
+            --additional-properties=pubName=api_client
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore(api): auto-generate dart client"
+          file_pattern: packages/api_client

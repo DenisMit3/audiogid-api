@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Audio Guide 2026</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- MapLibre CSS -->
+    <link href="https://unpkg.com/maplibre-gl@^4.0.0/dist/maplibre-gl.css" rel="stylesheet" />
+  </head>
+  <body class="dark-theme">
+    <div id="app">
+      <div id="map"></div>
+      
+      <!-- Top HUD -->
+      <header class="hud-top">
+        <div class="search-bar glass">
+          <span class="icon">🔍</span>
+          <input type="text" placeholder="Поиск в Калининграде..." readonly />
+        </div>
+      </header>
+
+      <!-- FAB HUD -->
+      <div class="hud-fab">
+        <button id="locate-btn" class="fab glass">📍</button>
+      </div>
+
+      <!-- Bottom Sheet -->
+      <div id="drawer" class="drawer glass">
+        <div class="drawer-handle"></div>
+        <div class="drawer-content">
+          <section class="tour-section">
+            <h2 class="section-title">Ближайшие туры</h2>
+            <div id="tour-list" class="horizontal-scroll">
+              <!-- Tour cards will be injected here -->
+              <div class="loading-state">Загрузка туров...</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

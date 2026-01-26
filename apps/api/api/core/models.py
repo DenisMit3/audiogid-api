@@ -1,6 +1,7 @@
 from typing import Optional, List, Any
 from sqlmodel import Field, SQLModel, Relationship
 from sqlalchemy import Column
+import sqlalchemy as sa
 from geoalchemy2 import Geography
 from datetime import datetime
 import uuid
@@ -10,6 +11,7 @@ class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
     is_active: bool = Field(default=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class City(CityBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -24,6 +26,11 @@ class PoiBase(SQLModel):
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
     osm_id: Optional[str] = Field(default=None, index=True)
+    wikidata_id: Optional[str] = Field(default=None, index=True)
+    confidence_score: float = Field(default=0.0)
+    preview_audio_url: Optional[str] = None
+    preview_bullets: Optional[List[str]] = Field(default=None, sa_column=Column(sa.JSON))
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 class Poi(PoiBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -134,11 +141,26 @@ class Purchase(SQLModel, table=True):
 class Entitlement(SQLModel, table=True):
     __tablename__ = "entitlements"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    city_slug: str = Field(index=True)
-    tour_id: uuid.UUID = Field(index=True)
+    slug: str = Field(unique=True, index=True) # e.g. "kaliningrad_city_access"
+    scope: str = "city" # city, tour
+    ref: str # slug города или UUID тура
+    title_ru: str
+    price_amount: float = 0.0
+    price_currency: str = "RUB"
+    is_active: bool = Field(default=True)
+
+class EntitlementGrant(SQLModel, table=True):
+    __tablename__ = "entitlement_grants"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     device_anon_id: str = Field(index=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    entitlement_id: uuid.UUID = Field(foreign_key="entitlements.id", index=True)
+    source: str = "yookassa" # yookassa, store, system, promo
+    source_ref: str = Field(unique=True, index=True) # e.g. payment_id или transaction_id
     granted_at: datetime = Field(default_factory=datetime.utcnow)
     revoked_at: Optional[datetime] = None
+    
+    entitlement: Optional[Entitlement] = Relationship()
 
 # --- PR-10: Deletion Requests ---
 

@@ -1,60 +1,68 @@
-# Audio Guide 2026 — Master Runbook
+# Operations Runbook
 
-## Deployment Status (2026-01-24)
-- **Vercel Project**: `audiogid-api`
-- **Production URL**: https://audiogid-api.vercel.app/
-- **Database**: Neon (Connected via Vercel Marketplace)
-- **Status**: ✅ LIVE (Health & Ready checks passed)
+## Валидация конфигурации (Cloud/CI Only)
+Для проверки готовности платформы используйте следующие инструменты:
 
-## Deployment Checklist (Day 1)
-*   **Env Vars**: `ADMIN_API_TOKEN` (Rotatable), `STORE_SANDBOX` (Preview Only), `QSTASH_*` (Async).
-*   **DB**: Migrations Applied (`alembic upgrade head`).
+### 1. Prerequisites / Environment Variables
+#### Core & Billing (Strict Startup)
+Эти переменные обязательны для старта API (Fail-fast).
 
-## Ops Validation
-*   **Health**: `GET /v1/ops/health` -> 200 OK.
-*   **Ready**: `GET /v1/ops/ready` -> 200 OK (DB Connected).
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon Postgres Connection String |
+| `PUBLIC_APP_BASE_URL` | Базовый URL для генерации абсолютных ссылок (webhooks, sharing) |
+| `YOOKASSA_*` | Учетные данные YooKassa (Shop ID, Secret Key, Webhook Secret) |
+| `PAYMENT_WEBHOOK_BASE_PATH` | Путь вебхука (must start with `/`) |
 
-## Functional Validation Flow
-1.  **Onboarding (Public Read)**
-    *   `GET /v1/public/cities` -> JSON list.
-    *   `GET /v1/public/tours?city=...` -> JSON list (Published only).
+### 2. Проверка конфигурации биллинга
+Вызовите эндпоинт `GET /v1/ops/config-check`. 
+- Ожидаемый результат: JSON со списком ключей и значениями `true/false`.
+- Все 5 параметров YooKassa должны быть `true`.
+- Поле `PAYMENT_WEBHOOK_BASE_PATH` должно быть `true` (путь не раскрывается).
 
-2.  **Purchase Flow (Sandbox)**
-    *   Enable `STORE_SANDBOX=true`.
-    *   **Intent**: `POST /v1/public/purchases/tours/intent` -> 201 Created (Pending).
-    *   **Confirm**: `POST /v1/public/purchases/tours/confirm` (`proof: "SANDBOX_SUCCESS"`) -> 200 OK (Entitlement Granted).
-    *   **Check Entitlement**: `GET /v1/public/entitlements` -> Returns ID.
+### 2. Проверка Ingestion (Strategy A: Readiness)
+API стартует без обязательных переменных `QSTASH_TOKEN` и `OVERPASS_API_URL`.
+Их состояние видно в `GET /v1/ops/config-check`.
 
-3.  **Content Delivery (Secure)**
-    *   **Manifest (Entitled)**: `GET /v1/public/tours/{id}/manifest` -> 200 OK (Assets List).
-    *   **Manifest (Unpaid)**: `GET ...` (Random ID) -> 403 Forbidden.
+**Поведение при отсутствии:**
+- Если `QSTASH_TOKEN: false`: попытка Enqueue (`POST /admin/ingestion/...`) вернет **503 Service Unavailable**.
+- Если `OVERPASS_API_URL: false`: Job начнется, но упадет с ошибкой `FAILED` (RuntimeError).
 
-4.  **Deletion (Compliance)**
-    *   **Get Token**: `POST /v1/public/account/delete/token` -> Returns signed token (1hr TTL).
-    *   **Request**: `POST /v1/public/account/delete/request` (ID + Token) -> 202 Pending.
-    *   **Poll**: `GET /v1/public/account/delete/status` -> COMPLETED.
-    *   **Verify Revocation**: `GET /v1/public/entitlements` -> Empty.
+### 3. Тестирование кеширования (ETag/304)
+Используйте `curl` или браузерную консоль:
+```bash
+# Первый запрос - получаем ETag
+curl -I https://audiogid-api.vercel.app/v1/public/cities
 
-## Security Logs Check
-*   **Search**: "Request Processed" / "Request Failed".
-*   **Verify**: Trace ID present. `authorization`/`proof` headers REDACTED (not visible in raw log).
-*   **Headers**: Response headers include `Strict-Transport-Security`, `X-Content-Type-Options`.
+# Второй запрос с заголовком If-None-Match
+curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" https://audiogid-api.vercel.app/v1/public/cities
+```
+- Ожидаемый результат: `HTTP/1.1 304 Not Modified`.
 
-## Disaster Recovery
-*   **Rollback**: Instant Revert via Vercel Dashboard / Git Revert.
+### 4. Проверка безопасности (Gated Cache)
+Вызовите детальный эндпоинт POI.
+- Ожидаемый результат: `Cache-Control: private, no-store`.
 
-## DEPLOYMENT REPORT (Production)
-Date: 2026-01-24
-Vercel Project URL: https://audiogid-api.vercel.app/
-Deployed version (GET https://audiogid-api.vercel.app/): 1.11.0
-DB provider: Neon (via Vercel Marketplace) — YES (Env vars injected)
-DATABASE_URL present in Production: YES
-Status:
-- /v1/ops/health: 200 OK
-- /v1/ops/ready: 200 OK ({"status":"ready"})
-Verdict: GO (No blockers)
+## Working with Antigravity (Context Pack)
+Каждая рабочая сессия с AI-ассистентом Antigravity должна начинаться со следующих шагов:
+1. Выполнить `view_file` для `AG_CONTEXT.md` для понимания текущих ограничений и стадии проекта.
+2. Выполнить `view_file` для `AG_TODO_NOW.md` для получения текущей задачи.
+3. Любое архитектурное решение должно проверяться на соответствие разделу "Non-negotiables".
 
-### Security Notes
-- Secrets in Vercel should be marked Sensitive (may require remove + re-add) / policy enforced.
-- Validate Cache-Control: no-store on sensitive endpoints.
-- Log review: verify redaction and absence of tokens/secrets.
+### Branch Reset Procedure
+1. После каждого успешного Merge в `main` и прохождения CI, создается Git Tag `checkpoint-N`.
+2. Новые фичи стартуют ТОЛЬКО от `main` или актуального `checkpoint`.
+3. Обязательное обновление `AG_TODO_NOW.md` после завершения задачи.
+
+## Синхронизация контракта API (Contract Sync)
+Если пайплайн `API Contract Sync Check` упал:
+- Перегенерируйте SDK локально с помощью `openapi-generator-cli`.
+- Закоммитьте изменения в папке `packages/api_client`.
+- В логах Vercel ищите `trace_id` для отладки конкретных запросов. Логи никогда не содержат секреты или полные подписанные URL.
+## Ingestion Troubleshooting
+
+### Диагностика
+1. Получите список запусков через Admin API: `GET /v1/admin/ingestion/runs`.
+2. В ответе найдите поле `trace_id` для интересующего запуска.
+3. Используйте `trace_id` в логах Vercel (Functions Tab) для фильтрации всех событий, связанных с этим запуском.
+   - Ищите события: `job_started`, `osm_import_success`, `osm_import_failed`.

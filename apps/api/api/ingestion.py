@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from .core.database import engine
-from .core.models import Job, IngestionRun
+from .core.models import Job, IngestionRun, AuditLog
 from .core.async_utils import enqueue_job
 from .core.config import config
 
@@ -31,8 +31,11 @@ async def enqueue_osm_import(
     req: OsmImportRequest, 
     session: Session = Depends(get_session)
 ):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    date_str = datetime.utcnow().strftime("%Y-%m-%d-%H-%M")
     key = f"osm_import|{req.city_slug}|{date_str}"
     
     payload_dict = req.model_dump() if hasattr(req, "model_dump") else req.dict()
@@ -66,6 +69,9 @@ async def enqueue_helpers_import(
     req: HelpersImportRequest,
     session: Session = Depends(get_session)
 ):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"helpers_import|{req.city_slug}|{date_str}"
     
@@ -91,4 +97,69 @@ def get_ingestion_runs(
         query = query.where(IngestionRun.city_slug == city)
         
     runs = session.exec(query).all()
-    return runs
+    
+    # Enrich with Trace ID from Audit Logs (Batch fetch)
+    if not runs:
+        return []
+        
+    run_ids = [r.id for r in runs]
+    
+    # P0: Fetch all ingestion audits related to these runs, ORDERED BY timestamp DESC
+    # Restrict to known Ingestion Actions (Whitelist)
+    ingestion_actions = ["OSM_IMPORT_SUCCESS", "OSM_IMPORT_FAILED", "HELPERS_IMPORT_SUCCESS", "HELPERS_IMPORT_FAILED"]
+    
+    stmt = (
+        select(AuditLog)
+        .where(AuditLog.target_id.in_(run_ids))
+        .where(AuditLog.action.in_(ingestion_actions))
+        .order_by(AuditLog.timestamp.desc())
+    )
+    audits = session.exec(stmt).all()
+    
+    # Map run_id -> audit info (Latest Only)
+    audit_map = {}
+    for a in audits:
+        # Since we ordered DESC, the first time we see a target_id, it is the latest.
+        if a.target_id not in audit_map:
+             audit_map[a.target_id] = {
+                 "trace_id": a.trace_id, 
+                 "action": a.action, 
+                 "created_at": a.timestamp
+             }
+    
+    # Construct response
+    result = []
+    for r in runs:
+        meta = audit_map.get(r.id, {})
+        r_dict = r.model_dump()
+        r_dict["trace_id"] = meta.get("trace_id")
+        r_dict["last_audit_action"] = meta.get("action")
+        r_dict["last_audit_at"] = meta.get("created_at")
+        result.append(r_dict)
+        
+    return result
+
+class PreviewGenRequest(BaseModel):
+    poi_id: str
+
+@router.post("/admin/ingestion/preview/enqueue", status_code=202, dependencies=[Depends(verify_admin_token)])
+async def enqueue_preview_gen(
+    req: PreviewGenRequest,
+    session: Session = Depends(get_session)
+):
+    if not config.QSTASH_TOKEN:
+        raise HTTPException(status_code=503, detail="Ingestion service not configured (Missing QSTASH_TOKEN)")
+
+    key = f"preview|{req.poi_id}"
+    
+    # Allow retries if previous failed (don't block strictly on key existence if failed)
+    # For simplicity, we just create a new job if not pending
+    # existing = session.exec(select(Job).where(Job.idempotency_key == key)).first()
+    # if existing and existing.status in ["PENDING", "RUNNING"]: ...
+    
+    job = await enqueue_job(
+        job_type="generate_preview",
+        payload=json.dumps({"poi_id": req.poi_id}),
+        session=session
+    )
+    return {"job_id": job.id, "status": job.status, "key": key}

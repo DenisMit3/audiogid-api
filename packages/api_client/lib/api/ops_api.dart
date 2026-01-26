@@ -16,6 +16,98 @@ class OpsApi {
 
   final ApiClient apiClient;
 
+  /// Get deployed commit info
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getOpsCommitWithHttpInfo() async {
+    // ignore: prefer_const_declarations
+    final path = r'/ops/commit';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Get deployed commit info
+  Future<GetOpsCommit200Response?> getOpsCommit() async {
+    final response = await getOpsCommitWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'GetOpsCommit200Response',) as GetOpsCommit200Response;
+    
+    }
+    return null;
+  }
+
+  /// Liveness and diagnostics probe
+  ///
+  /// Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
+  ///
+  /// Note: This method returns the HTTP [Response].
+  Future<Response> getOpsHealthWithHttpInfo() async {
+    // ignore: prefer_const_declarations
+    final path = r'/ops/health';
+
+    // ignore: prefer_final_locals
+    Object? postBody;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>[];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Liveness and diagnostics probe
+  ///
+  /// Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
+  Future<OpsHealthResponse?> getOpsHealth() async {
+    final response = await getOpsHealthWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'OpsHealthResponse',) as OpsHealthResponse;
+    
+    }
+    return null;
+  }
+
   /// Health and config check (Safe monitor)
   ///
   /// Note: This method returns the HTTP [Response].

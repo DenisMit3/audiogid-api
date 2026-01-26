@@ -192,6 +192,8 @@ class ApiClient {
           return EntitlementGrantRead.fromJson(value);
         case 'GetDeletionStatus200Response':
           return GetDeletionStatus200Response.fromJson(value);
+        case 'GetOpsCommit200Response':
+          return GetOpsCommit200Response.fromJson(value);
         case 'IngestionRunRead':
           return IngestionRunRead.fromJson(value);
         case 'JobEnqueueResponse':
@@ -208,6 +210,8 @@ class ApiClient {
           return OpsConfigCheckGet200Response.fromJson(value);
         case 'OpsConfigCheckGet200ResponseYOOKASSA':
           return OpsConfigCheckGet200ResponseYOOKASSA.fromJson(value);
+        case 'OpsHealthResponse':
+          return OpsHealthResponse.fromJson(value);
         case 'PoiDetail':
           return PoiDetail.fromJson(value);
         case 'PurchaseVerifyResponse':

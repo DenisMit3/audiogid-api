@@ -60,6 +60,9 @@ Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
 *AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
+*BillingApi* | [**getEntitlements**](doc//BillingApi.md#getentitlements) | **GET** /billing/entitlements | Get current user entitlements
+*BillingApi* | [**verifyAppleReceipt**](doc//BillingApi.md#verifyapplereceipt) | **POST** /billing/apple/verify | Verify Apple App Store Receipt
+*BillingApi* | [**verifyGooglePurchase**](doc//BillingApi.md#verifygooglepurchase) | **POST** /billing/google/verify | Verify Google Play Purchase
 *IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
 *OfflineApi* | [**buildOfflineBundle**](doc//OfflineApi.md#buildofflinebundle) | **POST** /offline/bundles:build | Enqueue Offline Bundle Build
 *OfflineApi* | [**getOfflineBundleStatus**](doc//OfflineApi.md#getofflinebundlestatus) | **GET** /offline/bundles/{job_id} | Get Bundle Job Status
@@ -75,6 +78,7 @@ Class | Method | HTTP request | Description
  - [BuildOfflineBundle202Response](doc//BuildOfflineBundle202Response.md)
  - [BuildOfflineBundleRequest](doc//BuildOfflineBundleRequest.md)
  - [City](doc//City.md)
+ - [EntitlementGrantRead](doc//EntitlementGrantRead.md)
  - [GetDeletionStatus200Response](doc//GetDeletionStatus200Response.md)
  - [IngestionRunRead](doc//IngestionRunRead.md)
  - [Media](doc//Media.md)
@@ -84,9 +88,12 @@ Class | Method | HTTP request | Description
  - [OpsConfigCheckGet200Response](doc//OpsConfigCheckGet200Response.md)
  - [OpsConfigCheckGet200ResponseYOOKASSA](doc//OpsConfigCheckGet200ResponseYOOKASSA.md)
  - [PoiDetail](doc//PoiDetail.md)
+ - [PurchaseVerifyResponse](doc//PurchaseVerifyResponse.md)
  - [RequestDeletion202Response](doc//RequestDeletion202Response.md)
  - [RequestDeletionRequest](doc//RequestDeletionRequest.md)
  - [TourSnippet](doc//TourSnippet.md)
+ - [VerifyAppleReceiptRequest](doc//VerifyAppleReceiptRequest.md)
+ - [VerifyGooglePurchaseRequest](doc//VerifyGooglePurchaseRequest.md)
 
 
 ## Documentation For Authorization

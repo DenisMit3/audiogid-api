@@ -13,9 +13,19 @@ part of openapi.api;
 class OfflineJobReadResult {
   /// Returns a new [OfflineJobReadResult] instance.
   OfflineJobReadResult({
+    this.bundleUrl,
     this.manifestUrl,
     this.contentHash,
+    this.zipSizeBytes,
   });
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? bundleUrl;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -33,22 +43,39 @@ class OfflineJobReadResult {
   ///
   String? contentHash;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  int? zipSizeBytes;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is OfflineJobReadResult &&
+    other.bundleUrl == bundleUrl &&
     other.manifestUrl == manifestUrl &&
-    other.contentHash == contentHash;
+    other.contentHash == contentHash &&
+    other.zipSizeBytes == zipSizeBytes;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
+    (bundleUrl == null ? 0 : bundleUrl!.hashCode) +
     (manifestUrl == null ? 0 : manifestUrl!.hashCode) +
-    (contentHash == null ? 0 : contentHash!.hashCode);
+    (contentHash == null ? 0 : contentHash!.hashCode) +
+    (zipSizeBytes == null ? 0 : zipSizeBytes!.hashCode);
 
   @override
-  String toString() => 'OfflineJobReadResult[manifestUrl=$manifestUrl, contentHash=$contentHash]';
+  String toString() => 'OfflineJobReadResult[bundleUrl=$bundleUrl, manifestUrl=$manifestUrl, contentHash=$contentHash, zipSizeBytes=$zipSizeBytes]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.bundleUrl != null) {
+      json[r'bundle_url'] = this.bundleUrl;
+    } else {
+      json[r'bundle_url'] = null;
+    }
     if (this.manifestUrl != null) {
       json[r'manifest_url'] = this.manifestUrl;
     } else {
@@ -58,6 +85,11 @@ class OfflineJobReadResult {
       json[r'content_hash'] = this.contentHash;
     } else {
       json[r'content_hash'] = null;
+    }
+    if (this.zipSizeBytes != null) {
+      json[r'zip_size_bytes'] = this.zipSizeBytes;
+    } else {
+      json[r'zip_size_bytes'] = null;
     }
     return json;
   }
@@ -81,8 +113,10 @@ class OfflineJobReadResult {
       }());
 
       return OfflineJobReadResult(
+        bundleUrl: mapValueOfType<String>(json, r'bundle_url'),
         manifestUrl: mapValueOfType<String>(json, r'manifest_url'),
         contentHash: mapValueOfType<String>(json, r'content_hash'),
+        zipSizeBytes: mapValueOfType<int>(json, r'zip_size_bytes'),
       );
     }
     return null;

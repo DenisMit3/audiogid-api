@@ -188,6 +188,8 @@ class ApiClient {
           return BuildOfflineBundleRequest.fromJson(value);
         case 'City':
           return City.fromJson(value);
+        case 'EntitlementGrantRead':
+          return EntitlementGrantRead.fromJson(value);
         case 'GetDeletionStatus200Response':
           return GetDeletionStatus200Response.fromJson(value);
         case 'IngestionRunRead':
@@ -206,12 +208,18 @@ class ApiClient {
           return OpsConfigCheckGet200ResponseYOOKASSA.fromJson(value);
         case 'PoiDetail':
           return PoiDetail.fromJson(value);
+        case 'PurchaseVerifyResponse':
+          return PurchaseVerifyResponse.fromJson(value);
         case 'RequestDeletion202Response':
           return RequestDeletion202Response.fromJson(value);
         case 'RequestDeletionRequest':
           return RequestDeletionRequest.fromJson(value);
         case 'TourSnippet':
           return TourSnippet.fromJson(value);
+        case 'VerifyAppleReceiptRequest':
+          return VerifyAppleReceiptRequest.fromJson(value);
+        case 'VerifyGooglePurchaseRequest':
+          return VerifyGooglePurchaseRequest.fromJson(value);
         default:
           dynamic match;
           if (value is List && (match = _regList.firstMatch(targetType)?.group(1)) != null) {

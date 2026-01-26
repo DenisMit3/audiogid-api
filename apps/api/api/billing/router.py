@@ -52,21 +52,17 @@ async def _grant_entitlement(
     product_id: str, 
     device_anon_id: str,
     trace_id: str
-) -> EntitlementGrant:
+) -> tuple[EntitlementGrant, bool]:
     """
-    Maps SKU -> Entitlement and grants it. Idempotent.
+    Maps SKU -> Entitlement and grants it. Idempotent and race-safe.
+    Returns: (grant, is_new) - is_new=False means idempotent hit.
     """
+    from sqlalchemy.exc import IntegrityError
     
     # 1. Resolve SKU to Entitlement
-    # MVP: Simple mapping convention or DB lookup
-    # Assumption: product_id MATCHES entitlement slug for now, or we have a map.
-    # We will try to find Entitlement by slug == product_id.
-    
     entitlement = session.exec(select(Entitlement).where(Entitlement.slug == product_id)).first()
     if not entitlement:
-        # Fallback: maybe internal map if stores use different IDs than our internal slugs
-        # e.g. "com.audiogid.kaliningrad.full" -> "kaliningrad_city_access"
-        # For Day 1, we assume 1:1 or manual map here
+        # Fallback mapping for store SKUs
         if "kaliningrad_city" in product_id:
              entitlement = session.exec(select(Entitlement).where(Entitlement.slug == "kaliningrad_city_access")).first()
         
@@ -74,17 +70,7 @@ async def _grant_entitlement(
         logger.error(f"[{trace_id}] Unknown Product ID: {product_id}")
         raise ValueError(f"Unknown Product ID: {product_id}")
 
-    # 2. Check Idempotency (Existing grant for this transaction)
-    existing = session.exec(select(EntitlementGrant).where(
-        EntitlementGrant.source == source,
-        EntitlementGrant.source_ref == source_ref
-    )).first()
-    
-    if existing:
-        logger.info(f"[{trace_id}] Grant already exists: {existing.id}")
-        return existing
-        
-    # 3. Create Grant
+    # 2. Try to create grant (race-safe via DB unique constraint)
     grant = EntitlementGrant(
         device_anon_id=device_anon_id,
         entitlement_id=entitlement.id,
@@ -92,21 +78,53 @@ async def _grant_entitlement(
         source_ref=source_ref,
         granted_at=datetime.datetime.utcnow()
     )
-    session.add(grant)
     
-    # 4. Audit Log
-    audit = AuditLog(
-        action="ENTITLEMENT_GRANTED",
-        target_id=grant.id,
-        actor_type=source,
-        actor_fingerprint=source_ref[:10], # partial ref
-        trace_id=trace_id
-    )
-    session.add(audit)
-    
-    session.commit()
-    session.refresh(grant)
-    return grant
+    try:
+        session.add(grant)
+        session.flush()  # Trigger constraint check before commit
+        
+        # Success: new grant created
+        audit = AuditLog(
+            action="ENTITLEMENT_GRANTED",
+            target_id=grant.id,
+            actor_type=source,
+            actor_fingerprint=source_ref[:10],
+            trace_id=trace_id
+        )
+        session.add(audit)
+        session.commit()
+        session.refresh(grant)
+        logger.info(f"[{trace_id}] New grant created: {grant.id}")
+        return grant, True
+        
+    except IntegrityError:
+        # Unique constraint violation: grant already exists
+        session.rollback()
+        
+        # Fetch existing grant
+        existing = session.exec(select(EntitlementGrant).where(
+            EntitlementGrant.source == source,
+            EntitlementGrant.source_ref == source_ref
+        )).first()
+        
+        if existing:
+            # Audit idempotent hit
+            audit = AuditLog(
+                action="ENTITLEMENT_GRANT_IDEMPOTENT_HIT",
+                target_id=existing.id,
+                actor_type=source,
+                actor_fingerprint=source_ref[:10],
+                trace_id=trace_id
+            )
+            session.add(audit)
+            session.commit()
+            logger.info(f"[{trace_id}] Idempotent hit, existing grant: {existing.id}")
+            return existing, False
+        else:
+            # Should not happen, but fail-safe
+            logger.error(f"[{trace_id}] Integrity error but no existing grant found")
+            raise ValueError("Grant conflict but no existing record")
+
 
 
 # --- Endpoints ---
@@ -130,7 +148,7 @@ async def apple_verify(req: AppleVerifyReq, request: Request, session: Session =
         
     # 2. Grant
     try:
-        grant = await _grant_entitlement(
+        grant, is_new = await _grant_entitlement(
             session, 
             source="apple", 
             source_ref=result["transaction_id"], 
@@ -164,7 +182,7 @@ async def google_verify(req: GoogleVerifyReq, request: Request, session: Session
         return {"verified": False, "granted": False, "trace_id": trace_id, "error": result.get("error")}
         
     try:
-        grant = await _grant_entitlement(
+        grant, is_new = await _grant_entitlement(
             session,
             source="google",
             source_ref=result["transaction_id"],

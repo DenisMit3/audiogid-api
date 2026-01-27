@@ -11,8 +11,8 @@ import httpx
 import zipfile
 import asyncio
 
-from ..models import Job, City, Poi, Tour
-from ..config import config
+from ..core.models import Job, City, Poi, Tour
+from ..core.config import config
 
 async def process_offline_bundle(session: Session, job: Job):
     """

@@ -88,8 +88,16 @@ curl -I -H "If-None-Match: [ETag_из_предыдущего_ответа]" http
 App Store Review Guideline 3.1.1 требует наличия функции "Restore Purchases".
 1. Приложение вызывает `POST /v1/billing/restore`.
    - Apple: передать `apple_receipt` (latest).
-   - Google: передать `google_purchase_token` и `product_id` (так как Google Restore требует токен для каждой покупки).
+   - Google: передать `google_purchases` (array) для батч-рестора. Legacy `google_purchase_token` поддерживается, но deprecated.
 2. Сервер ставит задачу в очередь (Async Job).
 3. Воркер проверяет Receipt/Token в сторе, запрашивает **полную историю транзакций** (для Apple).
 4. Создает гранты для *всех* найденных валидных покупок (используя идемпотентность для пропуска существующих).
+   - При сбое валидации (или отсутствии credentials) worker НЕ падает. Job завершается со статусом `COMPLETED`, но `failed_count > 0` и ошибки в массиве `items`.
 5. Результат доступен через поллинг `GET /v1/billing/restore/{job_id}`.
+
+### 5. Config Fail-Fast Behavior (PR-47)
+API стартует быстро (без проверки внешних сервисов). Проверка происходит при вызове эндпоинта.
+- **YooKassa**: Если `YOOKASSA_*` переменные не заданы:
+  - Webhook или Payment Endpoint вернет `503 Service Unavailable`.
+  - В `detail` будет указано, какие переменные отсутствуют (без значений).
+

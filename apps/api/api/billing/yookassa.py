@@ -30,7 +30,7 @@ async def verify_webhook_authenticity(key: str = Security(webhook_key_header)):
     """
     if not config.YOOKASSA_WEBHOOK_SECRET:
          logger.error("CRITICAL: YOOKASSA_WEBHOOK_SECRET is not configured. Webhooks disabled.")
-         raise HTTPException(status_code=500, detail="Configuration Error")
+         raise HTTPException(status_code=503, detail="YooKassa Webhook Secret is not configured")
          
     if key != config.YOOKASSA_WEBHOOK_SECRET:
         logger.warning(f"Unauthorized webhook attempt with key: {key}")

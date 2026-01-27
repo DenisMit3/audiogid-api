@@ -39,6 +39,12 @@ class GoogleVerifyReq(BaseModel):
     idempotency_key: str
     device_anon_id: str
 
+class GooglePurchaseItem(BaseModel):
+    package_name: str | None = None
+    product_id: str | None = None
+    purchase_token: str
+
+
 class EntitlementGrantRead(BaseModel):
     id: uuid.UUID
     entitlement_slug: str
@@ -53,9 +59,10 @@ class RestoreRequest(BaseModel):
     idempotency_key: str
     device_anon_id: str
     apple_receipt: str | None = None
-    google_purchase_token: str | None = None
-    product_id: str | None = None # Optional, helps Google single token verification
-    package_name: str | None = None
+    google_purchases: List[GooglePurchaseItem] | None = None # PR-40 Batch
+    google_purchase_token: str | None = None # Legacy
+    product_id: str | None = None # Legacy
+    package_name: str | None = None # Legacy
 
 # --- Helper Logic ---
 # (Moved to service.py)
@@ -160,6 +167,16 @@ def get_user_entitlements(device_anon_id: str = Query(...), session: Session = D
 async def restore_purchases(req: RestoreRequest, request: Request, session: Session = Depends(get_session)):
     trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
     
+    # Validation (PR-40 Fail Fast)
+    if req.platform == "google":
+        has_batch = bool(req.google_purchases)
+        has_legacy = bool(req.google_purchase_token)
+        if not has_batch and not has_legacy:
+             raise HTTPException(status_code=400, detail="platform=google requires google_purchases (batch) or google_purchase_token")
+    elif req.platform == "apple":
+        if not req.apple_receipt:
+             raise HTTPException(status_code=400, detail="platform=apple requires apple_receipt")
+
     # Check Idempotency (if job with this idempotency key already exists)
     existing_job = session.exec(select(Job).where(Job.idempotency_key == req.idempotency_key)).first()
     

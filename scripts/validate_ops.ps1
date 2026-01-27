@@ -21,20 +21,34 @@ Write-Host "Enqueued: $RespJson"
 # Assume {"job_id":"..." ...}
 if ($RespJson -match '"job_id":"([^"]+)"') {
     $JobId = $matches[1]
-    Write-Host "Polling Job $JobId..."
+    Write-Host "Polling Job $JobId (Max 60s)..."
     
-    for ($i=0; $i -lt 10; $i++) {
+    for ($i=0; $i -lt 30; $i++) {
         Start-Sleep -Seconds 2
         $StatusResp = curl.exe -sS "$BASE/v1/billing/restore/$JobId"
         if ($StatusResp -match '"status":"([^"]+)"') {
             $Status = $matches[1]
-            Write-Host "Status: $Status"
-            if ($Status -eq "COMPLETED" -or $Status -eq "FAILED") {
-                Write-Host "Terminal Result:"
-                Write-Host $StatusResp
-                break
+            Write-Host "[$i] Status: $Status"
+            
+            if ($Status -eq "COMPLETED") {
+                 Write-Host "✅ Validation Passed: Job Completed Successfully."
+                 exit 0
             }
+            if ($Status -eq "FAILED") {
+                 Write-Host "❌ Validation Failed: Job Reported Failure."
+                 Write-Host "Response: $StatusResp"
+                 # Warning: fail-fast smoke test might fail if tokens are invalid, that is acceptable for smoke?
+                 # Actually for smoke test with dummy token, we EXPECT failure or partial failure?
+                 # No, the code catches InvalidToken and logs it but might mark job as partial?
+                 # If job handles exception cleanly, it might be COMPLETED with failed_count > 0.
+                 # Let's inspect final logic.
+                 exit 1
+            }
+        } else {
+             Write-Host "[$i] Status Unknown (Response parse error)"
         }
     }
+    Write-Host "⚠️ Validation Timeout: Job stuck in PENDING/RUNNING > 60s."
+    exit 1
 }
 Write-Host "`nDone."

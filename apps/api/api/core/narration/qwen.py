@@ -18,8 +18,8 @@ async def generate_audio_qwen(text: str) -> bytes | None:
         logger.error("ALIBABA_API_KEY missing - skipping Qwen TTS")
         return None
 
-    # Standard DashScope Synthesis Endpoint
-    url = "https://dashscope.aliyuncs.com/api/v1/services/audio/synthesis/generation"
+    # Standard DashScope Synthesis Endpoint (Configurable for Region: Intl vs CN)
+    url = config.ALIBABA_API_URL
     
     headers = {
         "Authorization": f"Bearer {config.ALIBABA_API_KEY}",

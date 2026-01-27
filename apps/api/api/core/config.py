@@ -17,6 +17,7 @@ class AppConfig:
         self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
         self.OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip()
         self.ALIBABA_API_KEY = (os.getenv("ALIBABA_API_KEY") or "").strip()
+        self.ALIBABA_API_URL = os.getenv("ALIBABA_API_URL", "https://dashscope-intl.aliyuncs.com/api/v1/services/audio/synthesis/generation").strip()
         self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "qwen").strip()
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL")

@@ -6,9 +6,9 @@ class AppConfig:
         self.DATABASE_URL = self._get_required("DATABASE_URL")
         
         # Ingestion Env (Strategy A: Readiness-only check, optional at startup)
-        self.QSTASH_TOKEN = os.getenv("QSTASH_TOKEN")
-        self.QSTASH_CURRENT_SIGNING_KEY = os.getenv("QSTASH_CURRENT_SIGNING_KEY")
-        self.QSTASH_NEXT_SIGNING_KEY = os.getenv("QSTASH_NEXT_SIGNING_KEY")
+        self.QSTASH_TOKEN = (os.getenv("QSTASH_TOKEN") or "").strip()
+        self.QSTASH_CURRENT_SIGNING_KEY = (os.getenv("QSTASH_CURRENT_SIGNING_KEY") or "").strip()
+        self.QSTASH_NEXT_SIGNING_KEY = (os.getenv("QSTASH_NEXT_SIGNING_KEY") or "").strip()
         
         # ADMIN_API_TOKEN is OPTIONAL at startup (fail-closed check at endpoint level)
         self.ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN")

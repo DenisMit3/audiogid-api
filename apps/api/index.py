@@ -10,7 +10,8 @@ from api.core.config import config
 from api.core.middleware_security import SecurityMiddleware
 from api.core.models import Job
 from api.core.database import engine
-from api.core.worker import process_job
+# NOTE: process_job is imported lazily inside job_callback to prevent boot crash
+# from billing module failures (PR-43 fix for PR-42 wrong file)
 
 from api.public import router as public_router
 from api.ingestion import router as ingestion_router
@@ -87,6 +88,8 @@ async def job_callback(request: Request):
         session.add(job)
         session.commit()
         try:
+            # PR-43: Lazy import to prevent boot crash from billing/worker failures
+            from api.core.worker import process_job
             await process_job(session, job) 
             if job.status == "RUNNING": 
                 job.status = "COMPLETED"

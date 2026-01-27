@@ -72,31 +72,31 @@ Destination types:
 - /dl/offline/{bundle_type}/{id}
 
 ## 7) Feature set (required)
-A) City Select
+A) City Select [x] (API only)
 - First run: select city tenant (kaliningrad_city / kaliningrad_oblast). Persist.
 
-B) Tours (primary)
+B) Tours (primary) [~] (API done, Client missing)
 - Featured curated tours (city-scoped).
 - Tour detail: route on map, stops list, duration/distance.
 - Multi-select POI cards + bottom bar “Buy selected”.
 - Buy whole tour bundle discount.
 - Preview first 2 stops free.
 
-C) Catalog
+C) Catalog [~] (API done, Client missing)
 - Categories + search + filters.
 - Multi-select POI cards + bottom bar “Buy selected”.
 - Favorites/bookmarks.
 
-D) Nearby (discovery-only)
+D) Nearby (discovery-only) [~] (API done, Client missing)
 - Map+list; can favorite/add-to-selection; checkout only in Catalog/Tours.
 
-E) POI Detail
+E) POI Detail [~] (API done, Client missing)
 - Photos with credits/license.
 - Sources list.
 - Transcript.
 - Buttons: Preview / Listen (gated) / Ask (gated) / Favorite / Add to selection / Download (gated).
 
-F) Tour Mode (“держит за руку”)
+F) Tour Mode (“держит за руку”) [ ]
 - step-by-step to next point, distance/ETA,
 - auto-play on radius entry,
 - auto-advance,
@@ -104,31 +104,31 @@ F) Tour Mode (“держит за руку”)
 - offline bundle prompt before start,
 - progress + resume.
 
-G) Free Walking Mode (hands-free)
+G) Free Walking Mode (hands-free) [ ]
 - Auto-select nearest POIs + auto-play by proximity.
 - Cooldown/anti-repeat; energy-saving strategy.
 
-H) Museum Mode (QR)
+H) Museum Mode (QR) [ ]
 - QR scan → resolve to POI → play narration.
 - Works offline if downloaded.
 
-I) Itineraries / Routes
+I) Itineraries / Routes [ ]
 - Manual itinerary: select POIs + reorder.
 - Generated itinerary: heuristic MVP allowed.
 - Start itinerary uses Tour Mode engine.
 - Share itinerary deep link.
 - Offline bundle for itinerary.
 
-J) Helpers Nearby
+J) Helpers Nearby [x] (API only)
 - “Полезное рядом” (toilets/drinking_water/cafe; optional pharmacy/transport).
 - One-tap navigate, save for later.
 - Import from OSM.
 
-K) Kids Mode (NOT kids category by default)
+K) Kids Mode (NOT kids category by default) [ ]
 - Toggle “С детьми”: 30–60 sec, проще язык, optional mini-question.
 - Kids Mode не означает, что приложение “для детей” по политике стора; любые внешние ссылки/покупки — за parental gate (если появятся).
 
-L) SOS / Share location
+L) SOS / Share location [ ]
 - SOS: send coordinates/link to trusted contacts (SMS/Telegram).
 - Share trip (non-emergency) with TTL.
 

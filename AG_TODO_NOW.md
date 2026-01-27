@@ -1,28 +1,39 @@
 # Antigravity TODO NOW
 
-## Current State: checkpoint-11
-Store Billing (Verify + Restore) implemented. Google Batch Restore supported.
+## Current State: checkpoint-15 (API Stable)
+- ✅ API is Production Ready (Billing, Ingestion, Workers).
+- ✅ Worker issues resolved (QStash EU, Imports fixed).
+- ❌ **No Mobile App** (Flutter).
+- ❌ **No Auth** (SMS/Telegram).
+- ❌ **No Admin UI** for Content.
 
-## Next PRs (Priority Order)
+## Immediate Roadmap (Priority Order)
 
-### PR #41 — Growth & Attribution (Deep Links + Partner Campaigns)
-**Цель**: Трекинг источников установок и партнерских кампаний.
-- Таблица `partner_campaigns` и `attributions`.
-- Эндпоинт `POST /v1/growth/attribute`.
-- Интеграция с UTM-параметрами и Deep Links.
+### PR #58 — Auth Foundation (SMS + Telegram)
+**Цель**: Безопасная авторизация для Админки и Пользователей.
+- Интеграция SMS.RU (OTP).
+- Интеграция Telegram Login Widget.
+- JWT Session Management (`auth.py`).
+- Эндпоинты `/auth/login/sms`, `/auth/login/telegram`.
 
-### PR #42 — Push Notifications (FCM/APNS)
-**Цель**: Возможность отправки уведомлений пользователям.
-- Регистрация device tokens.
-- Эндпоинт для массовой рассылки (admin).
-- Интеграция с Firebase Cloud Messaging.
+### PR #59 — Admin Panel Content Management
+**Цель**: Интерфейс для наполнения контента (Калининград).
+- UI для списка/редактирования POI.
+- UI для списка/редактирования Туров.
+- Загрузка аудио/фото (Vercel Blob).
+- Интеграция с Auth (доступ только для админов).
 
-## Completed Today (2026-01-26)
-- [x] PR #40: Google Restore Batch (Android)
-- [x] PR #36: Store Billing (Apple/Google Server Verify)
-- [x] PR #38: Billing Idempotency Hardening
-- [x] Checkpoint-11 reached.
+### PR #60 — Flutter App Bootstrap
+**Цель**: Первый запуск мобильного приложения.
+- `flutter create`.
+- Architecture setup (Riverpod/Bloc).
+- API Client integration (`packages/api_client`).
+- Offline-first structure setup (Isar/Hive/SQLite).
 
-## Validation URLs
-- Production: https://audiogid-api.vercel.app/v1/ops/config-check
-- Billing Verify: POST /v1/billing/apple/verify
+## Later
+- PR #61: Deep Links & Attribution.
+- PR #62: Push Notifications.
+- PR #63: QR Mappings + Museum Mode.
+
+## Completed Recently
+- [x] PR #40-#57: Worker Stability, QStash EU Fix, Billing Restore, Import Fixes.

@@ -269,7 +269,8 @@ async def _process_billing_restore(session: Session, job: Job):
     
     # Inputs
     apple_receipt = payload.get("apple_receipt")
-    google_token = payload.get("google_purchase_token")
+    google_token_legacy = payload.get("google_purchase_token")
+    google_purchases = payload.get("google_purchases")
     
     stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "errors": []}
     
@@ -277,87 +278,159 @@ async def _process_billing_restore(session: Session, job: Job):
     from apps.api.api.billing.service import grant_entitlement
     from apps.api.api.billing.apple import restore_apple_receipt
     from apps.api.api.billing.google import verify_google_purchase
+    import hashlib
+
+    def _token_hash(t: str) -> str:
+        return hashlib.sha256(t.encode()).hexdigest()[:8] if t else "null"
 
     try:
         # APPLE PATH
         if (platform == "apple" or platform == "auto") and apple_receipt:
             stats["platform"] = "apple"
-            restore_result = await restore_apple_receipt(apple_receipt)
-            
-            if not restore_result.get("verified"):
-                 job.status = "FAILED"
-                 job.error = restore_result.get("error")
-                 return
-                 
-            transactions = restore_result.get("transactions", [])
-            for tx in transactions:
-                try:
-                    product_id = tx.get("product_id")
-                    tx_id = tx.get("transaction_id")
-                    
-                    # Grant
-                    _, is_new = await grant_entitlement(
-                        session, 
-                        source="apple", 
-                        source_ref=tx_id, 
-                        product_id=product_id, 
-                        device_anon_id=device_anon_id, 
-                        trace_id=f"{trace_id}:{tx_id}"
-                    )
-                    
-                    if is_new: stats["grants_created"] += 1
-                    else: stats["grants_existing"] += 1
-                    
-                except ValueError:
-                    # Unknown product ID - ignore legacy products not in our DB
-                    continue
-                except Exception as e:
-                    stats["errors"].append(f"Tx {tx.get('transaction_id')}: {str(e)}")
-            
-        # GOOGLE PATH
-        elif (platform == "google" or platform == "auto") and google_token:
-             # Google restore usually implies verifying "current" purchases sent by client
-             # Currently we only support single token verification in this flow ( MVP)
-             # To support MULTIPLE tokens, client should send array.
-             # If OpenAPI defines singular, we handle singular.
-             stats["platform"] = "google"
-             # Need package_name and product_id? 
-             # Google API requires packageName and productId to verify token.
-             # If Payload doesn't have product_id, we can't verify easily unless we decode the token (which is opaque).
-             # Wait, verify_google_purchase takes (package, product, token).
-             # If the client sends just token, we are stuck.
-             # BUT: Restore logic usually implies the client sends "I have purchase with token T and SKU S".
-             # Our OpenAPI schema for restore has `google_purchase_token` but NOT `product_id`.
-             # This is a flaw in my OpenAPI design in step A.
-             # FIX: I will assume `product_id` is passed in payload for Google, OR fail-fast.
-             # ACTUALLY: Google BillingClient `queryPurchases` returns (productId, purchaseToken).
-             # So client KNOWS the product_id.
-             # I should have added `product_id` to Restore schema? Or `google_purchases` list?
-             # Let's fix OpenAPI in next step if needed, or rely on payload extras.
-             # For now, if missing product_id, we log error.
-             
-             product_id = payload.get("product_id")
-             package_name = payload.get("package_name") or "app.audiogid.kaliningrad"
-             
-             if not product_id:
-                 job.status = "FAILED"
-                 job.error = "Google restore requires product_id"
-                 return
+            try:
+                restore_result = await restore_apple_receipt(apple_receipt)
+                
+                if not restore_result.get("verified"):
+                     job.status = "FAILED"
+                     job.error = restore_result.get("error")
+                     return
+                     
+                transactions = restore_result.get("transactions", [])
+                for tx in transactions:
+                    try:
+                        product_id = tx.get("product_id")
+                        tx_id = tx.get("transaction_id")
+                        
+                        # Grant
+                        _, is_new = await grant_entitlement(
+                            session, 
+                            source="apple", 
+                            source_ref=tx_id, 
+                            product_id=product_id, 
+                            device_anon_id=device_anon_id, 
+                            trace_id=f"{trace_id}:{tx_id}"
+                        )
+                        
+                        if is_new: stats["grants_created"] += 1
+                        else: stats["grants_existing"] += 1
+                        
+                    except ValueError:
+                        # Unknown product ID - ignore legacy products not in our DB
+                        continue
+                    except Exception as e:
+                        stats["errors"].append(f"Tx {tx.get('transaction_id')}: {str(e)}")
+            except Exception as e:
+                # Catch top-level apple errors (e.g. verify_apple_receipt crash)
+                job.status = "FAILED"
+                job.error = f"Apple verify failed: {str(e)}"
+                return
 
-             result = await verify_google_purchase(package_name, product_id, google_token)
-             if result.get("verified"):
-                  _, is_new = await grant_entitlement(session, "google", result["transaction_id"], product_id, device_anon_id, trace_id)
-                  if is_new: stats["grants_created"] += 1
-                  else: stats["grants_existing"] += 1
-             else:
-                  job.status = "FAILED"
-                  job.error = result.get("error")
-                  return
+        # GOOGLE PATH (PR-40 + PR-47 Hardened)
+        elif (platform == "google" or platform == "auto") and (google_purchases or google_token_legacy):
+             stats["platform"] = "google"
+             
+             items_to_process = []
+             
+             if google_purchases:
+                 # PR-40: New batch format
+                 for gp in google_purchases:
+                     items_to_process.append({
+                         "package_name": gp.get("package_name"),
+                         "product_id": gp.get("product_id"),
+                         "purchase_token": gp.get("purchase_token")
+                     })
+             elif google_token_legacy:
+                 # Deprecated legacy path
+                 product_id = payload.get("product_id")
+                 if not product_id:
+                     job.status = "FAILED"
+                     job.error = "Google restore: product_id required for legacy single token"
+                     return
+                 items_to_process.append({
+                     "package_name": payload.get("package_name") or "app.audiogid.kaliningrad",
+                     "product_id": product_id,
+                     "purchase_token": google_token_legacy
+                 })
+             
+             # Process Batch
+             for item in items_to_process:
+                 pkg = item.get("package_name")
+                 prod = item.get("product_id")
+                 token = item.get("purchase_token")
+                 
+                 th = _token_hash(token)
+                 
+                 item_result = {
+                     "product_id": prod,
+                     "status": "failed", 
+                     "error_code": None,
+                     "source_ref_hash_prefix": th
+                 }
+                 
+                 try:
+                     # PR-47: Harden against verification crashes
+                     # verify_google_purchase handles usage of GOOGLE_SERVICE_ACCOUNT_JSON inside
+                     result = await verify_google_purchase(pkg, prod, token)
+                     
+                     if result.get("verified"):
+                         order_id = result.get("transaction_id")
+                         # Derive stable source_ref: order_id is best, fallback to token hash
+                         # Note: Google tokens are long-lived but can rotate per user/device sometimes?
+                         # Usually order_id is the unique immutable ref.
+                         source_ref = order_id if order_id else f"token_hash:{hashlib.sha256(token.encode()).hexdigest()}"
+                         
+                         _, is_new = await grant_entitlement(
+                             session, 
+                             source="google",
+                             source_ref=source_ref,
+                             product_id=prod,
+                             device_anon_id=device_anon_id,
+                             trace_id=f"{trace_id}:{th}"
+                         )
+                         
+                         item_result["order_id"] = order_id
+                         
+                         if is_new:
+                             stats["grants_created"] += 1
+                             item_result["status"] = "created"
+                             # Audit successful verification
+                             session.add(AuditLog(
+                                 action="BILLING_RESTORE_ITEM_VERIFIED",
+                                 target_id=job.id,
+                                 actor_type="google",
+                                 actor_fingerprint=th,
+                                 trace_id=trace_id
+                             ))
+                         else:
+                             stats["grants_existing"] += 1
+                             item_result["status"] = "existing"
+                             
+                     else:
+                         stats["failed_count"] += 1
+                         item_result["error_code"] = (result.get("error") or "verify_failed")[:100]
+                         # Audit failure
+                         session.add(AuditLog(
+                             action="BILLING_RESTORE_ITEM_FAILED",
+                             target_id=job.id,
+                             actor_type="google",
+                             actor_fingerprint=th,
+                             trace_id=trace_id
+                         ))
+                         
+                 except Exception as e:
+                     # Item-level crash handler
+                     stats["failed_count"] += 1
+                     safe_err = str(e)[:150]
+                     item_result["error_code"] = safe_err
+                     # Log properly
+                     stats["errors"].append(f"Token {th}: {safe_err}")
+
+                 stats["items"].append(item_result)
 
         else:
-            if not apple_receipt and not google_token:
+            if not apple_receipt and not google_token_legacy and not google_purchases:
                  job.status = "FAILED"
-                 job.error = "No receipt or token provided"
+                 job.error = "No receipt or google purchases provided"
                  return
 
         stats["grants_total"] = stats["grants_created"] + stats["grants_existing"]
@@ -376,7 +449,9 @@ async def _process_billing_restore(session: Session, job: Job):
         session.commit()
 
     except Exception as e:
+        # Job-level crash handler
         job.status = "FAILED"
         job.error = str(e)
         session.add(job)
         session.commit()
+

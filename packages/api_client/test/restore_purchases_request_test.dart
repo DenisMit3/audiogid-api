@@ -37,19 +37,25 @@ void main() {
       // TODO
     });
 
-    // A Google purchase token (optional if server has none)
+    // List of Google purchases to restore (Batch mode)
+    // List<GooglePurchaseItem> googlePurchases (default value: const [])
+    test('to test the property `googlePurchases`', () async {
+      // TODO
+    });
+
+    // DEPRECATED: Use google_purchases
     // String googlePurchaseToken
     test('to test the property `googlePurchaseToken`', () async {
       // TODO
     });
 
-    // Product ID (Required for Google single-token verify)
+    // DEPRECATED: Use google_purchases
     // String productId
     test('to test the property `productId`', () async {
       // TODO
     });
 
-    // Package Name (Optional, defaults to app)
+    // DEPRECATED: Use google_purchases
     // String packageName
     test('to test the property `packageName`', () async {
       // TODO

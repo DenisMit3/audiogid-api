@@ -12,9 +12,10 @@ Name | Type | Description | Notes
 **idempotencyKey** | **String** |  | 
 **deviceAnonId** | **String** |  | 
 **appleReceipt** | **String** | Latest Apple App Store receipt (base64) | [optional] 
-**googlePurchaseToken** | **String** | A Google purchase token (optional if server has none) | [optional] 
-**productId** | **String** | Product ID (Required for Google single-token verify) | [optional] 
-**packageName** | **String** | Package Name (Optional, defaults to app) | [optional] 
+**googlePurchases** | [**List<GooglePurchaseItem>**](GooglePurchaseItem.md) | List of Google purchases to restore (Batch mode) | [optional] [default to const []]
+**googlePurchaseToken** | **String** | DEPRECATED: Use google_purchases | [optional] 
+**productId** | **String** | DEPRECATED: Use google_purchases | [optional] 
+**packageName** | **String** | DEPRECATED: Use google_purchases | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

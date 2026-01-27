@@ -10,6 +10,7 @@ doc/City.md
 doc/EntitlementGrantRead.md
 doc/GetDeletionStatus200Response.md
 doc/GetOpsCommit200Response.md
+doc/GooglePurchaseItem.md
 doc/IngestionApi.md
 doc/IngestionRunRead.md
 doc/JobEnqueueResponse.md
@@ -27,6 +28,7 @@ doc/PublicApi.md
 doc/PurchaseVerifyResponse.md
 doc/RequestDeletion202Response.md
 doc/RequestDeletionRequest.md
+doc/RestoreItemResult.md
 doc/RestoreJobRead.md
 doc/RestoreJobReadResult.md
 doc/RestorePurchasesRequest.md
@@ -55,6 +57,7 @@ lib/model/city.dart
 lib/model/entitlement_grant_read.dart
 lib/model/get_deletion_status200_response.dart
 lib/model/get_ops_commit200_response.dart
+lib/model/google_purchase_item.dart
 lib/model/ingestion_run_read.dart
 lib/model/job_enqueue_response.dart
 lib/model/media.dart
@@ -68,6 +71,7 @@ lib/model/poi_detail.dart
 lib/model/purchase_verify_response.dart
 lib/model/request_deletion202_response.dart
 lib/model/request_deletion_request.dart
+lib/model/restore_item_result.dart
 lib/model/restore_job_read.dart
 lib/model/restore_job_read_result.dart
 lib/model/restore_purchases_request.dart
@@ -83,6 +87,7 @@ test/city_test.dart
 test/entitlement_grant_read_test.dart
 test/get_deletion_status200_response_test.dart
 test/get_ops_commit200_response_test.dart
+test/google_purchase_item_test.dart
 test/ingestion_api_test.dart
 test/ingestion_run_read_test.dart
 test/job_enqueue_response_test.dart
@@ -100,6 +105,7 @@ test/public_api_test.dart
 test/purchase_verify_response_test.dart
 test/request_deletion202_response_test.dart
 test/request_deletion_request_test.dart
+test/restore_item_result_test.dart
 test/restore_job_read_result_test.dart
 test/restore_job_read_test.dart
 test/restore_purchases_request_test.dart

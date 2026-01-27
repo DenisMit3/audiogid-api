@@ -5,8 +5,26 @@ from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 
 from ..core.models import EntitlementGrant, Entitlement, AuditLog
+from ..core.config import config
+from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
+
+def require_yookassa_config():
+    """
+    Fail-fast helper for endpoints that require YooKassa to be configured.
+    Returns 503 instead of 500 if env vars are missing.
+    """
+    missing = []
+    if not config.YOOKASSA_SHOP_ID: missing.append("YOOKASSA_SHOP_ID")
+    if not config.YOOKASSA_SECRET_KEY: missing.append("YOOKASSA_SECRET_KEY")
+    # WEBHOOK_SECRET is technically only for webhooks, but let's enforce all for consistency if requested
+    
+    if missing:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"YooKassa is not configured (missing: {', '.join(missing)})"
+        )
 
 async def grant_entitlement(
     session: Session, 

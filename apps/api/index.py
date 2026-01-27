@@ -50,10 +50,11 @@ admin_tours_router = safe_import_router("api.admin_tours")
 purchases_router = safe_import_router("api.purchases")
 deletion_router = safe_import_router("api.deletion")
 yookassa_router = safe_import_router("api.billing.yookassa")
+billing_router = safe_import_router("api.billing.router")  # PR-46: Restore missing billing router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.12.0",
+    version="1.12.1",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -64,7 +65,7 @@ app.add_middleware(SecurityMiddleware)
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.12.0"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.12.1"}
 
 # Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
@@ -76,6 +77,7 @@ if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if yookassa_router: app.include_router(yookassa_router)
+if billing_router: app.include_router(billing_router, prefix="/v1")
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,

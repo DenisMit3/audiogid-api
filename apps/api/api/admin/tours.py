@@ -1,28 +1,15 @@
 from datetime import datetime
 import uuid
-import hashlib
-from fastapi import APIRouter, Depends, Query, HTTPException, Header, Response
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session, select
 from pydantic import BaseModel
-from typing import List
 
-from .core.database import engine
-from .core.models import Tour, TourSource, TourMedia, TourItem, Poi, AuditLog
-from .core.config import config
+from ..core.database import engine
+from ..core.models import Tour, TourSource, TourMedia, TourItem, Poi, AuditLog, User
+from ..auth.deps import get_current_admin, get_session
 
 router = APIRouter()
-
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-def verify_admin_token(x_admin_token: str = Header(...)):
-    if x_admin_token != config.ADMIN_API_TOKEN:
-        raise HTTPException(status_code=403, detail="Invalid Admin Token")
-    return x_admin_token
-
-def get_token_fingerprint(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
 
 # --- Input Models ---
 class CreateTourReq(BaseModel):
@@ -54,15 +41,28 @@ class PublishCheckResult(BaseModel):
 
 # --- Endpoints ---
 
-@router.post("/admin/tours", status_code=201, dependencies=[Depends(verify_admin_token)])
-def create_tour(req: CreateTourReq, session: Session = Depends(get_session)):
+@router.get("/admin/tours", response_model=List[Tour]) # Simple list
+def list_tours(
+    city_slug: Optional[str] = None,
+    session: Session = Depends(get_session),
+    admin: User = Depends(get_current_admin)
+):
+    query = select(Tour)
+    if city_slug:
+        query = query.where(Tour.city_slug == city_slug)
+    query = query.order_by(Tour.updated_at.desc())
+    return session.exec(query).all()
+
+
+@router.post("/admin/tours", status_code=201)
+def create_tour(req: CreateTourReq, session: Session = Depends(get_session), admin: User = Depends(get_current_admin)):
     tour = Tour(city_slug=req.city_slug, title_ru=req.title_ru, description_ru=req.description_ru, duration_minutes=req.duration_minutes)
     session.add(tour)
     session.commit()
     return {"id": str(tour.id), "status": "draft"}
 
-@router.post("/admin/tours/{tour_id}/sources", status_code=201, dependencies=[Depends(verify_admin_token)])
-def add_tour_source(tour_id: uuid.UUID, req: CreateSourceReq, session: Session = Depends(get_session)):
+@router.post("/admin/tours/{tour_id}/sources", status_code=201)
+def add_tour_source(tour_id: uuid.UUID, req: CreateSourceReq, session: Session = Depends(get_session), admin: User = Depends(get_current_admin)):
     tour = session.get(Tour, tour_id)
     if not tour: raise HTTPException(status_code=404, detail="Tour not found")
     source = TourSource(tour_id=tour_id, name=req.name, url=req.url)
@@ -70,8 +70,8 @@ def add_tour_source(tour_id: uuid.UUID, req: CreateSourceReq, session: Session =
     session.commit()
     return {"status": "created", "id": str(source.id)}
 
-@router.post("/admin/tours/{tour_id}/media", status_code=201, dependencies=[Depends(verify_admin_token)])
-def add_tour_media(tour_id: uuid.UUID, req: CreateMediaReq, session: Session = Depends(get_session)):
+@router.post("/admin/tours/{tour_id}/media", status_code=201)
+def add_tour_media(tour_id: uuid.UUID, req: CreateMediaReq, session: Session = Depends(get_session), admin: User = Depends(get_current_admin)):
     tour = session.get(Tour, tour_id)
     if not tour: raise HTTPException(status_code=404, detail="Tour not found")
     media = TourMedia(tour_id=tour_id, url=req.url, media_type=req.media_type, license_type=req.license_type, author=req.author, source_page_url=req.source_page_url)
@@ -79,8 +79,8 @@ def add_tour_media(tour_id: uuid.UUID, req: CreateMediaReq, session: Session = D
     session.commit()
     return {"status": "created", "id": str(media.id)}
 
-@router.post("/admin/tours/{tour_id}/items", status_code=201, dependencies=[Depends(verify_admin_token)])
-def add_tour_item(tour_id: uuid.UUID, req: CreateItemReq, session: Session = Depends(get_session)):
+@router.post("/admin/tours/{tour_id}/items", status_code=201)
+def add_tour_item(tour_id: uuid.UUID, req: CreateItemReq, session: Session = Depends(get_session), admin: User = Depends(get_current_admin)):
     tour = session.get(Tour, tour_id)
     if not tour: raise HTTPException(status_code=404, detail="Tour not found")
     poi = session.get(Poi, req.poi_id)
@@ -90,8 +90,8 @@ def add_tour_item(tour_id: uuid.UUID, req: CreateItemReq, session: Session = Dep
     session.commit()
     return {"status": "created", "id": str(item.id)}
 
-@router.get("/admin/tours/{tour_id}/publish_check", dependencies=[Depends(verify_admin_token)], response_model=PublishCheckResult)
-def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_session)):
+@router.get("/admin/tours/{tour_id}/publish_check", response_model=PublishCheckResult)
+def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_session), admin: User = Depends(get_current_admin)):
     tour = session.get(Tour, tour_id)
     if not tour: raise HTTPException(status_code=404, detail="Tour not found")
     
@@ -109,20 +109,17 @@ def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_sess
             count_valid_media += 1
     if count_valid_media == 0:
         issues.append("Missing Licensed Media")
-        missing_requirements.append("media") # means tour-level media
+        missing_requirements.append("media")
         
     if len(tour.items) == 0:
         issues.append("Tour has no items")
         missing_requirements.append("items")
     else:
-        # Check recursive publish AND Audio
         for item in tour.items:
             if item.poi and not item.poi.published_at:
                 issues.append(f"Contains unpublished POI: {item.poi_id}")
                 unpublished_poi_ids.append(str(item.poi_id))
             
-            # PR-9: Strict Audio Gate
-            # Every linked POI must have >= 1 Audio
             if item.poi:
                 has_audio = False
                 for m in item.poi.media:
@@ -141,8 +138,8 @@ def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_sess
     )
 
 @router.post("/admin/tours/{tour_id}/publish")
-def publish_tour(response: Response, tour_id: uuid.UUID, token: str = Depends(verify_admin_token), session: Session = Depends(get_session)):
-    check = check_publish_status(tour_id, session)
+def publish_tour(response: Response, tour_id: uuid.UUID, admin: User = Depends(get_current_admin), session: Session = Depends(get_session)):
+    check = check_publish_status(tour_id, session, admin)
     if not check.can_publish:
         response.status_code = 422
         return {
@@ -155,45 +152,26 @@ def publish_tour(response: Response, tour_id: uuid.UUID, token: str = Depends(ve
     tour = session.get(Tour, tour_id)
     if tour.published_at: return {"status": "already_published"}
     tour.published_at = datetime.utcnow()
-    fingerprint = get_token_fingerprint(token)
-    audit = AuditLog(action="PUBLISH_TOUR", target_id=tour_id, actor_type="admin_token", actor_fingerprint=fingerprint)
+    
+    audit = AuditLog(action="PUBLISH_TOUR", target_id=tour_id, actor_type="admin_user", actor_fingerprint=str(admin.id))
     session.add(audit)
     session.add(tour)
     session.commit()
     return {"status": "published"}
 
 @router.post("/admin/tours/{tour_id}/unpublish")
-def unpublish_tour(tour_id: uuid.UUID, token: str = Depends(verify_admin_token), session: Session = Depends(get_session)):
+def unpublish_tour(
+    tour_id: uuid.UUID, 
+    admin: User = Depends(get_current_admin), 
+    session: Session = Depends(get_session)
+):
     tour = session.get(Tour, tour_id)
     if not tour: raise HTTPException(status_code=404, detail="Tour not found")
     if not tour.published_at: return {"status": "already_unpublished"}
+    
     tour.published_at = None
-    fingerprint = get_token_fingerprint(token)
-    audit = AuditLog(action="UNPUBLISH_TOUR", target_id=tour_id, actor_type="admin_token", actor_fingerprint=fingerprint)
+    audit = AuditLog(action="UNPUBLISH_TOUR", target_id=tour_id, actor_type="admin_user", actor_fingerprint=str(admin.id))
     session.add(audit)
-    session.add(tour)
     session.add(tour)
     session.commit()
     return {"status": "unpublished"}
-
-@router.get("/admin/pois", dependencies=[Depends(verify_admin_token)])
-def list_pois(
-    limit: int = 50,
-    offset: int = 0,
-    has_wikidata: bool = False,
-    session: Session = Depends(get_session)
-):
-    query = select(Poi)
-    if has_wikidata:
-        query = query.where(Poi.wikidata_id != None)
-    
-    query = query.limit(limit).offset(offset)
-    pois = session.exec(query).all()
-    
-    # Return explicit fields including wikidata_id
-    res = []
-    for p in pois:
-        d = p.model_dump(include={"id", "title_ru", "wikidata_id", "confidence_score", "osm_id", "preview_audio_url", "preview_bullets"})
-        d["media"] = [m.model_dump() for m in p.media]
-        res.append(d)
-    return res

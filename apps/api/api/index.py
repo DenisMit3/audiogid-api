@@ -46,10 +46,16 @@ except Exception as e:
     publish_router = None
 
 try:
-    from .admin_tours import router as admin_tours_router
+    from .admin.tours import router as admin_tours_router # PR-59 Refactor
 except Exception as e:
     logger.error(f"Failed to import admin_tours router: {e}")
     admin_tours_router = None
+
+try:
+    from .admin.poi import router as admin_pois_router # PR-59 New
+except Exception as e:
+    logger.error(f"Failed to import admin_pois router: {e}")
+    admin_pois_router = None
 
 try:
     from .purchases import router as purchases_router
@@ -108,6 +114,7 @@ if ingestion_router: app.include_router(ingestion_router, prefix="/v1")
 if map_router: app.include_router(map_router, prefix="/v1")
 if publish_router: app.include_router(publish_router, prefix="/v1")
 if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
+if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")

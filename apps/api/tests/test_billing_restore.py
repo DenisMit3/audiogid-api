@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 import json
 from unittest.mock import AsyncMock, patch
 from sqlmodel import Session
@@ -37,7 +37,7 @@ async def test_billing_restore_apple_flow(db_session: Session):
     
     # Mock External Specifics
     # We patch at the import level where worker.py imports them
-    with patch("apps.api.api.core.worker.restore_apple_receipt", new_callable=AsyncMock) as mock_restore:
+    with patch("apps.api.api.billing.apple.restore_apple_receipt", new_callable=AsyncMock) as mock_restore:
         mock_restore.return_value = MOCK_APPLE_RESPONSE
         
         # Run Worker Logic Directly
@@ -78,7 +78,7 @@ async def test_billing_restore_idempotency_run(db_session: Session):
         ]
     }
     
-    with patch("apps.api.api.core.worker.restore_apple_receipt", new_callable=AsyncMock) as mock_restore:
+    with patch("apps.api.api.billing.apple.restore_apple_receipt", new_callable=AsyncMock) as mock_restore:
          mock_restore.return_value = MOCK_SINGLE
          
          # 1st Run
@@ -118,7 +118,7 @@ async def test_billing_restore_google_batch(db_session: Session):
     async def mock_verify(pkg, prod, token):
         return {"verified": True, "transaction_id": f"order_{token}"}
         
-    with patch("apps.api.api.core.worker.verify_google_purchase", side_effect=mock_verify) as m:
+    with patch("apps.api.api.billing.google.verify_google_purchase", side_effect=mock_verify) as m:
         await _process_billing_restore(db_session, job)
         
         assert job.status == "COMPLETED"
@@ -151,7 +151,7 @@ async def test_billing_restore_google_resilience(db_session: Session):
             raise RuntimeError("Google API Connection Reset")
         return {"verified": True, "transaction_id": "order_ok"}
 
-    with patch("apps.api.api.core.worker.verify_google_purchase", side_effect=mock_verify_crash):
+    with patch("apps.api.api.billing.google.verify_google_purchase", side_effect=mock_verify_crash):
         await _process_billing_restore(db_session, job)
         
         assert job.status == "COMPLETED" # Must succeed partially

@@ -134,11 +134,14 @@ async def job_callback(request: Request):
             signature=signature,
             url=str(request.url)
         )
-    except Exception:
+    except Exception as e:
+        logger.error(f"QStash Signature Verify Failed: {e}. ReqURL: {request.url}")
+        # Hint: check if http vs https mismatch behind proxy
         raise HTTPException(status_code=401, detail="Invalid signature")
 
     body = await request.json()
     job_id = body.get("job_id")
+    logger.info(f"Received QStash Callback for Job {job_id}")
     if not job_id: raise HTTPException(status_code=400, detail="Missing job_id")
 
     with Session(engine) as session:

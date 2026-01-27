@@ -32,6 +32,11 @@ async def enqueue_job(job_type: str, payload: str, session: Session) -> Job:
         
     destination = f"https://{base_url}/api/internal/jobs/callback"
     
+    # Debug Logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Enqueuing Job {job.id} to QStash. Dest: {destination}")
+    
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"https://qstash.upstash.io/v2/publish/{destination}",

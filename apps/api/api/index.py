@@ -128,14 +128,19 @@ async def job_callback(request: Request):
     raw_body = await request.body()
     signature = request.headers.get("Upstash-Signature")
     if not signature: raise HTTPException(status_code=401, detail="Missing signature")
+    # Fix: Vercel might report http:// internally, but QStash signed https://
+    verify_url = str(request.url)
+    if verify_url.startswith("http://"):
+        verify_url = verify_url.replace("http://", "https://", 1)
+
     try:
         receiver.verify(
             body=raw_body.decode("utf-8"),
             signature=signature,
-            url=str(request.url)
+            url=verify_url
         )
     except Exception as e:
-        logger.error(f"QStash Signature Verify Failed: {e}. ReqURL: {request.url}")
+        logger.error(f"QStash Signature Verify Failed: {e}. ReqURL: {request.url} Corrected: {verify_url} Sig: {signature[:10]}...")
         # Hint: check if http vs https mismatch behind proxy
         raise HTTPException(status_code=401, detail="Invalid signature")
 

@@ -272,7 +272,7 @@ async def _process_billing_restore(session: Session, job: Job):
     google_token_legacy = payload.get("google_purchase_token")
     google_purchases = payload.get("google_purchases")
     
-    stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "errors": []}
+    stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "failed_count": 0, "items": [], "errors": []}
     
     # Lazy Import inside handler to avoid startup crash (use relative imports for Vercel)
     from ..billing.service import grant_entitlement

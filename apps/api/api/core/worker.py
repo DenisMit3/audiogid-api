@@ -274,10 +274,10 @@ async def _process_billing_restore(session: Session, job: Job):
     
     stats = {"platform": platform, "grants_created": 0, "grants_existing": 0, "grants_total": 0, "errors": []}
     
-    # Lazy Import inside handler to avoid startup crash
-    from apps.api.api.billing.service import grant_entitlement
-    from apps.api.api.billing.apple import restore_apple_receipt
-    from apps.api.api.billing.google import verify_google_purchase
+    # Lazy Import inside handler to avoid startup crash (use relative imports for Vercel)
+    from ..billing.service import grant_entitlement
+    from ..billing.apple import restore_apple_receipt
+    from ..billing.google import verify_google_purchase
     import hashlib
 
     def _token_hash(t: str) -> str:

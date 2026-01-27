@@ -113,6 +113,14 @@ if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")
 if billing_router: app.include_router(billing_router, prefix="/v1")
 
+try:
+    from .auth.router import router as auth_router # PR-58
+except Exception as e:
+    logger.error(f"Failed to import auth router: {e}")
+    auth_router = None
+
+if auth_router: app.include_router(auth_router, prefix="/v1")
+
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
     next_signing_key=config.QSTASH_NEXT_SIGNING_KEY,

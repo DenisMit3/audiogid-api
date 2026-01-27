@@ -10,17 +10,20 @@
 - Подпись ассетов: HMAC + TTL обязательно.
 - Fail-fast при отсутствии критических ENV (YooKassa, BaseURL).
 
-## 2. Current Stage: Hardening
-Платформа доведена до Production-ready состояния NFR:
-- Безопасная работа со сторонним биллингом (Idempotency + Signature Verify).
-- Эффективное кеширование (ETag 304 на маркерах БД).
-- Строгая синхронизация контракта (OpenAPI-first).
+## 2. Current Stage: Pre-Launch (Mobile & Content)
+API is Production-ready (NFRs, Billing, Ingestion verified).
+Focus shifts to:
+1.  **Mobile App**: Flutter Bootstrap (MVP UI).
+2.  **Auth**: SMS.RU + Telegram Login (for Admin & User).
+3.  **Content**: Admin Panel tools for data population.
+4.  **Growth**: Attribution & Deep Links.
 
-## 3. What’s Implemented (PR#19–PR#22b)
-- **Billing**: `EntitlementGrant` + YooKassa Webhook + fail-closed gating.
-- **Contract**: `apps/api/openapi.yaml` -> `packages/api_client` (Dart SDK) + CI Sync Check.
-- **Caching**: ETag на основе `MAX(updated_at)` + `Cache-Control` (Public/Private) + `Vary`.
-- **Security**: HMAC+TTL signing для ассетов.
+## 3. What’s Implemented (PR#19–PR#57)
+-   **Billing**: EntitlementGrant + YooKassa/Google/Apple Verify + Restore (Batch).
+-   **Contract**: OpenAPI-first + Dart SDK Sync Check.
+-   **Ingestion**: OSM Import + QStash Worker Pipeline + Offline Bundles (ZIP).
+-   **Ops**: Structured Logs, Health Checks, Fail-fast Config.
+-   **Security**: HMAC Signing, Gating, Idempotency.
 
 ## 4. Source of Truth
 - **Spec**: `apps/api/openapi.yaml`

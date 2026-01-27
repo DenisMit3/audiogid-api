@@ -38,6 +38,13 @@ class AppConfig:
         self.APPLE_SHARED_SECRET = os.getenv("APPLE_SHARED_SECRET")
         self.GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_BASE64")  # Base64 encoded
 
+        # Auth (PR-58)
+        self.SMSRU_API_ID = os.getenv("SMSRU_API_ID")
+        self.TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+        self.JWT_SECRET = os.getenv("JWT_SECRET") 
+        self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+        self.OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))
+
             
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)

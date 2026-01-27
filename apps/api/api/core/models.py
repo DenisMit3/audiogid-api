@@ -235,3 +235,35 @@ class HelperPlace(SQLModel, table=True):
     geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
     name_ru: Optional[str] = None
     osm_id: Optional[str] = None
+
+# --- Auth Models (PR-58) ---
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    role: str = Field(default="user") # user, admin, editor
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = Field(default=True)
+    
+    # Relationships
+    identities: List["UserIdentity"] = Relationship(back_populates="user")
+    
+class UserIdentity(SQLModel, table=True):
+    __tablename__ = "user_identities"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
+    provider: str = Field(index=True) # phone, telegram
+    provider_id: str = Field(index=True) # +7999..., 12345678 (tg_id)
+    last_login: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    user: Optional[User] = Relationship(back_populates="identities")
+
+class OtpCode(SQLModel, table=True):
+    __tablename__ = "otp_codes"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    phone: str = Field(index=True)
+    code: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime
+    attempts: int = 0
+    used: bool = False

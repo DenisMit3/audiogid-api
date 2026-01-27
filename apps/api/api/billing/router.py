@@ -190,40 +190,21 @@ async def restore_purchases(req: RestoreRequest, request: Request, session: Sess
         return {"job_id": job_id, "status": existing_job.status, "trace_id": trace_id}
         
     # Create Job
-    job = Job(
-        id=uuid.UUID(job_id),
-        type="billing_restore",
-        status="PENDING",
-        idempotency_key=req.idempotency_key,
-        payload=json.dumps(req.model_dump())
-    )
-    session.add(job)
-    session.commit()
-    
-    # Enqueue
-    if config.QSTASH_TOKEN and config.PUBLIC_APP_BASE_URL:
-        # If QStash configured, send async
-        try:
-            callback_url = f"{config.PUBLIC_APP_BASE_URL}/api/internal/jobs/callback"
-            qstash.message(
-                url=callback_url,
-                body={"job_id": job_id},
-                headers={"Content-Type": "application/json"}
-            )
-        except Exception as e:
-            logger.error(f"Failed to enqueue restore job: {e}")
-            job.status = "FAILED"
-            job.error = "Queue Error"
-            session.add(job)
-            session.commit()
-            raise HTTPException(status_code=500, detail="Failed to enqueue job")
-    else:
-        # Fallback/Dev: we can't run async reliably without QStash in this architecture easily.
-        # But we could just fail or warn.
-        logger.warning("QStash not configured, job created but not enqueued automatically.")
-        # In Ops check we warn about this.
+    # Create and Enqueue Job via Utility (handles QStash URL resolution correctly)
+    try:
+        from ..core.async_utils import enqueue_job
+        job = await enqueue_job(
+            job_type="billing_restore",
+            payload=json.dumps(req.model_dump()),
+            session=session,
+            idempotency_key=req.idempotency_key
+        )
+    except Exception as e:
+        logger.error(f"Detailed Restore Enqueue Error: {e}")
+        # enqueue_job logs details before raising.
+        raise HTTPException(status_code=500, detail=f"Failed to enqueue restore job: {e}")
         
-    return {"job_id": job_id, "status": "PENDING", "trace_id": trace_id}
+    return {"job_id": str(job.id), "status": "PENDING", "trace_id": trace_id}
 
 @router.get("/billing/restore/{job_id}")
 def get_restore_status(job_id: uuid.UUID, session: Session = Depends(get_session)):

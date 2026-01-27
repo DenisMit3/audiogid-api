@@ -4,14 +4,14 @@ from .config import config
 from .models import Job
 from sqlmodel import Session
 
-async def enqueue_job(job_type: str, payload: str, session: Session) -> Job:
+async def enqueue_job(job_type: str, payload: str, session: Session, idempotency_key: str | None = None) -> Job:
     """
     Canonical Async Pattern:
     1. Persist Job (PENDING) to DB.
     2. Call QStash to enqueue callback.
     """
     # 1. Persist
-    job = Job(type=job_type, payload=payload, status="PENDING")
+    job = Job(type=job_type, payload=payload, status="PENDING", idempotency_key=idempotency_key)
     session.add(job)
     session.commit()
     session.refresh(job)

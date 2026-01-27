@@ -38,8 +38,9 @@ async def enqueue_job(job_type: str, payload: str, session: Session, idempotency
     logger.info(f"Enqueuing Job {job.id} to QStash. Dest: {destination}")
     
     async with httpx.AsyncClient() as client:
+        # Use configured QStash URL (e.g. for US-East-1)
         response = await client.post(
-            f"https://qstash.upstash.io/v2/publish/{destination}",
+            f"{config.QSTASH_URL}/v2/publish/{destination}",
             headers=headers,
             json={"job_id": str(job.id)}
         )

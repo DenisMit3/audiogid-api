@@ -12,6 +12,8 @@ Name | Type | Description | Notes
 **grantsCreated** | **int** |  | [optional] 
 **grantsExisting** | **int** |  | [optional] 
 **grantsTotal** | **int** |  | [optional] 
+**failedCount** | **int** |  | [optional] 
+**items** | [**List<RestoreItemResult>**](RestoreItemResult.md) |  | [optional] [default to const []]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

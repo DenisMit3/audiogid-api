@@ -36,6 +36,16 @@ void main() {
       // TODO
     });
 
+    // int failedCount
+    test('to test the property `failedCount`', () async {
+      // TODO
+    });
+
+    // List<RestoreItemResult> items (default value: const [])
+    test('to test the property `items`', () async {
+      // TODO
+    });
+
 
   });
 

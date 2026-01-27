@@ -194,6 +194,8 @@ class ApiClient {
           return GetDeletionStatus200Response.fromJson(value);
         case 'GetOpsCommit200Response':
           return GetOpsCommit200Response.fromJson(value);
+        case 'GooglePurchaseItem':
+          return GooglePurchaseItem.fromJson(value);
         case 'IngestionRunRead':
           return IngestionRunRead.fromJson(value);
         case 'JobEnqueueResponse':
@@ -220,6 +222,8 @@ class ApiClient {
           return RequestDeletion202Response.fromJson(value);
         case 'RequestDeletionRequest':
           return RequestDeletionRequest.fromJson(value);
+        case 'RestoreItemResult':
+          return RestoreItemResult.fromJson(value);
         case 'RestoreJobRead':
           return RestoreJobRead.fromJson(value);
         case 'RestoreJobReadResult':

@@ -17,6 +17,8 @@ class RestoreJobReadResult {
     this.grantsCreated,
     this.grantsExisting,
     this.grantsTotal,
+    this.failedCount,
+    this.items = const [],
   });
 
   ///
@@ -51,12 +53,24 @@ class RestoreJobReadResult {
   ///
   int? grantsTotal;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  int? failedCount;
+
+  List<RestoreItemResult> items;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is RestoreJobReadResult &&
     other.platform == platform &&
     other.grantsCreated == grantsCreated &&
     other.grantsExisting == grantsExisting &&
-    other.grantsTotal == grantsTotal;
+    other.grantsTotal == grantsTotal &&
+    other.failedCount == failedCount &&
+    _deepEquality.equals(other.items, items);
 
   @override
   int get hashCode =>
@@ -64,10 +78,12 @@ class RestoreJobReadResult {
     (platform == null ? 0 : platform!.hashCode) +
     (grantsCreated == null ? 0 : grantsCreated!.hashCode) +
     (grantsExisting == null ? 0 : grantsExisting!.hashCode) +
-    (grantsTotal == null ? 0 : grantsTotal!.hashCode);
+    (grantsTotal == null ? 0 : grantsTotal!.hashCode) +
+    (failedCount == null ? 0 : failedCount!.hashCode) +
+    (items.hashCode);
 
   @override
-  String toString() => 'RestoreJobReadResult[platform=$platform, grantsCreated=$grantsCreated, grantsExisting=$grantsExisting, grantsTotal=$grantsTotal]';
+  String toString() => 'RestoreJobReadResult[platform=$platform, grantsCreated=$grantsCreated, grantsExisting=$grantsExisting, grantsTotal=$grantsTotal, failedCount=$failedCount, items=$items]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -91,6 +107,12 @@ class RestoreJobReadResult {
     } else {
       json[r'grants_total'] = null;
     }
+    if (this.failedCount != null) {
+      json[r'failed_count'] = this.failedCount;
+    } else {
+      json[r'failed_count'] = null;
+    }
+      json[r'items'] = this.items;
     return json;
   }
 
@@ -117,6 +139,8 @@ class RestoreJobReadResult {
         grantsCreated: mapValueOfType<int>(json, r'grants_created'),
         grantsExisting: mapValueOfType<int>(json, r'grants_existing'),
         grantsTotal: mapValueOfType<int>(json, r'grants_total'),
+        failedCount: mapValueOfType<int>(json, r'failed_count'),
+        items: RestoreItemResult.listFromJson(json[r'items']),
       );
     }
     return null;

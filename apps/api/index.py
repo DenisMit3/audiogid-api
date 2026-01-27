@@ -1,9 +1,12 @@
 # Audio Guide 2026 API - Main Entry Point for Vercel
 # This file exports 'app' as required by Vercel FastAPI deployment
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, APIRouter
 from sqlmodel import Session, select
 from qstash import Receiver
+import logging
+
+logger = logging.getLogger("api.boot")
 
 # Import from api package (relative to this file location)
 from api.core.config import config
@@ -13,19 +16,44 @@ from api.core.database import engine
 # NOTE: process_job is imported lazily inside job_callback to prevent boot crash
 # from billing module failures (PR-43 fix for PR-42 wrong file)
 
-from api.public import router as public_router
-from api.ingestion import router as ingestion_router
-from api.map import router as map_router
-from api.publish import router as publish_router
-from api.admin_tours import router as admin_tours_router
-from api.purchases import router as purchases_router
-from api.deletion import router as deletion_router
-from api.ops import router as ops_router
-from api.billing.yookassa import router as yookassa_router
+# PR-44: Wrap ALL router imports in try/except to prevent boot crash
+# If any router fails to import, app still starts with /v1/ops/* available
+
+def safe_import_router(module_path: str, router_name: str = "router"):
+    """Safely import a router, return None on failure"""
+    try:
+        import importlib
+        module = importlib.import_module(module_path)
+        return getattr(module, router_name)
+    except Exception as e:
+        logger.error(f"Failed to import {module_path}: {e}")
+        return None
+
+# Critical: ops_router MUST have fallback for diagnostics
+try:
+    from api.ops import router as ops_router
+except Exception as e:
+    logger.error(f"Failed to import ops router: {e}")
+    ops_router = APIRouter()
+    @ops_router.get("/ops/health")
+    def fallback_health(): 
+        return {"status": "fallback", "boot_error": str(e), "fix": "check logs for import errors"}
+    @ops_router.get("/ops/commit")
+    def fallback_commit():
+        return {"sha": "unknown", "boot_error": str(e)}
+
+public_router = safe_import_router("api.public")
+ingestion_router = safe_import_router("api.ingestion")
+map_router = safe_import_router("api.map")
+publish_router = safe_import_router("api.publish")
+admin_tours_router = safe_import_router("api.admin_tours")
+purchases_router = safe_import_router("api.purchases")
+deletion_router = safe_import_router("api.deletion")
+yookassa_router = safe_import_router("api.billing.yookassa")
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.11.0",
+    version="1.12.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -36,17 +64,18 @@ app.add_middleware(SecurityMiddleware)
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.11.0"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.12.0"}
 
+# Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
-app.include_router(public_router, prefix="/v1")
-app.include_router(ingestion_router, prefix="/v1")
-app.include_router(map_router, prefix="/v1")
-app.include_router(publish_router, prefix="/v1")
-app.include_router(admin_tours_router, prefix="/v1")
-app.include_router(purchases_router, prefix="/v1")
-app.include_router(deletion_router, prefix="/v1")
-app.include_router(yookassa_router)
+if public_router: app.include_router(public_router, prefix="/v1")
+if ingestion_router: app.include_router(ingestion_router, prefix="/v1")
+if map_router: app.include_router(map_router, prefix="/v1")
+if publish_router: app.include_router(publish_router, prefix="/v1")
+if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
+if purchases_router: app.include_router(purchases_router, prefix="/v1")
+if deletion_router: app.include_router(deletion_router, prefix="/v1")
+if yookassa_router: app.include_router(yookassa_router)
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,

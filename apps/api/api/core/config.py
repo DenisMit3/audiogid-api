@@ -20,8 +20,8 @@ class AppConfig:
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL")
         
-        # Billing (PR-45: Changed to optional at boot, fail-fast at endpoint level)
-        # Rationale: Missing billing vars should NOT crash entire app including /ops/*
+        # Billing (PR-50 Hotfix: Force Optional Config for YooKassa to prevent crash)
+        # Previously caused crash if YOOKASSA_SHOP_ID missing.
         self.YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
         self.YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
         self.YOOKASSA_WEBHOOK_SECRET = os.getenv("YOOKASSA_WEBHOOK_SECRET")
@@ -51,5 +51,3 @@ except RuntimeError as e:
     # POLICY says NO LOCAL. So we just crash print.
     print(f"Startup Config Error: {e}")
     raise e
-
-

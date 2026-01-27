@@ -20,19 +20,21 @@ class AppConfig:
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL")
         
-        # Billing (P0 Required per POLICY)
-        self.YOOKASSA_SHOP_ID = self._get_required("YOOKASSA_SHOP_ID")
-        self.YOOKASSA_SECRET_KEY = self._get_required("YOOKASSA_SECRET_KEY")
-        self.YOOKASSA_WEBHOOK_SECRET = self._get_required("YOOKASSA_WEBHOOK_SECRET")
-        self.PAYMENT_WEBHOOK_BASE_PATH = self._get_required("PAYMENT_WEBHOOK_BASE_PATH")
-        self.PUBLIC_APP_BASE_URL = self._get_required("PUBLIC_APP_BASE_URL")
+        # Billing (PR-45: Changed to optional at boot, fail-fast at endpoint level)
+        # Rationale: Missing billing vars should NOT crash entire app including /ops/*
+        self.YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
+        self.YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
+        self.YOOKASSA_WEBHOOK_SECRET = os.getenv("YOOKASSA_WEBHOOK_SECRET")
+        self.PAYMENT_WEBHOOK_BASE_PATH = os.getenv("PAYMENT_WEBHOOK_BASE_PATH", "/v1/billing")
+        self.PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL")
+        
+        # Validate billing config only if any billing var is set
+        if self.PAYMENT_WEBHOOK_BASE_PATH and not self.PAYMENT_WEBHOOK_BASE_PATH.startswith("/"):
+            raise RuntimeError("CRITICAL: PAYMENT_WEBHOOK_BASE_PATH must start with '/'")
         
         # Stores (Apple/Google) - Optional at startup (fail-fast at endpoint)
         self.APPLE_SHARED_SECRET = os.getenv("APPLE_SHARED_SECRET")
-        self.GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_BASE64") # Base64 encoded
-        
-        if not self.PAYMENT_WEBHOOK_BASE_PATH.startswith("/"):
-            raise RuntimeError("CRITICAL: PAYMENT_WEBHOOK_BASE_PATH must start with '/'")
+        self.GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_BASE64")  # Base64 encoded
 
             
     def _get_required(self, key: str) -> str:

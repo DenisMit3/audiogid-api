@@ -93,7 +93,7 @@ except Exception as e:
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.11.0",
+    version="1.12.0 TEST",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )

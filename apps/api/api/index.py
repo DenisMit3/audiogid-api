@@ -116,7 +116,7 @@ app.add_middleware(
 )
 
 # Mount Security Middleware (Global)
-app.add_middleware(SecurityMiddleware)
+# app.add_middleware(SecurityMiddleware)
 
 app.include_router(ops_router, prefix="/v1") # Ops first
 if public_router: app.include_router(public_router, prefix="/v1")

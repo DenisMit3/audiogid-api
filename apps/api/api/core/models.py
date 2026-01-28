@@ -205,6 +205,11 @@ class AuditLog(SQLModel, table=True):
     actor_fingerprint: str 
     trace_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Phase 10 extensions
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    diff_json: Optional[str] = None # JSON string of changes
 
 class IngestionRun(SQLModel, table=True):
     __tablename__ = "ingestion_runs"
@@ -244,7 +249,10 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = Field(default=True)
     
+    role_id: Optional[uuid.UUID] = Field(default=None, foreign_key="roles.id")
+    
     # Relationships
+    assigned_role: Optional["Role"] = Relationship(back_populates="users")
     identities: List["UserIdentity"] = Relationship(back_populates="user")
     
 class UserIdentity(SQLModel, table=True):
@@ -267,3 +275,151 @@ class OtpCode(SQLModel, table=True):
     expires_at: datetime
     attempts: int = 0
     used: bool = False
+
+# --- Content Versions (Phase 3) ---
+class PoiVersion(SQLModel, table=True):
+    __tablename__ = "poi_versions"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True) 
+    version_at: datetime = Field(default_factory=datetime.utcnow)
+    changed_by: Optional[uuid.UUID] = Field(default=None) # User ID
+    
+    # Snapshot of important fields
+    title_ru: str 
+    description_ru: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    full_snapshot_json: Optional[str] = None # schema-less backup
+
+class TourVersion(SQLModel, table=True):
+    __tablename__ = "tour_versions"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
+    version_at: datetime = Field(default_factory=datetime.utcnow)
+    changed_by: Optional[uuid.UUID] = Field(default=None)
+    
+    title_ru: str
+    description_ru: Optional[str] = None
+    full_snapshot_json: Optional[str] = None
+
+class ContentValidationIssue(SQLModel, table=True):
+    __tablename__ = "content_validation_issues"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    entity_type: str = Field(index=True) # "poi" or "tour"
+    entity_id: uuid.UUID = Field(index=True)
+    issue_type: str # "missing_source", "missing_audio", "unpublished_poi"
+    severity: str # "blocker", "warning"
+    message: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    fixed_at: Optional[datetime] = None
+
+class Permission(SQLModel, table=True):
+    __tablename__ = "permissions"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    slug: str = Field(unique=True, index=True) # e.g. 'poi:read'
+    description: Optional[str] = None
+    
+    role_permissions: List["RolePermission"] = Relationship(back_populates="permission")
+
+class Role(SQLModel, table=True):
+    __tablename__ = "roles"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    slug: str = Field(unique=True, index=True) # e.g. 'admin'
+    name: str
+    description: Optional[str] = None
+    
+    users: List["User"] = Relationship(back_populates="assigned_role")
+    role_permissions: List["RolePermission"] = Relationship(back_populates="role")
+
+class RolePermission(SQLModel, table=True):
+    __tablename__ = "role_permissions"
+    role_id: uuid.UUID = Field(foreign_key="roles.id", primary_key=True)
+    permission_id: uuid.UUID = Field(foreign_key="permissions.id", primary_key=True)
+    
+    role: "Role" = Relationship(back_populates="role_permissions")
+    permission: "Permission" = Relationship(back_populates="role_permissions")
+
+# --- Analytics (Phase 5) ---
+
+class AppEvent(SQLModel, table=True):
+    __tablename__ = "app_events"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    ts: datetime = Field(default_factory=datetime.utcnow, index=True) # Sorted time
+    event_type: str = Field(index=True) # e.g. "app_open", "screen_view"
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    anon_id: Optional[str] = Field(default=None, index=True)
+    payload_json: Optional[str] = None # JSONB
+
+class ContentEvent(SQLModel, table=True):
+    # Specialized event table for Content interactions to keep main table smaller?
+    # Or just use AppEvent? User requested "AppEvent, ContentEvent, PurchaseEvent (separate)".
+    __tablename__ = "content_events"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    ts: datetime = Field(default_factory=datetime.utcnow, index=True)
+    event_type: str = Field(index=True) # "poi_viewed", "tour_started"
+    user_id: Optional[uuid.UUID] = Field(default=None)
+    anon_id: Optional[str] = Field(default=None)
+    entity_type: str # "poi", "tour"
+    entity_id: uuid.UUID = Field(index=True)
+    duration_seconds: Optional[int] = None # For viewed/listened
+
+class PurchaseEvent(SQLModel, table=True):
+    __tablename__ = "purchase_events"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    ts: datetime = Field(default_factory=datetime.utcnow, index=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    anon_id: Optional[str] = Field(default=None)
+    amount: float
+    currency: str
+    product_id: str
+    store: str # apple, google
+
+class AnalyticsDailyStats(SQLModel, table=True):
+    __tablename__ = "analytics_daily_stats"
+    date: datetime = Field(primary_key=True) # Midnight UTC
+    dau: int = 0
+    mau: int = 0 # Rolling 30d calculated on this day
+    new_users: int = 0
+    total_revenue: float = 0.0
+    sessions_count: int = 0
+    
+class UserCohort(SQLModel, table=True):
+    __tablename__ = "user_cohorts"
+    user_id: uuid.UUID = Field(primary_key=True)
+    cohort_date: datetime = Field(index=True) # First seen date (midnight)
+    source: Optional[str] = None # install source
+
+class RetentionMatrix(SQLModel, table=True):
+    __tablename__ = "retention_matrix"
+    cohort_date: datetime = Field(primary_key=True)
+    day_n: int = Field(primary_key=True) # 0, 1, 7, 30...
+    retained_count: int = 0
+    percentage: float = 0.0
+
+
+class Funnel(SQLModel, table=True):
+    __tablename__ = "funnels"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+    owner_id: Optional[uuid.UUID] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    steps: List["FunnelStep"] = Relationship(back_populates="funnel")
+
+class FunnelStep(SQLModel, table=True):
+    __tablename__ = "funnel_steps"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    funnel_id: uuid.UUID = Field(foreign_key="funnels.id", index=True)
+    order_index: int
+    event_type: str 
+    step_name: Optional[str] = None
+    
+    funnel: Optional[Funnel] = Relationship(back_populates="steps")
+
+class FunnelConversion(SQLModel, table=True):
+    __tablename__ = "funnel_conversions"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    date: datetime = Field(index=True)
+    funnel_id: uuid.UUID = Field(foreign_key="funnels.id", index=True) # Logical link, maybe cascade delete manually
+    step_order: int
+    users_count: int = 0

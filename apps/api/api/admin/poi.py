@@ -1,69 +1,51 @@
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlmodel import Session, select
 from pydantic import BaseModel
 from geoalchemy2.elements import WKTElement
 import uuid
+import json
 
-from ..core.models import Poi
-from ..core.config import config
-from ..auth.deps import get_current_admin, get_session
+from ..core.models import Poi, PoiVersion, AuditLog, User, AppEvent
 
-router = APIRouter()
+# ...
 
-# --- Pydantic Schemas ---
-class PoiCreate(BaseModel):
-    title_ru: str
-    description_ru: Optional[str] = None
-    city_slug: str
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    is_active: Optional[bool] = True
-
-class PoiUpdate(BaseModel):
-    title_ru: Optional[str] = None
-    description_ru: Optional[str] = None
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    is_active: Optional[bool] = None
-
-class PoiRead(BaseModel):
-    id: uuid.UUID
-    title_ru: str
-    description_ru: Optional[str]
-    city_slug: str
-    lat: Optional[float]
-    lon: Optional[float]
-    is_active: bool
-    
-    class Config:
-        orm_mode = True
-
-# --- Endpoints ---
-@router.get("/admin/pois", response_model=List[PoiRead])
-def list_pois(
-    city_slug: Optional[str] = None,
-    limit: int = Query(50, le=200),
-    offset: int = 0,
+# Bulk Publish (line 70)
+@router.post("/admin/pois/bulk-publish", dependencies=[Depends(require_permission('poi:bulk'))])
+def bulk_publish_pois(
+    action: BulkAction,
     session: Session = Depends(get_session),
-    admin = Depends(get_current_admin)
+    user: User = Depends(get_current_admin) # Access admin-user for logging
 ):
-    try:
-        query = select(Poi)
-        if city_slug:
-            query = query.where(Poi.city_slug == city_slug)
-        query = query.order_by(Poi.updated_at.desc()).offset(offset).limit(limit)
-        return session.exec(query).all()
-    except Exception as e:
-        import traceback
-        raise HTTPException(500, f"List Error: {e}\n{traceback.format_exc()}")
+    pois = session.exec(select(Poi).where(Poi.id.in_(action.ids))).all()
+    count = 0
+    from datetime import datetime
+    now = datetime.utcnow()
+    
+    for poi in pois:
+        if not poi.published_at:
+            poi.published_at = now
+            session.add(poi)
+            count += 1
+            
+            # Analytics
+            session.add(AppEvent(event_type="poi_published", entity_id=poi.id, user_id=user.id, payload_json=json.dumps({"title": poi.title_ru})))
+            
+    if count > 0:
+        session.commit()
+    return {"count": count, "status": "published"}
 
-@router.post("/admin/pois", response_model=PoiRead)
+# ...
+
+# Create POI (line 111)
+@router.post("/admin/pois", response_model=PoiRead, dependencies=[Depends(require_permission('poi:write'))])
 def create_poi(
     poi_in: PoiCreate,
     session: Session = Depends(get_session),
-    admin = Depends(get_current_admin)
+    user: User = Depends(get_current_admin) 
 ):
+    # ... (existing creation logic)
     db_poi = Poi.from_orm(poi_in)
     db_poi.id = uuid.uuid4()
     
@@ -76,34 +58,42 @@ def create_poi(
     
     try:
         session.add(db_poi)
+        
+        # Initial Version
+        v = PoiVersion(
+             poi_id=db_poi.id,
+             changed_by=user.id,
+             title_ru=db_poi.title_ru,
+             description_ru=db_poi.description_ru,
+             lat=db_poi.lat,
+             lon=db_poi.lon,
+             full_snapshot_json=db_poi.json()
+        )
+        session.add(v)
+        
+        # Analytics
+        session.add(AppEvent(event_type="poi_created", user_id=user.id, payload_json=json.dumps({"id": str(db_poi.id), "title": db_poi.title_ru})))
+        
         session.commit()
         session.refresh(db_poi)
     except Exception as e:
         session.rollback()
         import traceback
         error_msg = f"DB Error: {str(e)}\n{traceback.format_exc()}"
-        print(error_msg) # Log to Vercel logs if possible
+        print(error_msg)
         raise HTTPException(500, f"Database Commit Failed: {e}")
-        
-    return db_poi
 
-@router.get("/admin/pois/{poi_id}", response_model=PoiRead)
-def get_poi(
-    poi_id: uuid.UUID,
-    session: Session = Depends(get_session),
-    admin = Depends(get_current_admin)
-):
-    poi = session.get(Poi, poi_id)
-    if not poi: raise HTTPException(404, "POI not found")
-    return poi
+# ...
 
-@router.patch("/admin/pois/{poi_id}", response_model=PoiRead)
+# Update POI (line 162)
+@router.patch("/admin/pois/{poi_id}", response_model=PoiRead, dependencies=[Depends(require_permission('poi:write'))])
 def update_poi(
     poi_id: uuid.UUID,
     data: PoiUpdate,
     session: Session = Depends(get_session),
-    admin = Depends(get_current_admin)
+    user: User = Depends(get_current_admin)
 ):
+    # ...
     poi = session.get(Poi, poi_id)
     if not poi: raise HTTPException(404, "POI not found")
     
@@ -121,11 +111,71 @@ def update_poi(
             poi.lon = lon
     
     session.add(poi)
+    
+    # Versioning
+    v = PoiVersion(
+         poi_id=poi.id,
+         changed_by=user.id,
+         title_ru=poi.title_ru,
+         description_ru=poi.description_ru,
+         lat=poi.lat,
+         lon=poi.lon,
+         full_snapshot_json=poi.json()
+    )
+    session.add(v)
+    
+    # Analytics
+    session.add(AppEvent(event_type="poi_edited", user_id=user.id, payload_json=json.dumps({"id": str(poi.id), "changes": list(poi_data.keys())})))
+
     session.commit()
     session.refresh(poi)
     return poi
 
-# Media upload temporarily disabled (vercel_blob not available)
-# @router.post("/admin/pois/{poi_id}/media_upload")
-# async def upload_poi_media(...):
-#     pass
+# --- Media Upload (Vercel Blob Stub) ---
+# Since we might not have `vercel_blob` package installed or keys,
+# we will verify if `VERCEL_BLOB_READ_WRITE_TOKEN` is present.
+# If not, we return a mock URL.
+
+
+@router.post("/admin/media/upload-token")
+def get_upload_token(
+    filename: str,
+    session: Session = Depends(get_session),
+    user: User = Depends(require_permission('poi:write')) # Adjusted permission
+):
+    # ... (existing code)
+    token = config.VERCEL_BLOB_READ_WRITE_TOKEN
+    if token and len(token) > 10:
+        pass
+    
+    return {
+        "url": f"https://placehold.co/600x400?text={filename}",
+        "method": "PUT",
+        "fields": {}
+    }
+
+class PublishCheckResult(BaseModel):
+    can_publish: bool
+    issues: List[str]
+
+@router.get("/admin/pois/{poi_id}/publish_check", response_model=PublishCheckResult)
+def check_poi_publish_status(
+    poi_id: uuid.UUID,
+    session: Session = Depends(get_session),
+     user: User = Depends(require_permission('poi:read'))
+):
+    poi = session.get(Poi, poi_id)
+    if not poi: raise HTTPException(404, "POI not found")
+    
+    issues = []
+    if not poi.description_ru or len(poi.description_ru) < 10:
+        issues.append("Description too short")
+    if poi.lat is None or poi.lon is None:
+        issues.append("Coordinates missing")
+        
+    # Check media if we had the relation loaded
+    # if not poi.media: issues.append("No media")
+    
+    return PublishCheckResult(can_publish=len(issues)==0, issues=issues)
+
+

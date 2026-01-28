@@ -17,6 +17,26 @@ from api.core.database import engine
 # NOTE: process_job is imported lazily inside job_callback to prevent boot crash
 # from billing module failures (PR-43 fix for PR-42 wrong file)
 
+# Phase 10: Audit Middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from api.core.audit import set_audit_context, clear_audit_context
+from api.core.middleware_timeout import TimeoutMiddleware
+from api.core.middleware_ratelimit import RateLimitMiddleware
+
+class AuditMiddleware(BaseHTTPMiddleware):
+# ...
+    async def dispatch(self, request: Request, call_next):
+        # Try to extract user from state if AuthMiddleware ran, or just pass request
+        # Since Auth happens in dependencies usually, global middleware might not have user yet.
+        # But we can store Request.
+        set_audit_context(request, getattr(request.state, 'user', None))
+        try:
+            response = await call_next(request)
+            return response
+        finally:
+            clear_audit_context()
+
+
 # PR-44: Wrap ALL router imports in try/except to prevent boot crash
 # If any router fails to import, app still starts with /v1/ops/* available
 
@@ -49,6 +69,7 @@ map_router = safe_import_router("api.map")
 publish_router = safe_import_router("api.publish")
 admin_tours_router = safe_import_router("api.admin_tours")
 admin_pois_router = safe_import_router("api.admin.poi")  # PR-59: Add POI admin router
+admin_analytics_router = safe_import_router("api.admin.analytics") # Phase 6
 purchases_router = safe_import_router("api.purchases")
 deletion_router = safe_import_router("api.deletion")
 yookassa_router = safe_import_router("api.billing.yookassa")
@@ -57,7 +78,7 @@ auth_router = safe_import_router("api.auth.router")  # PR-58: Auth router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.15.5",
+    version="1.15.6",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -73,11 +94,14 @@ app.add_middleware(
 
 # Mount Security Middleware (Global) - DISABLED for debug
 # app.add_middleware(SecurityMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(TimeoutMiddleware)
+app.add_middleware(AuditMiddleware)
 
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.15.5"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.15.6"}
 
 # Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
@@ -87,11 +111,18 @@ if map_router: app.include_router(map_router, prefix="/v1")
 if publish_router: app.include_router(publish_router, prefix="/v1")
 if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
 if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")  # PR-59: POI routes
+if admin_analytics_router: app.include_router(admin_analytics_router, prefix="/v1")
+if admin_users_router: app.include_router(admin_users_router, prefix="/v1")
+if admin_audit_router: app.include_router(admin_audit_router, prefix="/v1")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if yookassa_router: app.include_router(yookassa_router)
 if billing_router: app.include_router(billing_router, prefix="/v1")
+if billing_router: app.include_router(billing_router, prefix="/v1")
 if auth_router: app.include_router(auth_router, prefix="/v1")  # PR-58: Auth routes
+
+analytics_router = safe_import_router("api.analytics.router")
+if analytics_router: app.include_router(analytics_router, prefix="/v1") # Phase 5
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
@@ -100,7 +131,7 @@ receiver = Receiver(
 
 @app.get("/api/health")
 def health_check_legacy():
-    return {"status": "ok", "version": "1.15.5"}
+    return {"status": "ok", "version": "1.15.6"}
 
 # --- Diagnostic Endpoint ---
 @app.get("/api/diagnose-admin")
@@ -128,6 +159,18 @@ def diagnose_routes():
         if hasattr(route, "path"):
             routes.append(f"{route.methods} {route.path}")
     return {"routes": routes}
+
+@app.get("/api/diagnose-db")
+def diagnose_db():
+    try:
+        with Session(engine) as session:
+            # Try simple query
+            from sqlalchemy import text
+            result = session.exec(text("SELECT 1")).all()
+            return {"status": "ok", "result": str(result), "engine": str(engine.url)}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):

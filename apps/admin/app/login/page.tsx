@@ -10,12 +10,7 @@ export default function LoginPage() {
     const [secret, setSecret] = useState('');
 
     useEffect(() => {
-        const token = localStorage.getItem('admin_token');
-        if (token) {
-            router.push('/dashboard');
-            return;
-        }
-
+        // Init Telegram Widget
         if (!document.getElementById('tg-script')) {
             const script = document.createElement('script');
             script.id = 'tg-script';
@@ -32,16 +27,14 @@ export default function LoginPage() {
 
         (window as any).onTelegramAuth = async (user: any) => {
             try {
-                const res = await fetch(`${API_URL}/v1/auth/login/telegram`, {
+                const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(user)
                 });
                 if (res.ok) {
-                    const data = await res.json();
-                    localStorage.setItem('admin_token', data.access_token);
-                    localStorage.setItem('admin_user', JSON.stringify(user));
                     router.push('/dashboard');
+                    router.refresh();
                 } else {
                     const err = await res.json();
                     alert(`Login failed: ${err.detail}`);
@@ -55,15 +48,14 @@ export default function LoginPage() {
 
     const handleDevLogin = async () => {
         try {
-            const res = await fetch(`${API_URL}/v1/auth/login/dev-admin`, {
+            const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ secret })
             });
             if (res.ok) {
-                const data = await res.json();
-                localStorage.setItem('admin_token', data.access_token);
                 router.push('/dashboard');
+                router.refresh();
             } else {
                 alert('Invalid Secret');
             }

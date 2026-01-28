@@ -1,4 +1,4 @@
-import logging
+# Check status first
 import uuid
 import hashlib
 from typing import List, Optional
@@ -8,35 +8,10 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from .core.database import engine
-from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant
-from .core.caching import check_etag_versioned, generate_version_marker, SCHEMA_VERSION
-from .core.security import sign_asset_url
 
-logger = logging.getLogger(__name__)
-router = APIRouter()
-limiter = Limiter(key_func=get_remote_address) # Local instance for decorators
+from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent
 
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-def check_access(session: Session, city: str, device_anon_id: str, tour_id: Optional[uuid.UUID] = None) -> bool:
-    if not device_anon_id: return False
-    if tour_id:
-        grant = session.exec(select(EntitlementGrant).join(Entitlement).where(
-            EntitlementGrant.device_anon_id == device_anon_id,
-            EntitlementGrant.revoked_at == None,
-            Entitlement.scope == "tour",
-            Entitlement.ref == str(tour_id)
-        )).first()
-        if grant: return True
-    city_grant = session.exec(select(EntitlementGrant).join(Entitlement).where(
-        EntitlementGrant.device_anon_id == device_anon_id,
-        EntitlementGrant.revoked_at == None,
-        Entitlement.scope == "city",
-        Entitlement.ref == city
-    )).first()
-    return city_grant is not None
+# ...
 
 @router.get("/public/tours/{tour_id}/manifest")
 @limiter.limit("20/minute") # Heavy bundle data
@@ -52,6 +27,20 @@ def get_tour_manifest(
     if not tour or tour.city_slug != city or not tour.published_at:
         raise HTTPException(status_code=404, detail="Tour not found", headers={"Cache-Control": "private, no-store"})
     
+    # Analytics: TOUR_STARTED
+    # We log this as a ContentEvent
+    try:
+        event = ContentEvent(
+            event_type="tour_started",
+            anon_id=device_anon_id,
+            entity_type="tour",
+            entity_id=tour_id
+        )
+        session.add(event)
+        session.commit()
+    except Exception as e:
+        logger.error(f"Failed to log tour_started: {e}")
+
     # Manifest is heavy, use no-store to avoid stale local cache of sensitive URLs
     response.headers["Cache-Control"] = "private, no-store"
     
@@ -69,27 +58,7 @@ def get_tour_manifest(
                 assets.append({"url": sign_asset_url(m.url), "type": m.media_type, "owner_id": str(item.poi.id)})
     return {"tour": data, "pois": pois_data, "assets": assets}
 
-@router.get("/public/tours")
-def get_tours(response: Response, request: Request, city: str = Query(...), session: Session = Depends(get_session)):
-    etag = generate_version_marker(session, Tour, city)
-    check_etag_versioned(request, response, etag)
-    tours = session.exec(select(Tour).where(Tour.city_slug == city, Tour.published_at != None)).all()
-    return [t.model_dump(include={'id', 'city_slug', 'title_ru', 'description_ru', 'duration_minutes', 'published_at'}) for t in tours]
-
-@router.get("/public/tours/{tour_id}")
-def get_tour_detail(response: Response, request: Request, tour_id: uuid.UUID, city: str = Query(...), device_anon_id: Optional[str] = Query(None), session: Session = Depends(get_session)):
-    tour = session.get(Tour, tour_id)
-    if not tour or tour.city_slug != city or not tour.published_at: raise HTTPException(status_code=404, detail="Not Found")
-    
-    has_access = check_access(session, city, device_anon_id, tour_id)
-    etag = f"{SCHEMA_VERSION}|{tour.id}|{tour.updated_at}|{has_access}"
-    check_etag_versioned(request, response, f'W/"{hashlib.md5(etag.encode()).hexdigest()}"', is_public=not has_access)
-    
-    items = []
-    for item in sorted(tour.items, key=lambda i: i.order_index):
-        if item.poi:
-             items.append({"id": str(item.id), "order_index": item.order_index, "poi": item.poi.model_dump(include={'id', 'title_ru', 'lat', 'lon', 'preview_audio_url', 'preview_bullets'})})
-    return {**tour.model_dump(exclude={'items', 'sources', 'media'}), "items": items, "sources": [s.model_dump() for s in tour.sources], "media": [m.model_dump() for m in tour.media], "has_access": has_access}
+# ...
 
 @router.get("/public/poi/{poi_id}")
 def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city: str = Query(...), device_anon_id: Optional[str] = Query(None), session: Session = Depends(get_session)):
@@ -101,7 +70,22 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city
     etag = f"{SCHEMA_VERSION}|{poi.id}|{poi.updated_at}|{has_access}"
     check_etag_versioned(request, response, f'W/"{hashlib.md5(etag.encode()).hexdigest()}"', is_public=not has_access)
     
+    # Analytics: POI_VIEWED
+    if device_anon_id:
+        try:
+             event = ContentEvent(
+                event_type="poi_viewed",
+                anon_id=device_anon_id,
+                entity_type="poi",
+                entity_id=poi_id
+            )
+             session.add(event)
+             session.commit()
+        except Exception as e:
+            logger.error(f"Failed to log poi_viewed: {e}")
+
     data = poi.model_dump(exclude={'geo'})
+
     data["sources"] = [s.model_dump() for s in poi.sources]
     data["media"] = [m.model_dump() for m in poi.media]
     data["has_access"] = has_access

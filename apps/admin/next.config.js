@@ -1,10 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    swcMinify: true,
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'public.blob.vercel-storage.com',
+            },
+        ],
+    },
     async rewrites() {
         return [
             {
                 source: '/api/proxy/:path*',
-                destination: 'https://audiogid-api.vercel.app/:path*',
+                destination: (process.env.NEXT_PUBLIC_API_URL || 'https://api.audiogid.app') + '/v1/:path*',
             },
         ]
     },

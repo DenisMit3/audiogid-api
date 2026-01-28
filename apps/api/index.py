@@ -2,6 +2,7 @@
 # This file exports 'app' as required by Vercel FastAPI deployment
 
 from fastapi import FastAPI, Request, HTTPException, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from qstash import Receiver
 import logging
@@ -47,25 +48,36 @@ ingestion_router = safe_import_router("api.ingestion")
 map_router = safe_import_router("api.map")
 publish_router = safe_import_router("api.publish")
 admin_tours_router = safe_import_router("api.admin_tours")
+admin_pois_router = safe_import_router("api.admin.poi")  # PR-59: Add POI admin router
 purchases_router = safe_import_router("api.purchases")
 deletion_router = safe_import_router("api.deletion")
 yookassa_router = safe_import_router("api.billing.yookassa")
 billing_router = safe_import_router("api.billing.router")  # PR-46: Restore missing billing router
+auth_router = safe_import_router("api.auth.router")  # PR-58: Auth router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.12.1",
+    version="1.14.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
 
-# Mount Security Middleware (Global)
-app.add_middleware(SecurityMiddleware)
+# --- CORS Middleware (MUST be before other middleware) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount Security Middleware (Global) - DISABLED for debug
+# app.add_middleware(SecurityMiddleware)
 
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.12.1"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.14.0"}
 
 # Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
@@ -74,10 +86,12 @@ if ingestion_router: app.include_router(ingestion_router, prefix="/v1")
 if map_router: app.include_router(map_router, prefix="/v1")
 if publish_router: app.include_router(publish_router, prefix="/v1")
 if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
+if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")  # PR-59: POI routes
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if yookassa_router: app.include_router(yookassa_router)
 if billing_router: app.include_router(billing_router, prefix="/v1")
+if auth_router: app.include_router(auth_router, prefix="/v1")  # PR-58: Auth routes
 
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
@@ -86,7 +100,17 @@ receiver = Receiver(
 
 @app.get("/api/health")
 def health_check_legacy():
-    return {"status": "ok", "version": "1.11.0"}
+    return {"status": "ok", "version": "1.14.0"}
+
+# --- Diagnostic Endpoint ---
+@app.get("/api/diagnose-admin")
+def diagnose_admin():
+    import traceback
+    try:
+        from api.admin import poi
+        return {"status": "ok", "poi_module": str(poi)}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):

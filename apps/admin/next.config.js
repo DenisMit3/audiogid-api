@@ -4,7 +4,7 @@ const nextConfig = {
         return [
             {
                 source: '/api/proxy/:path*',
-                destination: 'https://audiogid-api.vercel.app/v1/:path*',
+                destination: 'https://audiogid-api.vercel.app/:path*',
             },
         ]
     },

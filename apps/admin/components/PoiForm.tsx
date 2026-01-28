@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+const API_URL = '/api/proxy';
 
 export default function PoiForm({ poi, onSuccess }: { poi?: any, onSuccess: () => void }) {
     const [formData, setFormData] = useState({

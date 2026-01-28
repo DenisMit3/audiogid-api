@@ -109,7 +109,7 @@ app.add_middleware(SlowApiMiddleware)
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow Admin Panel
+    allow_origins=["https://audiogid-admin.vercel.app", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

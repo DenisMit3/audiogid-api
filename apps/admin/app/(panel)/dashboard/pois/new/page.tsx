@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import PoiForm from '../../../../components/PoiForm';
+import PoiForm from '@/components/PoiForm';
 
 export default function NewPoiPage() {
     const router = useRouter();

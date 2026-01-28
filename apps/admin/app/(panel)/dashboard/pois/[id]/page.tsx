@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import PoiForm from '../../../../components/PoiForm';
+import PoiForm from '@/components/PoiForm';
 
 const API_URL = '/api/proxy';
 

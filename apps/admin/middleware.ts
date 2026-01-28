@@ -1,8 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { ROLE_PERMISSIONS } from './lib/permissions';
+import { decodeJwt } from 'jose';
 
 // Public paths that don't require auth
 const PUBLIC_PATHS = ['/login', '/_next', '/favicon.ico', '/api/auth'];
@@ -23,13 +22,8 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-        // We decode without verification here for speed/routing check, 
-        // relying on Backend to verify signature in API calls.
-        // Ideally we verify with JWT_SECRET if shared, but simplest is presence check + strict backend check.
-        // If we have JWT_SECRET in env, we can verify.
-        // const decoded = jwt.verify(token, process.env.JWT_SECRET!); 
-        // For now just check expiry via decode
-        const decoded = jwt.decode(token) as any;
+        // Use jose for Edge-compatible JWT decoding
+        const decoded = decodeJwt(token);
 
         if (!decoded || (decoded.exp && Date.now() >= decoded.exp * 1000)) {
             const url = request.nextUrl.clone();

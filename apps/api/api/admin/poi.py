@@ -48,11 +48,15 @@ def list_pois(
     session: Session = Depends(get_session),
     admin = Depends(get_current_admin)
 ):
-    query = select(Poi)
-    if city_slug:
-        query = query.where(Poi.city_slug == city_slug)
-    query = query.order_by(Poi.updated_at.desc()).offset(offset).limit(limit)
-    return session.exec(query).all()
+    try:
+        query = select(Poi)
+        if city_slug:
+            query = query.where(Poi.city_slug == city_slug)
+        query = query.order_by(Poi.updated_at.desc()).offset(offset).limit(limit)
+        return session.exec(query).all()
+    except Exception as e:
+        import traceback
+        raise HTTPException(500, f"List Error: {e}\n{traceback.format_exc()}")
 
 @router.post("/admin/pois", response_model=PoiRead)
 def create_poi(

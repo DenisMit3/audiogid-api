@@ -57,7 +57,7 @@ auth_router = safe_import_router("api.auth.router")  # PR-58: Auth router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.15.4",
+    version="1.15.5",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -77,7 +77,7 @@ app.add_middleware(
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.15.4"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.15.5"}
 
 # Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
@@ -100,7 +100,7 @@ receiver = Receiver(
 
 @app.get("/api/health")
 def health_check_legacy():
-    return {"status": "ok", "version": "1.15.4"}
+    return {"status": "ok", "version": "1.15.5"}
 
 # --- Diagnostic Endpoint ---
 @app.get("/api/diagnose-admin")

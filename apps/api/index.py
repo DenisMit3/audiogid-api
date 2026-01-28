@@ -57,7 +57,7 @@ auth_router = safe_import_router("api.auth.router")  # PR-58: Auth router
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.14.0",
+    version="1.15.0",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -77,7 +77,7 @@ app.add_middleware(
 # Health check at root
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.14.0"}
+    return {"status": "ok", "api": "Audio Guide 2026", "version": "1.15.0"}
 
 # Mount routers (ops first for diagnostics)
 app.include_router(ops_router, prefix="/v1")
@@ -100,7 +100,7 @@ receiver = Receiver(
 
 @app.get("/api/health")
 def health_check_legacy():
-    return {"status": "ok", "version": "1.14.0"}
+    return {"status": "ok", "version": "1.15.0"}
 
 # --- Diagnostic Endpoint ---
 @app.get("/api/diagnose-admin")
@@ -111,6 +111,15 @@ def diagnose_admin():
         return {"status": "ok", "poi_module": str(poi)}
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+@app.get("/api/diagnose-routers")
+def diagnose_routers():
+    return {
+        "admin_pois_router": str(admin_pois_router) if admin_pois_router else "NOT LOADED",
+        "admin_tours_router": str(admin_tours_router) if admin_tours_router else "NOT LOADED",
+        "auth_router": str(auth_router) if auth_router else "NOT LOADED",
+        "public_router": str(public_router) if public_router else "NOT LOADED",
+    }
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):

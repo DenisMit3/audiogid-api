@@ -65,11 +65,22 @@ def create_poi(
     
     # Set geo if lat/lon provided
     if db_poi.lat is not None and db_poi.lon is not None:
-        db_poi.geo = WKTElement(f"POINT({db_poi.lon} {db_poi.lat})", srid=4326)
+        try:
+            db_poi.geo = WKTElement(f"POINT({db_poi.lon} {db_poi.lat})", srid=4326)
+        except Exception as e:
+            raise HTTPException(500, f"Geo Error: {e}")
     
-    session.add(db_poi)
-    session.commit()
-    session.refresh(db_poi)
+    try:
+        session.add(db_poi)
+        session.commit()
+        session.refresh(db_poi)
+    except Exception as e:
+        session.rollback()
+        import traceback
+        error_msg = f"DB Error: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg) # Log to Vercel logs if possible
+        raise HTTPException(500, f"Database Commit Failed: {e}")
+        
     return db_poi
 
 @router.get("/admin/pois/{poi_id}", response_model=PoiRead)

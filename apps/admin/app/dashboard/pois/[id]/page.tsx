@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PoiForm from '../../../../components/PoiForm';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+const API_URL = '/api/proxy';
 
 export default function EditPoiPage({ params }: { params: { id: string } }) {
     const router = useRouter();

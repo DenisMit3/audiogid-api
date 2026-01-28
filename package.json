@@ -8,5 +8,6 @@
   ],
   "scripts": {
     "dev": "echo 'Run specific app dev scripts'"
-  }
+  },
+  "packageManager": "pnpm@8.15.4"
 }

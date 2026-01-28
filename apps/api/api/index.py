@@ -93,7 +93,7 @@ except Exception as e:
 
 app = FastAPI(
     title="Audio Guide 2026 API",
-    version="1.12.0 TEST",
+    version="1.13.0 TEST",
     docs_url="/docs",
     openapi_url="/openapi.json"
 )
@@ -146,7 +146,7 @@ receiver = Receiver(
 @app.get("/api/health")
 def health_check_legacy():
     # Legacy path alias
-    return {"status": "ok", "version": "1.11.0"}
+    return {"status": "ok", "version": "1.13.0 TEST"}
 
 @app.post("/api/internal/jobs/callback")
 async def job_callback(request: Request):
@@ -198,3 +198,13 @@ async def job_callback(request: Request):
         session.add(job)
         session.commit()
     return {"status": "processed", "job_id": job_id}
+
+# --- Diagnostic Endpoint ---
+@app.get("/api/diagnose-admin")
+def diagnose_admin():
+    import traceback
+    try:
+        from .admin import poi
+        return {"status": "ok", "poi_module": str(poi)}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}

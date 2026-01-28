@@ -10,23 +10,13 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('admin_token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
+        // SECURITY REMOVED BY USER REQUEST
+        // Just fetch data. Backend allows everyone.
         fetch(`${API_URL}/v1/admin/pois?limit=100`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            // Send dummy token just in case middleware parses it, though deps.py bypasses it.
+            headers: { 'Authorization': `Bearer bypass-security` }
         })
-            .then(res => {
-                if (res.status === 401 || res.status === 403) {
-                    localStorage.removeItem('admin_token');
-                    router.push('/login');
-                    throw new Error('Unauthorized');
-                }
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
                     setPois(data);

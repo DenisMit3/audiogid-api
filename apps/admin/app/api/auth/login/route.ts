@@ -5,12 +5,12 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Use backend URL from env or default to localhost
-    const API_URL = process.env.backend_url || 'http://localhost:8000';
+    const API_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
-    let endpoint = '/auth/login/dev-admin';
-    if ('phone' in body && 'code' in body) endpoint = '/auth/login/sms/verify';
-    else if ('hash' in body) endpoint = '/auth/login/telegram';
-    else if ('secret' in body) endpoint = '/auth/login/dev-admin';
+    let endpoint = '/v1/auth/login/dev-admin';
+    if ('phone' in body && 'code' in body) endpoint = '/v1/auth/login/sms/verify';
+    else if ('hash' in body) endpoint = '/v1/auth/login/telegram';
+    else if ('secret' in body) endpoint = '/v1/auth/login/dev-admin';
 
     try {
         const backendRes = await fetch(`${API_URL}${endpoint}`, {
@@ -42,8 +42,12 @@ export async function POST(request: Request) {
 
         return response;
 
-    } catch (e) {
+    } catch (e: any) {
         console.error('Login Proxy Error:', e);
-        return NextResponse.json({ detail: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({
+            detail: 'Internal Server Error',
+            error: e.message,
+            url: `${API_URL}${endpoint}`
+        }, { status: 500 });
     }
 }

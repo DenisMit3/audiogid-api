@@ -42,7 +42,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 type User = {
     id: string;

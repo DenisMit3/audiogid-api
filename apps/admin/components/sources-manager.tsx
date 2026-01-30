@@ -28,7 +28,8 @@ type Props = {
     entityType: 'poi' | 'tour';
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 export function SourcesManager({ poiId, sources: initialSources, entityType }: Props) {
     const [sources, setSources] = useState<Source[]>(initialSources || []);

@@ -36,7 +36,8 @@ import { SourcesManager } from './sources-manager';
 import { RouteBuilder } from './route-builder';
 import { PublishCheckModal } from './publish-check-modal';
 
-import { apiClient } from '@/lib/api-client';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 const tourSchema = z.object({
     title_ru: z.string().min(3, "Title must be at least 3 characters"),
@@ -87,13 +88,21 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     // 1. Save Basic Info
     const saveMutation = useMutation({
         mutationFn: async (values: TourFormValues) => {
-            let res;
-            if (tour) {
-                res = await apiClient.put<any>(`/admin/tours/${tour.id}`, values);
-            } else {
-                res = await apiClient.post<any>('/admin/tours', values);
-            }
-            return res;
+            const token = localStorage.getItem('admin_token');
+            const url = tour ? `${API_URL}/admin/tours/${tour.id}` : `${API_URL}/admin/tours`;
+            const method = tour ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(values)
+            });
+
+            if (!res.ok) throw new Error('Failed to save tour info');
+            return res.json();
         },
         onSuccess: (data) => {
             if (!tour) {
@@ -108,21 +117,40 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     // 2. Route Management
     const addItemMutation = useMutation({
         mutationFn: async ({ poiId, order }: { poiId: string, order: number }) => {
-            return await apiClient.post<any>(`/admin/tours/${tour!.id}/items`, { poi_id: poiId, order_index: order });
+            const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify({ poi_id: poiId, order_index: order })
+            });
+            if (!res.ok) throw new Error("Failed to add item");
+            return res.json();
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
     });
 
     const removeItemMutation = useMutation({
         mutationFn: async (itemId: string) => {
-            await apiClient.delete(`/admin/tours/${tour!.id}/items/${itemId}`);
+            await fetch(`${API_URL}/admin/tours/${tour!.id}/items/${itemId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
     });
 
     const reorderMutation = useMutation({
         mutationFn: async (itemIds: string[]) => {
-            await apiClient.put(`/admin/tours/${tour!.id}/items`, { item_ids: itemIds });
+            await fetch(`${API_URL}/admin/tours/${tour!.id}/items`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify({ item_ids: itemIds })
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] });
@@ -131,7 +159,16 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
 
     const updateItemMutation = useMutation({
         mutationFn: async ({ itemId, data }: { itemId: string, data: any }) => {
-            return await apiClient.put<any>(`/admin/tours/${tour!.id}/items/${itemId}`, data);
+            const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/items/${itemId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error("Failed to update item");
+            return res.json();
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
     });
@@ -139,7 +176,12 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     // 3. Publish Actions
     const publishMutation = useMutation({
         mutationFn: async (action: 'publish' | 'unpublish') => {
-            return await apiClient.post<any>(`/admin/tours/${tour!.id}/${action}`, {});
+            const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/${action}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
+            if (!res.ok) throw new Error(`${action} failed`);
+            return res.json();
         },
         onSuccess: () => {
             setIsPublishModalOpen(false);

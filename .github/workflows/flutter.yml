@@ -70,7 +70,7 @@ jobs:
       - name: Decode Keystore
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/audiogid-release.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > audiogid-release.jks
 
       - name: Build APK (Prod Release)
         env:

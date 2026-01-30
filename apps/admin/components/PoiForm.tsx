@@ -40,7 +40,8 @@ import { NarrationsManager } from './narrations-manager';
 import { LocationPicker } from './location-picker';
 import { PublishCheckModal } from './publish-check-modal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 const poiSchema = z.object({
     title_ru: z.string().min(3, "Title (RU) must be at least 3 characters"),

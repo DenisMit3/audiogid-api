@@ -141,7 +141,8 @@ type Props = {
     onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number }) => void;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
     const sensors = useSensors(

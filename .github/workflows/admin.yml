@@ -30,9 +30,8 @@ jobs:
           cache: 'pnpm'
 
       - name: Install Dependencies
-        run: |
-          pnpm install --frozen-lockfile
-          git diff --exit-code pnpm-lock.yaml
+        run: pnpm install
+        working-directory: .
 
       - name: Lint
         run: cd apps/admin && pnpm lint

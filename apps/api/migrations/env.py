@@ -64,8 +64,8 @@ def run_migrations_online() -> None:
     # Override URL with environment variable IF PRESENT, else use alembic.ini default
     # db_url = os.getenv("DATABASE_URL")
     
-    from api.core.config import config
-    db_url = config.DATABASE_URL
+    from api.core.config import config as app_config
+    db_url = app_config.DATABASE_URL
 
     configuration = config.get_section(config.config_ini_section) or {}
     if db_url:

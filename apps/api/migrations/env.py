@@ -8,7 +8,19 @@ from alembic import context
 from sqlmodel import SQLModel
 
 # Import models for autogeneration
-from api.core.models import Job 
+from api.core.models import (
+    SQLModel, Job, City, Poi, PoiSource, PoiMedia, Narration,
+    Tour, TourItem, TourSource, TourMedia, PurchaseIntent,
+    Purchase, Entitlement, EntitlementGrant, DeletionRequest,
+    AuditLog, IngestionRun, PoiStaging, HelperPlace,
+    User, UserIdentity, OtpCode, BlacklistedToken,
+    PoiVersion, TourVersion, ContentValidationIssue,
+    Permission, Role, RolePermission, AppEvent,
+    ContentEvent, PurchaseEvent, AnalyticsDailyStats,
+    UserCohort, RetentionMatrix, Funnel, FunnelStep,
+    FunnelConversion, QRMapping, UserPushToken
+)
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

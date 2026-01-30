@@ -3,6 +3,8 @@
 
 from fastapi import FastAPI, Request, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+
 from sqlmodel import Session, select
 from qstash import Receiver
 import logging
@@ -112,11 +114,15 @@ app = FastAPI(
 )
 
 # --- CORS Middleware (MUST be before other middleware) ---
-allowed_origins = [
+# Default origins + optional ones from env
+_default_origins = [
     "https://audiogid.app",
     "https://admin.audiogid.app",
     "https://*.vercel.app",  # Preview deployments
 ]
+_env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+allowed_origins = list(set(_default_origins + [o.strip() for o in _env_origins if o.strip()]))
+
 
 if os.getenv("VERCEL_ENV") == "preview":
     vercel_url = os.getenv("VERCEL_URL")
@@ -132,11 +138,11 @@ app.add_middleware(
 )
 
 # Mount Security Middleware (Global) - enabled in production
-if os.getenv("VERCEL_ENV") == "production":
-    app.add_middleware(SecurityMiddleware)
+app.add_middleware(SecurityMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(TimeoutMiddleware)
 app.add_middleware(AuditMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Health check at root
 @app.get("/")
@@ -170,10 +176,16 @@ if deeplinks_router: app.include_router(deeplinks_router) # No prefix for .well-
 analytics_router = safe_import_router("api.analytics.router")
 if analytics_router: app.include_router(analytics_router, prefix="/v1") # Phase 5
 
-receiver = Receiver(
-    current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
-    next_signing_key=config.QSTASH_NEXT_SIGNING_KEY,
-)
+# QStash Receiver for webhook verification
+if config.QSTASH_CURRENT_SIGNING_KEY:
+    receiver = Receiver(
+        current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
+        next_signing_key=config.QSTASH_NEXT_SIGNING_KEY,
+    )
+else:
+    logger.warning("QSTASH_CURRENT_SIGNING_KEY not set. Webhook verification will be disabled (SECURITY RISK).")
+    receiver = None
+
 
 @app.get("/api/health")
 def health_check_legacy():
@@ -224,14 +236,19 @@ async def job_callback(request: Request):
     signature = request.headers.get("Upstash-Signature")
     if not signature: 
         raise HTTPException(status_code=401, detail="Missing signature")
-    try:
-        receiver.verify(
-            body=raw_body.decode("utf-8"),
-            signature=signature,
-            url=str(request.url)
-        )
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid signature")
+    
+    if receiver:
+        try:
+            receiver.verify(
+                body=raw_body.decode("utf-8"),
+                signature=signature,
+                url=str(request.url)
+            )
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid signature")
+    else:
+        logger.warning("Skipping signature verification because QSTASH_CURRENT_SIGNING_KEY is not set.")
+
 
     body = await request.json()
     job_id = body.get("job_id")

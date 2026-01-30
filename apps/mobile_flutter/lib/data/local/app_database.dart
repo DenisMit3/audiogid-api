@@ -187,12 +187,18 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
+            // tables are created by onCreate for new installs, 
+            // but for older versions we might need this if they somehow bypassed onCreate
             for (final table in allTables) {
               await m.createTable(table);
             }
           }
+
           if (from < 4) {
              await m.addColumn(tours, tours.transportType);
              await m.addColumn(tours, tours.distanceKm);

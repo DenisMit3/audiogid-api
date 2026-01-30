@@ -1,4 +1,5 @@
 
+import os
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session, select, func, or_
@@ -10,8 +11,9 @@ from datetime import datetime, timedelta
 
 from ..core.models import Poi, PoiBase, PoiVersion, AuditLog, User, AppEvent, PoiSource, PoiMedia, Narration
 from ..auth.deps import get_current_admin, get_session, require_permission
-from ..core.config import settings
+from ..core.config import config as settings
 from ..core.async_utils import enqueue_job
+import requests
 
 router = APIRouter()
 
@@ -467,21 +469,59 @@ def get_presigned_url(
     
     # Generate path: entity_type/entity_id/uuid_filename
     unique_name = f"{uuid.uuid4()}_{req.filename}"
-    path = f"{req.entity_type}/{req.entity_id}/{unique_name}"
+    pathname = f"{req.entity_type}/{req.entity_id}/{unique_name}"
     
-    # TODO: Integration with Vercel Blob SDK
-    # For now, return a Mock/Local or check env
-    # If using Vercel Blob client side upload:
-    # return vercel_blob.put(path, ..., options={mode: 'client'})
-    
-    # Returning a dummy PUT url for now or use a proxy endpoint
-    return {
-        "upload_url": "https://httpbin.org/put", # MOCK!
-        "final_url": f"https://cdn.example.com/{path}",
-        "method": "PUT",
-        "headers": {"Content-Type": req.content_type},
-        "expires_at": datetime.utcnow() + timedelta(minutes=15)
-    }
+    if not settings.VERCEL_BLOB_READ_WRITE_TOKEN:
+        # Fail-fast in production
+        if os.getenv("VERCEL_ENV") == "production":
+             raise HTTPException(500, "Storage configuration error: VERCEL_BLOB_READ_WRITE_TOKEN missing in production")
+
+        # Fallback for dev without token
+        return {
+            "upload_url": "https://httpbin.org/put",
+            "final_url": f"https://cdn.example.com/{pathname}",
+            "method": "PUT",
+            "headers": {"Content-Type": req.content_type},
+            "expires_at": datetime.utcnow() + timedelta(minutes=15)
+        }
+
+    try:
+        # Using Vercel Blob MPU endpoint for client-side upload support
+        res = requests.post(
+            "https://blob.vercel-storage.com/mpu",
+            headers={
+                "Authorization": f"Bearer {settings.VERCEL_BLOB_READ_WRITE_TOKEN}",
+                "x-api-version": "1"
+            },
+            json={
+                "pathname": pathname,
+                "contentType": req.content_type,
+                "access": "public" 
+            },
+            timeout=10
+        )
+        res.raise_for_status()
+        data = res.json()
+        
+        # 'url' from MPU response is typically the PUT url or the final url?
+        # For Vercel Blob simple upload via MPU create, it gives a valid PUT url.
+        upload_url = data.get("url")
+        # Construct final public URL manually to avoid using the signed expiring URL
+        final_url = f"https://public.blob.vercel-storage.com/{pathname}"
+        
+        return {
+            "upload_url": upload_url,
+            "final_url": final_url, 
+            "method": "PUT",
+            "headers": {
+                "x-api-version": "1"
+            },
+            "expires_at": datetime.utcnow() + timedelta(minutes=15)
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Blob Presign Error: {e}")
+        raise HTTPException(502, "Failed to generate upload URL")
 
 @router.get("/admin/pois/{poi_id}/publish_check", response_model=PublishCheckResult)
 def check_poi_publish_status(

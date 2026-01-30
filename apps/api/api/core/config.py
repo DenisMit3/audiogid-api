@@ -53,6 +53,10 @@ class AppConfig:
         
         # Monitoring
         self.SENTRY_DSN = os.getenv("SENTRY_DSN")
+        
+        # Redis (Optional, used for shared rate limiting)
+        self.REDIS_URL = os.getenv("REDIS_URL")
+
 
             
     def _get_required(self, key: str) -> str:

@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    assetPrefix: process.env.CDN_URL || '',
     swcMinify: false,
+
     images: {
         remotePatterns: [
             {
@@ -16,7 +18,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+                        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://public.blob.vercel-storage.com data: blob:; media-src 'self' https://public.blob.vercel-storage.com data: blob:; connect-src 'self' https://public.blob.vercel-storage.com;"
                     }
                 ]
             }

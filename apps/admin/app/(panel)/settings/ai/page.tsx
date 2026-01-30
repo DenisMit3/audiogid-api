@@ -17,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const aiSchema = z.object({
     tts_provider: z.enum(['openai', 'google', 'azure']),
-    openai_api_key: z.string().optional(),
+    openai_api_key: z.string().optional().default(''),
     default_voice: z.string().min(1),
     enable_translation: z.boolean().default(true),
 });
@@ -51,7 +51,7 @@ export default function AISettingsPage() {
         queryFn: fetchAISettings
     });
 
-    const form = useForm<AIValues>({
+    const form = useForm<any>({
         resolver: zodResolver(aiSchema),
         values: settings,
         defaultValues: {
@@ -174,4 +174,5 @@ export default function AISettingsPage() {
         </div>
     );
 }
+
 

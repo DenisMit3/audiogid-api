@@ -67,3 +67,4 @@ function IntegrationCard({ name, description, status }: { name: string, descript
     )
 }
 
+

@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'wss://audiogid-api.vercel.app';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
+if (!WS_URL) throw new Error("NEXT_PUBLIC_WS_URL is required");
 
 type JobUpdate = {
     job_id: string;

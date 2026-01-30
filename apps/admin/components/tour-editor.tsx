@@ -70,7 +70,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const form = useForm<TourFormValues>({
+    const form = useForm<any>({
         resolver: zodResolver(tourSchema),
         defaultValues: {
             title_ru: tour?.title_ru || '',
@@ -440,4 +440,5 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         </div>
     );
 }
+
 

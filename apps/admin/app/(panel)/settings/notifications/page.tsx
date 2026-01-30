@@ -61,7 +61,7 @@ export default function NotificationsSettingsPage() {
         queryFn: fetchSettings,
     });
 
-    const form = useForm<NotificationsValues>({
+    const form = useForm<any>({
         resolver: zodResolver(notificationsSchema),
         values: settings, // Auto-populate when data is loaded
         defaultValues: {
@@ -295,4 +295,5 @@ export default function NotificationsSettingsPage() {
         </div>
     );
 }
+
 

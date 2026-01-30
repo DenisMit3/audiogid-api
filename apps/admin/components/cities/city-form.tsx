@@ -64,7 +64,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const form = useForm<CityFormValues>({
+    const form = useForm<any>({
         resolver: zodResolver(citySchema),
         defaultValues: {
             slug: initialData?.slug || "",
@@ -387,4 +387,5 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
         </Form>
     );
 }
+
 

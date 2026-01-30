@@ -76,7 +76,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const form = useForm<PoiFormValues>({
+    const form = useForm<any>({
         resolver: zodResolver(poiSchema),
         defaultValues: {
             title_ru: poi?.title_ru || '',
@@ -424,4 +424,5 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
         </div>
     );
 }
+
 

@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
     const body = await request.json();
 
-    // Use backend URL from env or default to localhost
-    const API_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+    // Use the internal proxy to handle backend routing and env vars
+    const origin = new URL(request.url).origin;
 
     let endpoint = '/v1/auth/login/dev-admin';
     if ('phone' in body && 'code' in body) endpoint = '/v1/auth/login/sms/verify';
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     else if ('secret' in body) endpoint = '/v1/auth/login/dev-admin';
 
     try {
-        const backendRes = await fetch(`${API_URL}${endpoint}`, {
+        const backendRes = await fetch(`${origin}/api/proxy${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             detail: 'Internal Server Error',
             error: e.message,
-            url: `${API_URL}${endpoint}`
+            url: `${origin}/api/proxy${endpoint}`
         }, { status: 500 });
     }
 }

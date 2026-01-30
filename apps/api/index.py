@@ -77,6 +77,9 @@ deletion_router = safe_import_router("api.deletion")
 yookassa_router = safe_import_router("api.billing.yookassa")
 billing_router = safe_import_router("api.billing.router")  # PR-46: Restore missing billing router
 auth_router = safe_import_router("api.auth.router")  # PR-58: Auth router
+admin_media_router = safe_import_router("api.admin.media")
+admin_validation_router = safe_import_router("api.admin.validation")
+offline_router = safe_import_router("api.offline.router")
 
 app = FastAPI(
     title="Audio Guide 2026 API",
@@ -122,6 +125,9 @@ if yookassa_router: app.include_router(yookassa_router)
 if billing_router: app.include_router(billing_router, prefix="/v1")
 if billing_router: app.include_router(billing_router, prefix="/v1")
 if auth_router: app.include_router(auth_router, prefix="/v1")  # PR-58: Auth routes
+if admin_media_router: app.include_router(admin_media_router, prefix="/v1")
+if admin_validation_router: app.include_router(admin_validation_router, prefix="/v1")
+if offline_router: app.include_router(offline_router, prefix="/v1")
 
 analytics_router = safe_import_router("api.analytics.router")
 if analytics_router: app.include_router(analytics_router, prefix="/v1") # Phase 5

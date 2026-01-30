@@ -1,88 +1,120 @@
 
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import { AlertCircle, CheckCircle } from "lucide-react"
+    DialogDescription,
+    DialogFooter
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-interface PublishCheckModalProps {
-    entityId: string
-    entityType: 'poi' | 'tour'
-}
+type Props = {
+    isOpen: boolean;
+    onClose: () => void;
+    onPublish: () => void;
+    onUnpublish?: () => void;
+    checkResult: {
+        can_publish: boolean;
+        issues: string[];
+        missing_requirements?: string[];
+        unpublished_poi_ids?: string[];
+    } | null;
+    isPublishing: boolean;
+    currentStatus: 'published' | 'draft';
+};
 
-export function PublishCheckModal({ entityId, entityType }: PublishCheckModalProps) {
-    const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<{ can_publish: boolean, issues: string[] } | null>(null);
+export function PublishCheckModal({
+    isOpen,
+    onClose,
+    onPublish,
+    onUnpublish,
+    checkResult,
+    isPublishing,
+    currentStatus
+}: Props) {
+    if (!checkResult && isOpen) return null;
 
-    const check = async () => {
-        setLoading(true);
-        try {
-            // endpoint: /admin/{pois|tours}/{id}/publish_check
-            // Proxy path: /api/proxy/admin/{pois|tours}/{id}/publish_check
-            const endpoint = entityType === 'poi' ? 'pois' : 'tours';
-            const res = await fetch(`/api/proxy/admin/${endpoint}/${entityId}/publish_check`);
-            if (res.ok) {
-                const data = await res.json();
-                setResult(data);
-            } else {
-                setResult({ can_publish: false, issues: ["Failed to fetch check status"] });
-            }
-        } catch (e) {
-            setResult({ can_publish: false, issues: ["Network error"] });
-        } finally {
-            setLoading(false);
-        }
-    };
+    const isPublished = currentStatus === 'published';
 
     return (
-        <Dialog open={open} onOpenChange={(v) => {
-            setOpen(v);
-            if (v) check();
-        }}>
-            <DialogTrigger asChild>
-                <Button variant="secondary" type="button">Check Publish</Button>
-            </DialogTrigger>
-            <DialogContent>
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Publish Check</DialogTitle>
-                    <DialogDescription>Validating content requirements...</DialogDescription>
+                    <DialogTitle className="flex items-center gap-2">
+                        {isPublished ? "Manage Publication" : "Publish Content"}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {isPublished
+                            ? "This content is currently live. You can unpublish it to hide it from users."
+                            : "Review the quality checks before making this content live."}
+                    </DialogDescription>
                 </DialogHeader>
 
-                <div className="py-4">
-                    {loading && <div className="text-center">Checking...</div>}
-                    {!loading && result && (
-                        <div className="space-y-4">
-                            {result.can_publish ? (
-                                <div className="flex items-center gap-2 text-green-600 bg-green-50 p-4 rounded-md">
-                                    <CheckCircle className="h-5 w-5" />
-                                    <span className="font-semibold">Ready to Publish</span>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-red-600 font-semibold">
-                                        <AlertCircle className="h-5 w-5" />
-                                        <span>Issues Found ({result.issues.length})</span>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
-                                        {result.issues.map((issue, idx) => (
-                                            <li key={idx}>{issue}</li>
-                                        ))}
-                                    </ul>
-                                </div>
+                <div className="space-y-4 py-4">
+                    {/* Status Card */}
+                    <div className={`p-4 rounded-lg flex items-start gap-3 border ${checkResult?.can_publish
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-amber-50 border-amber-200'
+                        }`}>
+                        {checkResult?.can_publish ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                        ) : (
+                            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                        )}
+                        <div>
+                            <h4 className={`text-sm font-semibold ${checkResult?.can_publish ? 'text-green-800' : 'text-amber-800'
+                                }`}>
+                                {checkResult?.can_publish ? "Ready to Publish" : "Issues Found"}
+                            </h4>
+                            {!checkResult?.can_publish && (
+                                <p className="text-xs text-amber-700 mt-1">
+                                    You must fix the critical issues below before publishing.
+                                </p>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Issues List */}
+                    {checkResult?.issues && checkResult.issues.length > 0 && (
+                        <div className="space-y-2">
+                            <span className="text-sm font-medium">Validation Report:</span>
+                            <ul className="text-sm space-y-2 pl-1">
+                                {checkResult.issues.map((issue, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-slate-700 bg-slate-50 p-2 rounded">
+                                        <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                        <span>{issue}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button variant="outline" onClick={onClose}>Close</Button>
+
+                    {isPublished && onUnpublish && (
+                        <Button variant="destructive" onClick={onUnpublish} disabled={isPublishing}>
+                            {isPublishing ? "Processing..." : "Unpublish Now"}
+                        </Button>
+                    )}
+
+                    {!isPublished && (
+                        <Button
+                            onClick={onPublish}
+                            disabled={!checkResult?.can_publish || isPublishing}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {isPublishing ? "Publishing..." : "Publish Now"}
+                        </Button>
+                    )}
+                </DialogFooter>
             </DialogContent>
         </Dialog>
-    )
+    );
 }

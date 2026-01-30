@@ -25,7 +25,7 @@ class OfflineApi {
   /// Parameters:
   ///
   /// * [BuildOfflineBundleRequest] buildOfflineBundleRequest (required):
-  Future<Response> buildOfflineBundleWithHttpInfo(BuildOfflineBundleRequest buildOfflineBundleRequest,) async {
+  Future<http.Response> buildOfflineBundleWithHttpInfo(BuildOfflineBundleRequest buildOfflineBundleRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/offline/bundles:build';
 
@@ -79,7 +79,7 @@ class OfflineApi {
   /// Parameters:
   ///
   /// * [String] jobId (required):
-  Future<Response> getOfflineBundleStatusWithHttpInfo(String jobId,) async {
+  Future<http.Response> getOfflineBundleStatusWithHttpInfo(String jobId,) async {
     // ignore: prefer_const_declarations
     final path = r'/offline/bundles/{job_id}'
       .replaceAll('{job_id}', jobId);

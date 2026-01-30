@@ -11,21 +11,22 @@
 part of openapi.api;
 
 class ApiClient {
-  ApiClient({this.basePath = 'https://audiogid-api.vercel.app/v1', this.authentication,});
+  ApiClient({this.basePath = 'https://audiogid-api.vercel.app/v1', this.authentication, this.dio,});
 
   final String basePath;
   final Authentication? authentication;
+  final dio.Dio? dio;
 
-  var _client = Client();
+  var _client = http.Client();
   final _defaultHeaderMap = <String, String>{};
 
   /// Returns the current HTTP [Client] instance to use in this class.
   ///
   /// The return value is guaranteed to never be null.
-  Client get client => _client;
+  http.Client get client => _client;
 
   /// Requests to use a new HTTP [Client] in this class.
-  set client(Client newClient) {
+  set client(http.Client newClient) {
     _client = newClient;
   }
 
@@ -37,7 +38,7 @@ class ApiClient {
 
   // We don't use a Map<String, String> for queryParams.
   // If collectionFormat is 'multi', a key might appear multiple times.
-  Future<Response> invokeAPI(
+  Future<http.Response> invokeAPI(
     String path,
     String method,
     List<QueryParam> queryParams,
@@ -55,15 +56,46 @@ class ApiClient {
 
     final urlEncodedQueryParams = queryParams.map((param) => '$param');
     final queryString = urlEncodedQueryParams.isNotEmpty ? '?${urlEncodedQueryParams.join('&')}' : '';
+    
+    if (dio != null) {
+      final options = dio!.Options(
+        method: method,
+        headers: headerParams,
+        contentType: contentType,
+        responseType: dio!.ResponseType.bytes, // and then we decode or use as is
+        validateStatus: (status) => true, // Handle all statuses
+      );
+
+      final queryMap = <String, dynamic>{};
+      for (final param in queryParams) {
+        queryMap[param.name] = param.value;
+      }
+
+      final response = await dio!.request(
+        path,
+        data: body,
+        queryParameters: queryMap,
+        options: options,
+      );
+
+      return http.Response.bytes(
+        (response.data as List<int>?) ?? [],
+        response.statusCode ?? 200,
+        headers: response.headers.map.map((k, v) => MapEntry(k, v.join(','))),
+        isRedirect: response.redirects.isNotEmpty,
+        request: http.Request(method, Uri.parse('$basePath$path$queryString')),
+      );
+    }
+
     final uri = Uri.parse('$basePath$path$queryString');
 
     try {
       // Special case for uploading a single file which isn't a 'multipart/form-data'.
       if (
-        body is MultipartFile && (contentType == null ||
+        body is http.MultipartFile && (contentType == null ||
         !contentType.toLowerCase().startsWith('multipart/form-data'))
       ) {
-        final request = StreamedRequest(method, uri);
+        final request = http.StreamedRequest(method, uri);
         request.headers.addAll(headerParams);
         request.contentLength = body.length;
         body.finalize().listen(
@@ -74,17 +106,17 @@ class ApiClient {
           cancelOnError: true,
         );
         final response = await _client.send(request);
-        return Response.fromStream(response);
+        return http.Response.fromStream(response);
       }
 
-      if (body is MultipartRequest) {
-        final request = MultipartRequest(method, uri);
+      if (body is http.MultipartRequest) {
+        final request = http.MultipartRequest(method, uri);
         request.fields.addAll(body.fields);
         request.files.addAll(body.files);
         request.headers.addAll(body.headers);
         request.headers.addAll(headerParams);
         final response = await _client.send(request);
-        return Response.fromStream(response);
+        return http.Response.fromStream(response);
       }
 
       final msgBody = contentType == 'application/x-www-form-urlencoded'
@@ -121,7 +153,7 @@ class ApiClient {
         error,
         trace,
       );
-    } on ClientException catch (error, trace) {
+    } on http.ClientException catch (error, trace) {
       throw ApiException.withInner(
         HttpStatus.badRequest,
         'HTTP connection failed: $method $path',

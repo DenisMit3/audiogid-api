@@ -448,6 +448,8 @@ components:
         has_access: { type: boolean }
         narrations: { type: array, items: { $ref: '#/components/schemas/Narration' } }
         media: { type: array, items: { $ref: '#/components/schemas/Media' } }
+        sources: { type: array, items: { $ref: '#/components/schemas/PoiSource' } }
+        category: { type: string, nullable: true }
 
     Narration:
       type: object
@@ -456,6 +458,7 @@ components:
         url: { type: string }
         locale: { type: string }
         duration_seconds: { type: number }
+        transcript: { type: string, nullable: true }
 
     Media:
       type: object
@@ -465,6 +468,14 @@ components:
         media_type: { type: string }
         author: { type: string }
         source_page_url: { type: string }
+        license_type: { type: string }
+
+    PoiSource:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string, nullable: true }
 
     IngestionRunRead:
       type: object

@@ -3,7 +3,7 @@ import uuid
 import hashlib
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request
-from sqlmodel import Session, select, text
+from sqlmodel import Session, select, text, func
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -89,10 +89,20 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID, city
     data["sources"] = [s.model_dump() for s in poi.sources]
     data["media"] = [m.model_dump() for m in poi.media]
     data["has_access"] = has_access
+    data["category"] = "Cultural Heritage" # Simplified for now
+    
     if not has_access:
         data["narrations"] = [] 
     else:
-        data["narrations"] = [{"id": str(n.id), "url": sign_asset_url(n.url), "locale": n.locale} for n in poi.narrations]
+        data["narrations"] = [
+            {
+                "id": str(n.id), 
+                "url": sign_asset_url(n.url), 
+                "locale": n.locale, 
+                "duration_seconds": n.duration_seconds,
+                "transcript": n.transcript
+            } for n in poi.narrations
+        ]
     return data
 
 
@@ -133,3 +143,43 @@ def get_helpers(response: Response, request: Request, city: str = Query(...), ca
     if category: q = q.where(HelperPlace.type == category)
     helpers = session.exec(q).all()
     return [h.model_dump(exclude={'geo'}) for h in helpers]
+
+# --- Phase 5: Mobile Sync Expanded ---
+
+@router.get("/public/cities/{slug}")
+def get_city_detail(response: Response, request: Request, slug: str, session: Session = Depends(get_session)):
+    city = session.exec(select(City).where(City.slug == slug)).first()
+    if not city:
+        raise HTTPException(status_code=404, detail="City not found")
+        
+    etag = f"city|{slug}|{city.updated_at}" # Simple etag
+    check_etag_versioned(request, response, f'W/"{hashlib.md5(etag.encode()).hexdigest()}"')
+    
+    return city.model_dump(exclude={'pois', 'tours', 'osm_relation_id'})
+
+@router.get("/public/cities/{slug}/pois")
+def get_city_pois(response: Response, request: Request, slug: str, page: int = 1, per_page: int = 50, session: Session = Depends(get_session)):
+    # List POIs for "Map Mode" or "Catalog"
+    offset = (page - 1) * per_page
+    query = select(Poi).where(Poi.city_slug == slug, Poi.published_at != None)
+    
+    # ETag based on latest POI update in city? Expensive. 
+    # For list, we might just cache short term or rely on client to not spam.
+    # Let's use generic list caching.
+    response.headers["Cache-Control"] = "public, max-age=60"
+    
+    total = session.exec(select(func.count()).select_from(query.subquery())).one()
+    pois = session.exec(query.offset(offset).limit(per_page)).all()
+    
+    return {
+        "items": [p.model_dump(include={'id', 'title_ru', 'category', 'lat', 'lon', 'cover_image'}) for p in pois],
+        "total": total,
+        "page": page,
+        "per_page": per_page
+    }
+
+@router.get("/public/cities/{slug}/tours")
+def get_city_tours(response: Response, request: Request, slug: str, session: Session = Depends(get_session)):
+    tours = session.exec(select(Tour).where(Tour.city_slug == slug, Tour.published_at != None)).all()
+    return [t.model_dump(include={'id', 'title_ru', 'description_ru', 'cover_image', 'duration_minutes', 'tour_type'}) for t in tours]
+

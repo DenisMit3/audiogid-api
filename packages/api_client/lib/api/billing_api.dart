@@ -23,7 +23,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [String] deviceAnonId (required):
-  Future<Response> getEntitlementsWithHttpInfo(String deviceAnonId,) async {
+  Future<http.Response> getEntitlementsWithHttpInfo(String deviceAnonId,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/entitlements';
 
@@ -80,7 +80,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [String] jobId (required):
-  Future<Response> getRestoreJobStatusWithHttpInfo(String jobId,) async {
+  Future<http.Response> getRestoreJobStatusWithHttpInfo(String jobId,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/restore/{job_id}'
       .replaceAll('{job_id}', jobId);
@@ -135,7 +135,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [RestorePurchasesRequest] restorePurchasesRequest (required):
-  Future<Response> restorePurchasesWithHttpInfo(RestorePurchasesRequest restorePurchasesRequest,) async {
+  Future<http.Response> restorePurchasesWithHttpInfo(RestorePurchasesRequest restorePurchasesRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/restore';
 
@@ -189,7 +189,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [VerifyAppleReceiptRequest] verifyAppleReceiptRequest (required):
-  Future<Response> verifyAppleReceiptWithHttpInfo(VerifyAppleReceiptRequest verifyAppleReceiptRequest,) async {
+  Future<http.Response> verifyAppleReceiptWithHttpInfo(VerifyAppleReceiptRequest verifyAppleReceiptRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/apple/verify';
 
@@ -241,7 +241,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [VerifyGooglePurchaseRequest] verifyGooglePurchaseRequest (required):
-  Future<Response> verifyGooglePurchaseWithHttpInfo(VerifyGooglePurchaseRequest verifyGooglePurchaseRequest,) async {
+  Future<http.Response> verifyGooglePurchaseWithHttpInfo(VerifyGooglePurchaseRequest verifyGooglePurchaseRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/google/verify';
 

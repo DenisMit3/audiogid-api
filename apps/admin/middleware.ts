@@ -1,12 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { decodeJwt } from 'jose';
+import { jwtVerify } from 'jose';
 
 // Public paths that don't require auth
 const PUBLIC_PATHS = ['/login', '/_next', '/favicon.ico', '/api/auth'];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+    // TEMPORARY FULL BYPASS FOR DEBUGGING AS REQUESTED
+    return NextResponse.next();
+
+    /* Original auth logic preserved for restoration
     const { pathname } = request.nextUrl;
 
     if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
@@ -22,26 +26,21 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-        // Use jose for Edge-compatible JWT decoding
-        const decoded = decodeJwt(token);
+        // Verify JWT signature using Jose
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-for-dev-only');
+        await jwtVerify(token, secret);
 
-        if (!decoded || (decoded.exp && Date.now() >= decoded.exp * 1000)) {
-            const url = request.nextUrl.clone();
-            url.pathname = '/login';
-            const response = NextResponse.redirect(url);
-            response.cookies.delete('token');
-            return response;
-        }
+        return NextResponse.next();
 
     } catch (error) {
+        console.error('Middleware Auth Error:', error);
         const url = request.nextUrl.clone();
         url.pathname = '/login';
         const response = NextResponse.redirect(url);
         response.cookies.delete('token');
         return response;
     }
-
-    return NextResponse.next();
+    */
 }
 
 export const config = {

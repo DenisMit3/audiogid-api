@@ -23,7 +23,7 @@ class AccountApi {
   /// Parameters:
   ///
   /// * [String] deletionRequestId (required):
-  Future<Response> getDeletionStatusWithHttpInfo(String deletionRequestId,) async {
+  Future<http.Response> getDeletionStatusWithHttpInfo(String deletionRequestId,) async {
     // ignore: prefer_const_declarations
     final path = r'/public/account/delete/status';
 
@@ -79,7 +79,7 @@ class AccountApi {
   /// Parameters:
   ///
   /// * [RequestDeletionRequest] requestDeletionRequest (required):
-  Future<Response> requestDeletionWithHttpInfo(RequestDeletionRequest requestDeletionRequest,) async {
+  Future<http.Response> requestDeletionWithHttpInfo(RequestDeletionRequest requestDeletionRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/public/account/delete/request';
 

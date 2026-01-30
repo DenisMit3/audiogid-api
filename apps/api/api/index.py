@@ -57,6 +57,40 @@ except Exception as e:
     logger.error(f"Failed to import admin_pois router: {e}")
     admin_pois_router = None
 
+
+
+try:
+    from .admin.qrcodes import router as admin_qr_router
+except Exception as e:
+    logger.error(f"Failed to import admin_qr router: {e}")
+    admin_qr_router = None
+
+try:
+    from .admin.jobs import router as admin_jobs_router
+except Exception as e:
+    logger.error(f"Failed to import admin_jobs router: {e}")
+    admin_jobs_router = None
+
+
+try:
+    from .admin.cities import router as admin_cities_router
+except Exception as e:
+    logger.error(f"Failed to import admin_cities router: {e}")
+    admin_cities_router = None
+
+try:
+    from .admin.validation import router as admin_validation_router
+except Exception as e:
+    logger.error(f"Failed to import admin_validation router: {e}")
+    admin_validation_router = None
+
+
+try:
+    from .admin.media import router as admin_media_router
+except Exception as e:
+    logger.error(f"Failed to import admin_media router: {e}")
+    admin_media_router = None
+
 try:
     from .purchases import router as purchases_router
 except Exception as e:
@@ -125,6 +159,11 @@ if map_router: app.include_router(map_router, prefix="/v1")
 if publish_router: app.include_router(publish_router, prefix="/v1")
 if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
 if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")
+if admin_qr_router: app.include_router(admin_qr_router, prefix="/v1")
+if admin_jobs_router: app.include_router(admin_jobs_router, prefix="/v1")
+if admin_cities_router: app.include_router(admin_cities_router, prefix="/v1")
+if admin_validation_router: app.include_router(admin_validation_router, prefix="/v1")
+if admin_media_router: app.include_router(admin_media_router, prefix="/v1")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")
@@ -184,7 +223,7 @@ async def job_callback(request: Request):
         session.commit()
         try:
             from .core.worker import process_job
-            process_job(session, job) 
+            await process_job(session, job) 
             if job.status == "RUNNING": job.status = "COMPLETED"
         except ImportError as ie:
             logger.error(f"Worker Import Error: {ie}")

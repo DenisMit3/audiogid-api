@@ -7,5 +7,8 @@
     "build": "pnpm --filter admin build",
     "lint": "pnpm --filter admin lint"
   },
-  "packageManager": "pnpm@8.15.4"
+  "packageManager": "pnpm@8.15.4",
+  "devDependencies": {
+    "turbo": "^2.8.0"
+  }
 }

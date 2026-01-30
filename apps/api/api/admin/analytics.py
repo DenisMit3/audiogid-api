@@ -172,6 +172,16 @@ def get_analytics_overview(
     session: Session = Depends(get_session),
     user: User = Depends(require_permission('analytics:read'))
 ):
+    # Simple In-Memory Cache for 5 mins to prevent DB redundant hits
+    # In production, use Redis.
+    now = datetime.utcnow()
+    cache_key = "analytics_overview"
+    
+    if hasattr(get_analytics_overview, "cache"):
+        cached_ts, cached_data = get_analytics_overview.cache
+        if (now - cached_ts).total_seconds() < 300: # 5 mins
+            return cached_data
+            
     # 1. KPIs (Aggregation from AnalyticsDailyStats)
     cutoff_30d = datetime.utcnow() - timedelta(days=30)
     cutoff_7d = datetime.utcnow() - timedelta(days=7)
@@ -243,4 +253,34 @@ def get_analytics_overview(
             "revenue": s.total_revenue
         })
         
-    return OverviewResponse(kpis=kpis, top_content=top_content, recent_trend=trend)
+    response = OverviewResponse(kpis=kpis, top_content=top_content, recent_trend=trend)
+    get_analytics_overview.cache = (now, response)
+    return response
+
+@router.get("/admin/analytics/heatmap")
+def get_heatmap_data(
+    days: int = 30,
+    session: Session = Depends(get_session),
+    user: User = Depends(require_permission('analytics:read'))
+):
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    # Aggregate POI interactions to generate heatmap
+    # count(ContentEvent) group by entity_id where type=poi
+    
+    stmt = select(Poi.lat, Poi.lon, func.count(ContentEvent.id)).join(
+        ContentEvent, 
+        (ContentEvent.entity_id == Poi.id) & (ContentEvent.entity_type == 'poi')
+    ).where(ContentEvent.ts >= cutoff).group_by(Poi.id, Poi.lat, Poi.lon)
+    
+    results = session.exec(stmt).all()
+    
+    # Format: [[lat, lon, intensity], ...]
+    points = []
+    max_val = 0
+    for lat, lon, cnt in results:
+        if lat is not None and lon is not None:
+             points.append([lat, lon, cnt])
+             if cnt > max_val: max_val = cnt
+             
+    # Normalize intensity 0-1 if client wants, or send raw
+    return {"points": points, "max": max_val}

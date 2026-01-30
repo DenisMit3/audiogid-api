@@ -1,171 +1,423 @@
+
 'use client';
+
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Loader2, Save, MoreVertical, MapPin, Globe, Mic, Image as ImageIcon, BookOpen, Send, Plus } from 'lucide-react';
 
-const API_URL = '/api/proxy';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export default function PoiForm({ poi, onSuccess }: { poi?: any, onSuccess: () => void }) {
-    const [formData, setFormData] = useState({
-        title_ru: poi?.title_ru || '',
-        description_ru: poi?.description_ru || '',
-        lat: poi?.lat || '',
-        lon: poi?.lon || '',
-        city_slug: poi?.city_slug || 'kaliningrad_city',
-        is_active: poi?.is_active ?? true
+import { MediaUploader } from './media-upload';
+import { SourcesManager } from './sources-manager';
+import { NarrationsManager } from './narrations-manager';
+import { LocationPicker } from './location-picker';
+import { PublishCheckModal } from './publish-check-modal';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+
+const poiSchema = z.object({
+    title_ru: z.string().min(3, "Title (RU) must be at least 3 characters"),
+    title_en: z.string().optional(),
+    city_slug: z.string().min(1, "City is required"),
+    description_ru: z.string().optional(),
+    description_en: z.string().optional(),
+    category: z.string().optional(),
+    address: z.string().optional(),
+    cover_image: z.string().optional(),
+    lat: z.coerce.number().min(-90).max(90).optional(),
+    lon: z.coerce.number().min(-180).max(180).optional(),
+    is_active: z.boolean().default(true),
+    // TODO: opening_hours, external_links json support
+});
+
+type PoiFormValues = z.infer<typeof poiSchema>;
+
+type PoiData = PoiFormValues & {
+    id: string;
+    media: any[];
+    sources: any[];
+    narrations: any[];
+    published_at?: string;
+    can_publish: boolean;
+    publish_issues: string[];
+};
+
+export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?: (id: string) => void }) {
+    const [activeTab, setActiveTab] = useState('general');
+    const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const router = useRouter();
+    const queryClient = useQueryClient();
+
+    const form = useForm<PoiFormValues>({
+        resolver: zodResolver(poiSchema),
+        defaultValues: {
+            title_ru: poi?.title_ru || '',
+            title_en: poi?.title_en || '',
+            city_slug: poi?.city_slug || 'kaliningrad_city', // default
+            description_ru: poi?.description_ru || '',
+            description_en: poi?.description_en || '',
+            category: poi?.category || 'landmark',
+            address: poi?.address || '',
+            cover_image: poi?.cover_image || '',
+            lat: poi?.lat,
+            lon: poi?.lon,
+            is_active: poi?.is_active ?? true,
+        }
     });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const token = localStorage.getItem('admin_token');
-        const url = poi
-            ? `${API_URL}/v1/admin/pois/${poi.id}`
-            : `${API_URL}/v1/admin/pois`;
+    const mutation = useMutation({
+        mutationFn: async (values: PoiFormValues) => {
+            const token = localStorage.getItem('admin_token');
+            const url = poi ? `${API_URL}/admin/pois/${poi.id}` : `${API_URL}/admin/pois`;
+            const method = poi ? 'PATCH' : 'POST';
 
-        const method = poi ? 'PATCH' : 'POST';
-
-        try {
             const res = await fetch(url, {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(values)
             });
 
-            if (res.ok) {
-                onSuccess();
-            } else {
+            if (!res.ok) {
                 const err = await res.json();
-                alert(`Error saving POI: ${JSON.stringify(err)}`);
+                throw new Error(err.detail || 'Failed to save');
             }
-        } catch (e) {
-            alert('Network error');
-        }
-    };
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['pois'] });
+            queryClient.invalidateQueries({ queryKey: ['poi', data.id] });
 
-    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
-        if (!e.target.files || !e.target.files[0] || !poi?.id) return;
-        const file = e.target.files[0];
-        const fd = new FormData();
-        fd.append('file', file);
-
-        const token = localStorage.getItem('admin_token');
-        try {
-            const res = await fetch(`${API_URL}/v1/admin/pois/${poi.id}/media_upload?media_type=${type}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: fd
-            });
-            if (res.ok) {
-                alert('Uploaded!');
-                // We should ideally reload the POI data here, but for now just tell user.
-                // Trigger onSuccess to maybe reload parent?
-                // onSuccess(); // This might nav away. 
+            if (onSuccess) onSuccess(data.id);
+            if (!poi) {
+                router.push(`/content/pois/${data.id}`);
             } else {
-                alert('Upload failed');
+                // alert("Saved successfully");
             }
-        } catch (e) {
-            alert('Upload error');
+        },
+        onError: (err) => alert(err.message)
+    });
+
+    const publishMutation = useMutation({
+        mutationFn: async (action: 'publish' | 'unpublish') => {
+            const res = await fetch(`${API_URL}/admin/pois/${poi!.id}/${action}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
+            if (!res.ok) throw new Error(`${action} failed`);
+            return res.json();
+        },
+        onSuccess: () => {
+            setIsPublishModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['poi', poi?.id] });
         }
+    });
+
+    const onSubmit = (values: PoiFormValues) => {
+        mutation.mutate(values);
     };
 
     return (
-        <div style={{ fontFamily: 'sans-serif', maxWidth: 600 }}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                <div>
-                    <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Title (RU)</label>
-                    <input
-                        required
-                        value={formData.title_ru}
-                        onChange={e => setFormData({ ...formData, title_ru: e.target.value })}
-                        style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
-                    />
-                </div>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <div className="flex justify-between w-full border-b pb-px">
+                        <TabsList className="bg-transparent p-0 h-auto">
+                            <TabsTrigger value="general" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2">
+                                <BookOpen className="w-4 h-4" /> General
+                            </TabsTrigger>
+                            <TabsTrigger value="location" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
+                                <MapPin className="w-4 h-4" /> Location
+                            </TabsTrigger>
+                            <TabsTrigger value="media" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
+                                <ImageIcon className="w-4 h-4" /> Media
+                            </TabsTrigger>
+                            <TabsTrigger value="narrations" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
+                                <Mic className="w-4 h-4" /> Narrations
+                            </TabsTrigger>
+                            <TabsTrigger value="sources" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
+                                <Globe className="w-4 h-4" /> Sources
+                            </TabsTrigger>
+                        </TabsList>
 
-                <div>
-                    <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>City Slug</label>
-                    <select
-                        value={formData.city_slug}
-                        onChange={e => setFormData({ ...formData, city_slug: e.target.value })}
-                        style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
-                    >
-                        <option value="kaliningrad_city">Kaliningrad City</option>
-                        <option value="kaliningrad_oblast">Kaliningrad Oblast</option>
-                    </select>
-                </div>
-
-                <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Lat</label>
-                        <input
-                            type="number" step="any"
-                            value={formData.lat}
-                            onChange={e => setFormData({ ...formData, lat: parseFloat(e.target.value) })}
-                            style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
-                        />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Lon</label>
-                        <input
-                            type="number" step="any"
-                            value={formData.lon}
-                            onChange={e => setFormData({ ...formData, lon: parseFloat(e.target.value) })}
-                            style={{ width: '100%', padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Description</label>
-                    <textarea
-                        value={formData.description_ru}
-                        onChange={e => setFormData({ ...formData, description_ru: e.target.value })}
-                        style={{ width: '100%', height: 100, padding: 8, border: '1px solid #ccc', borderRadius: 4, fontFamily: 'sans-serif' }}
-                    />
-                </div>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                        type="checkbox"
-                        checked={formData.is_active}
-                        onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
-                    />
-                    Active
-                </label>
-
-                <button type="submit" style={{ padding: 12, background: '#0070f3', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 'bold' }}>
-                    {poi ? 'Update POI Details' : 'Create POI'}
-                </button>
-            </form>
-
-            {poi && (
-                <div style={{ marginTop: 30, borderTop: '2px solid #eee', paddingTop: 20 }}>
-                    <h3>Media & Files</h3>
-
-                    <div style={{ marginBottom: 20 }}>
-                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Upload Audio (MP3)</label>
-                        <input type="file" accept="audio/*" onChange={e => handleUpload(e, 'audio')} />
-                    </div>
-
-                    <div style={{ marginBottom: 20 }}>
-                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 5 }}>Upload Image (JPG/PNG)</label>
-                        <input type="file" accept="image/*" onChange={e => handleUpload(e, 'image')} />
-                    </div>
-
-                    {poi.media && poi.media.length > 0 && (
-                        <div>
-                            <h4>Attached Media:</h4>
-                            <ul style={{ listStyle: 'none', padding: 0 }}>
-                                {poi.media.map((m: any, i: number) => (
-                                    <li key={i} style={{ marginBottom: 5, padding: 5, background: '#f9f9f9' }}>
-                                        <strong>[{m.media_type}]</strong>
-                                        <a href={m.url} target="_blank" style={{ marginLeft: 10 }}>{m.url.split('/').pop()}</a>
-                                    </li>
-                                ))}
-                            </ul>
+                        <div className="flex items-center gap-2 mb-1">
+                            {poi && (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsPublishModalOpen(true)}
+                                        className={poi.published_at ? "border-green-500 text-green-700 bg-green-50" : ""}
+                                    >
+                                        <Send className="w-3 h-3 mr-2" />
+                                        {poi.published_at ? 'Published' : 'Publish'}
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem className="text-red-500">Delete POI</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </div>
+
+                    <div className="pt-6">
+                        {/* TAB: GENERAL */}
+                        <TabsContent value="general">
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="title_ru"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Title (Russian) *</FormLabel>
+                                                            <FormControl><Input {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="title_en"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Title (English)</FormLabel>
+                                                            <FormControl><Input {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="city_slug"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>City</FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl><SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger></FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="kaliningrad_city">Kaliningrad City</SelectItem>
+                                                                    <SelectItem value="zelenogradsk">Zelenogradsk</SelectItem>
+                                                                    <SelectItem value="svetlogorsk">Svetlogorsk</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="category"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Category</FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="landmark">Landmark</SelectItem>
+                                                                    <SelectItem value="museum">Museum</SelectItem>
+                                                                    <SelectItem value="park">Park</SelectItem>
+                                                                    <SelectItem value="monument">Monument</SelectItem>
+                                                                    <SelectItem value="church">Church</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="description_ru"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Description (RU)</FormLabel>
+                                                            <FormControl><Textarea className="h-32" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="description_en"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Description (EN)</FormLabel>
+                                                            <FormControl><Textarea className="h-32" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="address"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Address</FormLabel>
+                                                            <FormControl><Input {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="cover_image"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Cover Image URL</FormLabel>
+                                                            <FormControl><Input {...field} placeholder="https://..." /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="is_active"
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl>
+                                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                            </FormControl>
+                                                            <div className="space-y-1 leading-none">
+                                                                <FormLabel>Active Status</FormLabel>
+                                                                <FormDescription>Visible in app</FormDescription>
+                                                            </div>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <Button type="submit" disabled={mutation.isPending}>
+                                                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                    {poi ? 'Update General Info' : 'Create POI'}
+                                                </Button>
+                                            </div>
+                                        </form>
+                                    </Form>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* TAB: LOCATION */}
+                        <TabsContent value="location">
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <div className="grid grid-cols-3 gap-6">
+                                        <div className="col-span-1 space-y-4">
+                                            <div>
+                                                <h3 className="font-semibold mb-2">Coordinates</h3>
+                                                <p className="text-sm text-muted-foreground mb-4">
+                                                    Click on the map or search for an address to set the location.
+                                                </p>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="grid gap-2">
+                                                    <Label>Latitude</Label>
+                                                    <Input type="number" step="any" value={form.watch('lat') || ''} onChange={e => form.setValue('lat', parseFloat(e.target.value))} />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label>Longitude</Label>
+                                                    <Input type="number" step="any" value={form.watch('lon') || ''} onChange={e => form.setValue('lon', parseFloat(e.target.value))} />
+                                                </div>
+                                                <Button onClick={() => mutation.mutate(form.getValues())} className="w-full">
+                                                    Save Location
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <LocationPicker
+                                                lat={form.watch('lat')}
+                                                lon={form.watch('lon')}
+                                                onChange={(lat, lon) => {
+                                                    form.setValue('lat', lat);
+                                                    form.setValue('lon', lon);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* TAB: MEDIA */}
+                        <TabsContent value="media">
+                            {poi && <MediaUploader entityId={poi.id} entityType="poi" media={poi.media} />}
+                        </TabsContent>
+
+                        {/* TAB: NARRATIONS */}
+                        <TabsContent value="narrations">
+                            {poi && <NarrationsManager poiId={poi.id} narrations={poi.narrations} />}
+                        </TabsContent>
+
+                        {/* TAB: SOURCES */}
+                        <TabsContent value="sources">
+                            {poi && <SourcesManager poiId={poi.id} sources={poi.sources} entityType="poi" />}
+                        </TabsContent>
+
+                    </div>
+                </Tabs>
+            </div>
+
+            {/* Modals */}
+            {poi && (
+                <PublishCheckModal
+                    isOpen={isPublishModalOpen}
+                    onClose={() => setIsPublishModalOpen(false)}
+                    onPublish={() => publishMutation.mutate('publish')}
+                    onUnpublish={() => publishMutation.mutate('unpublish')}
+                    isPublishing={publishMutation.isPending}
+                    checkResult={{
+                        can_publish: poi.can_publish,
+                        issues: poi.publish_issues || []
+                    }}
+                    currentStatus={poi.published_at ? 'published' : 'draft'}
+                />
             )}
         </div>
     );

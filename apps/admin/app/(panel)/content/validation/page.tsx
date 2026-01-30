@@ -6,33 +6,61 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, CheckCircle, RotateCw } from "lucide-react"
-import useSWR from "swr"
+import { useQuery } from '@tanstack/react-query';
 import Link from "next/link"
 import { useState } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app/v1';
+
+type ValidationIssue = {
+    id: string;
+    entity_id: string;
+    entity_type: string;
+    issue_type: string;
+    severity: 'blocker' | 'warning' | 'info';
+    message: string;
+};
+
+const fetchIssues = async (): Promise<ValidationIssue[]> => {
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch(`${API_URL}/admin/content/issues`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("Failed to fetch issues");
+    return res.json();
+};
 
 export default function ValidationPage() {
-    const { data: issues, error, mutate } = useSWR('/api/proxy/admin/content/issues', fetcher);
+    const { toast } = useToast();
+    const { data: issues, isLoading, error, refetch } = useQuery({
+        queryKey: ['validation-issues'],
+        queryFn: fetchIssues
+    });
+
     const [scanning, setScanning] = useState(false);
 
     const runScan = async () => {
         setScanning(true);
         try {
-            await fetch('/api/proxy/admin/content/validation-report', { method: 'POST' });
-            mutate();
+            await refetch();
+            toast({ title: "Scan Complete", description: "Validation issues updated." });
+        } catch (e) {
+            toast({ title: "Scan Failed", variant: "destructive" });
         } finally {
             setScanning(false);
         }
     };
 
-    const columns: ColumnDef<any>[] = [
+    const columns: ColumnDef<ValidationIssue>[] = [
         {
             accessorKey: "severity",
             header: "Severity",
             cell: ({ row }) => {
                 const s = row.getValue("severity") as string;
-                return s === 'blocker' ? <Badge variant="destructive">{s}</Badge> : <Badge variant="secondary">{s}</Badge>
+                if (s === 'blocker') return <Badge variant="destructive">Blocker</Badge>;
+                if (s === 'warning') return <Badge className="bg-yellow-500 hover:bg-yellow-600">Warning</Badge>;
+                return <Badge variant="secondary">Info</Badge>;
             }
         },
         {
@@ -64,23 +92,26 @@ export default function ValidationPage() {
     ]
 
     return (
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-4 p-6">
             <div className="flex items-center justify-between py-4">
                 <div>
                     <h1 className="text-2xl font-bold">Content Validation</h1>
                     <p className="text-muted-foreground">Global quality check report</p>
                 </div>
-                <Button onClick={runScan} disabled={scanning}>
-                    {scanning ? <RotateCw className="mr-2 h-4 w-4 animate-spin" /> : <RotateCw className="mr-2 h-4 w-4" />}
+                <Button onClick={runScan} disabled={scanning || isLoading}>
+                    {scanning || isLoading ? <RotateCw className="mr-2 h-4 w-4 animate-spin" /> : <RotateCw className="mr-2 h-4 w-4" />}
                     Run Scan
                 </Button>
             </div>
 
-            {error && <div>Failed to load issues</div>}
-            {!issues ? (
-                <div>Loading...</div>
+            {error && <div className="text-red-500">Failed to load issues: {(error as Error).message}</div>}
+
+            {isLoading ? (
+                <div>Loading issues...</div>
             ) : (
-                <DataTable columns={columns} data={issues} />
+                <div className="rounded-md border">
+                    <DataTable columns={columns} data={issues || []} />
+                </div>
             )}
         </div>
     )

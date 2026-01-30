@@ -19,7 +19,7 @@ class OpsApi {
   /// Get deployed commit info
   ///
   /// Note: This method returns the HTTP [Response].
-  Future<Response> getOpsCommitWithHttpInfo() async {
+  Future<http.Response> getOpsCommitWithHttpInfo() async {
     // ignore: prefer_const_declarations
     final path = r'/ops/commit';
 
@@ -65,7 +65,7 @@ class OpsApi {
   /// Returns 200 (OK) if healthy, 503 if partial failure (e.g. imports).
   ///
   /// Note: This method returns the HTTP [Response].
-  Future<Response> getOpsHealthWithHttpInfo() async {
+  Future<http.Response> getOpsHealthWithHttpInfo() async {
     // ignore: prefer_const_declarations
     final path = r'/ops/health';
 
@@ -111,7 +111,7 @@ class OpsApi {
   /// Health and config check (Safe monitor)
   ///
   /// Note: This method returns the HTTP [Response].
-  Future<Response> opsConfigCheckGetWithHttpInfo() async {
+  Future<http.Response> opsConfigCheckGetWithHttpInfo() async {
     // ignore: prefer_const_declarations
     final path = r'/ops/config-check';
 

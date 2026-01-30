@@ -1,0 +1,83 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+apply plugin: 'com.google.gms.google-services'
+
+android {
+    namespace "app.audiogid.mobile_flutter"
+    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        applicationId "app.audiogid.mobile_flutter"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    flavorDimensions "mode"
+
+    productFlavors {
+        dev {
+            dimension "mode"
+            applicationIdSuffix ".dev"
+            versionNameSuffix "-dev"
+            resValue "string", "app_name", "Audiogid Dev"
+        }
+        staging {
+            dimension "mode"
+            applicationIdSuffix ".staging"
+            versionNameSuffix "-staging"
+            resValue "string", "app_name", "Audiogid Staging"
+        }
+        prod {
+            dimension "mode"
+            resValue "string", "app_name", "Audiogid"
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+        }
+        release {
+            // Checks for env vars first, then gradle.properties
+            storeFile file(System.getenv("UPLOAD_STORE_FILE") ?: (project.hasProperty("UPLOAD_STORE_FILE") ? project.property("UPLOAD_STORE_FILE") : "release.keystore"))
+            storePassword System.getenv("UPLOAD_STORE_PASSWORD") ?: (project.hasProperty("UPLOAD_STORE_PASSWORD") ? project.property("UPLOAD_STORE_PASSWORD") : "")
+            keyAlias System.getenv("UPLOAD_KEY_ALIAS") ?: (project.hasProperty("UPLOAD_KEY_ALIAS") ? project.property("UPLOAD_KEY_ALIAS") : "")
+            keyPassword System.getenv("UPLOAD_KEY_PASSWORD") ?: (project.hasProperty("UPLOAD_KEY_PASSWORD") ? project.property("UPLOAD_KEY_PASSWORD") : "")
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}

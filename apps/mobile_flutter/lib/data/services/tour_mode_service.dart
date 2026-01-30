@@ -1,0 +1,270 @@
+
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:mobile_flutter/core/audio/providers.dart';
+import 'package:mobile_flutter/core/location/location_service.dart';
+import 'package:mobile_flutter/domain/entities/tour.dart';
+import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/core/audio/audio_player_service.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:mobile_flutter/data/repositories/settings_repository.dart';
+
+class TourModeState {
+  final Tour? activeTour;
+  final int currentStepIndex;
+  final double? distanceToNextPoi;
+  final int? etaSeconds;
+  final bool isAutoPlayEnabled;
+  final bool isOffRoute;
+  final bool isActive;
+
+  // Derived getters
+  Poi? get currentPoi {
+    if (activeTour == null || activeTour!.items == null) return null;
+    if (currentStepIndex >= activeTour!.items!.length) return null;
+    return activeTour!.items![currentStepIndex].poi;
+  }
+  
+  Poi? get nextPoi {
+    if (activeTour == null || activeTour!.items == null) return null;
+    if (currentStepIndex + 1 >= activeTour!.items!.length) return null;
+    return activeTour!.items![currentStepIndex + 1].poi;
+  }
+
+  TourModeState({
+    this.activeTour,
+    this.currentStepIndex = 0,
+    this.distanceToNextPoi,
+    this.etaSeconds,
+    this.isAutoPlayEnabled = true,
+    this.isOffRoute = false,
+    this.isActive = false,
+  });
+
+  TourModeState copyWith({
+    Tour? activeTour,
+    int? currentStepIndex,
+    double? distanceToNextPoi,
+    int? etaSeconds,
+    bool? isAutoPlayEnabled,
+    bool? isOffRoute,
+    bool? isActive,
+  }) {
+    return TourModeState(
+      activeTour: activeTour ?? this.activeTour,
+      currentStepIndex: currentStepIndex ?? this.currentStepIndex,
+      distanceToNextPoi: distanceToNextPoi ?? this.distanceToNextPoi,
+      etaSeconds: etaSeconds ?? this.etaSeconds,
+      isAutoPlayEnabled: isAutoPlayEnabled ?? this.isAutoPlayEnabled,
+      isOffRoute: isOffRoute ?? this.isOffRoute,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+class TourModeService extends StateNotifier<TourModeState> {
+  final Ref _ref;
+  StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<PlaybackState>? _playbackSubscription;
+  StreamSubscription<MediaItem?>? _mediaItemSubscription;
+  
+  static const double GEOFENCE_RADIUS_METERS = 30.0;
+  static const double OFF_ROUTE_THRESHOLD_METERS = 200.0;
+  static const double PREF_WALKING_SPEED_M_S = 1.4; // approx 5km/h
+
+  final Map<int, int> _itemToQueueIndex = {};
+  int _queueLength = 0;
+
+  TourModeService(this._ref) : super(TourModeState());
+
+  void startTour(Tour tour, {int startIndex = 0}) {
+    // Build mapping
+    _itemToQueueIndex.clear();
+    final validPois = <Poi>[];
+    
+    if (tour.items != null) {
+      int queueIdx = 0;
+      for (int i = 0; i < tour.items!.length; i++) {
+        final item = tour.items![i];
+        if (item.poi != null) {
+          validPois.add(item.poi!);
+          _itemToQueueIndex[i] = queueIdx;
+          queueIdx++;
+        }
+      }
+    }
+    _queueLength = validPois.length;
+
+    state = TourModeState(
+      activeTour: tour,
+      currentStepIndex: startIndex,
+      isActive: true,
+      isAutoPlayEnabled: true,
+    );
+
+    _listenToLocation();
+    _listenToPlayback();
+    
+    if (validPois.isNotEmpty) {
+      // Find initial queue index
+      final initialQueueIndex = _itemToQueueIndex[startIndex] ?? 0;
+      
+      _ref.read(audioPlayerServiceProvider).loadPlaylist(
+        tourId: tour.id,
+        pois: validPois,
+        initialIndex: initialQueueIndex,
+      );
+    }
+    
+    _saveProgress();
+  }
+
+  void stopTour() {
+    state = TourModeState(isActive: false);
+    _cancelSubscriptions();
+    _ref.read(audioPlayerServiceProvider).stop();
+    _saveProgress(); // Update timestamp/state
+  }
+  
+  void _cancelSubscriptions() {
+    _positionSubscription?.cancel();
+    _playbackSubscription?.cancel();
+    _mediaItemSubscription?.cancel();
+  }
+
+  void toggleAutoPlay() {
+    state = state.copyWith(isAutoPlayEnabled: !state.isAutoPlayEnabled);
+    _saveProgress();
+  }
+
+  void nextStep() {
+    if (!state.isActive || state.activeTour == null) return;
+    final items = state.activeTour!.items;
+    if (items == null) return;
+
+    if (state.currentStepIndex < items.length - 1) {
+      final newIndex = state.currentStepIndex + 1;
+      state = state.copyWith(currentStepIndex: newIndex);
+      _saveProgress();
+      
+      _skipToCorrectQueueItem(newIndex);
+    } else {
+      stopTour();
+    }
+  }
+
+  void prevStep() {
+    if (!state.isActive) return;
+    if (state.currentStepIndex > 0) {
+      final newIndex = state.currentStepIndex - 1;
+      state = state.copyWith(currentStepIndex: newIndex);
+      _saveProgress();
+      
+      _skipToCorrectQueueItem(newIndex);
+    }
+  }
+  
+  void _skipToCorrectQueueItem(int stepIndex) {
+    if (_itemToQueueIndex.containsKey(stepIndex)) {
+      final queueIndex = _itemToQueueIndex[stepIndex]!;
+      if (queueIndex < _queueLength) {
+        _ref.read(audioHandlerProvider).skipToQueueItem(queueIndex);
+      }
+    }
+  }
+
+  void _listenToLocation() {
+    final locationService = _ref.read(locationServiceProvider);
+    _positionSubscription?.cancel();
+    _positionSubscription = locationService.positionStream.listen((position) {
+      if (!state.isActive || state.currentPoi == null) return;
+
+      final target = state.currentPoi!;
+      final distance = locationService.calculateDistance(
+        position.latitude,
+        position.longitude,
+        target.lat,
+        target.lon,
+      );
+      
+      // ETA Calculation
+      // Use current speed if valid, else fallback to walking speed
+      final speed = (position.speedAccuracy > 0 || position.speed > 0.5) 
+          ? (position.speed > 0.1 ? position.speed : PREF_WALKING_SPEED_M_S)
+          : PREF_WALKING_SPEED_M_S;
+          
+      final eta = distance / speed;
+
+      // Off-route logic
+      final isOffRoute = distance > OFF_ROUTE_THRESHOLD_METERS;
+      
+      state = state.copyWith(
+        distanceToNextPoi: distance,
+        etaSeconds: eta.round(),
+        isOffRoute: isOffRoute,
+      );
+
+      if (state.isAutoPlayEnabled && distance <= GEOFENCE_RADIUS_METERS) {
+         _triggerAutoPlayIfNeeded();
+      }
+    });
+  }
+
+  void _triggerAutoPlayIfNeeded() {
+    final audioHandler = _ref.read(audioHandlerProvider);
+    final playbackState = audioHandler.playbackState.value;
+    
+    final notPlaying = !playbackState.playing && 
+      playbackState.processingState != AudioProcessingState.buffering;
+
+    if (notPlaying) {
+        audioHandler.play();
+    }
+  }
+
+  void _listenToPlayback() {
+    final audioHandler = _ref.read(audioHandlerProvider);
+    
+    _mediaItemSubscription?.cancel();
+    _mediaItemSubscription = audioHandler.mediaItem.listen((mediaItem) {
+      if (mediaItem == null || state.activeTour == null) return;
+      
+      final poiId = mediaItem.extras?['poiId'];
+      if (poiId != null) {
+        final items = state.activeTour!.items;
+        if (items != null) {
+          final index = items.indexWhere((item) => item.poi?.id == poiId);
+          if (index != -1 && index != state.currentStepIndex) {
+            state = state.copyWith(currentStepIndex: index);
+            _saveProgress();
+            
+            if (state.isAutoPlayEnabled) {
+               audioHandler.pause();
+            }
+          }
+        }
+      }
+    });
+
+    _playbackSubscription?.cancel();
+    _playbackSubscription = audioHandler.playbackState.listen((playbackState) {
+       // Optional: Handle 'completed'
+    });
+  }
+  
+  Future<void> _saveProgress() async {
+    if (state.activeTour == null) return;
+    await _ref.read(settingsRepositoryProvider.future).then((settings) {
+      settings.saveTourProgress(
+        state.activeTour!.id, 
+        state.currentStepIndex, 
+        state.isAutoPlayEnabled
+      );
+    });
+  }
+}
+
+final tourModeServiceProvider = StateNotifierProvider<TourModeService, TourModeState>((ref) {
+  return TourModeService(ref);
+});

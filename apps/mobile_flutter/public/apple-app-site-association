@@ -1,0 +1,39 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.app.audiogid.mobile_flutter",
+        "paths": [
+          "/dl/*",
+          "/poi/*",
+          "/tour/*",
+          "/city/*"
+        ]
+      },
+      {
+        "appID": "TEAM_ID.app.audiogid.mobile_flutter.dev",
+        "paths": [
+          "/dl/*",
+          "/poi/*",
+          "/tour/*",
+          "/city/*"
+        ]
+      },
+      {
+        "appID": "TEAM_ID.app.audiogid.mobile_flutter.staging",
+        "paths": [
+          "/dl/*",
+          "/poi/*",
+          "/tour/*",
+          "/city/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAM_ID.app.audiogid.mobile_flutter"
+    ]
+  }
+}

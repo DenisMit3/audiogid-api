@@ -12,7 +12,10 @@ import {
     Users,
     Filter,
     Shield,
-    Eye
+    Eye,
+    Settings,
+    QrCode,
+    Zap
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -35,13 +38,16 @@ export function Sidebar({ permissions }: { permissions: string[] }) {
 
     // Stub links for now
     const links = [
-        { name: 'POIs', href: '/admin/pois', icon: MapPin, perm: 'poi:read' },
-        { name: 'Tours', href: '/admin/tours', icon: Route, perm: 'tour:read' },
+        { name: 'Dashboard', href: '/dashboard', icon: Activity, perm: '*' },
+        { name: 'Cities', href: '/cities', icon: MapPin, perm: 'city:read' },
+        { name: 'POIs', href: '/content/pois', icon: MapPin, perm: 'poi:read' },
+        { name: 'Tours', href: '/content/tours', icon: Route, perm: 'tour:read' },
+        { name: 'Media', href: '/content/media', icon: Eye, perm: 'media:read' },
+        { name: 'QR Codes', href: '/qr-codes', icon: QrCode, perm: 'poi:read' },
+        { name: 'Jobs', href: '/jobs', icon: Zap, perm: 'jobs:read' },
         { name: 'Analytics', href: '/analytics/overview', icon: Activity, perm: 'analytics:read' },
-        { name: 'Cohorts', href: '/analytics/cohorts', icon: Users, perm: 'analytics:read' },
-        { name: 'Funnels', href: '/analytics/funnels', icon: Filter, perm: 'analytics:read' },
         { name: 'Users', href: '/users', icon: Shield, perm: 'users:manage' },
-        { name: 'Audit', href: '/audit', icon: Eye, perm: 'audit:read' },
+        { name: 'Settings', href: '/settings', icon: Settings, perm: 'settings:manage' }
     ];
 
     // Filter by permissions

@@ -4,6 +4,6 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "generate": "echo 'Generating client from ../contract/openapi.yaml' && exit 0"
+        "generate": "openapi-generator-cli generate -i ../../apps/api/openapi.yaml -g dart -o . --additional-properties=pubName=api_client"
     }
 }

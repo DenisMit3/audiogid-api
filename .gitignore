@@ -30,3 +30,4 @@ pass.key
 node_modules/
 .npm/
 
+.env*.local

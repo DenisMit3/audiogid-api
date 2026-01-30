@@ -1,6 +1,8 @@
 import React from 'react';
 import './globals.css';
 
+import Providers from './providers';
+
 export default function RootLayout({
     children,
 }: {
@@ -8,7 +10,11 @@ export default function RootLayout({
 }) {
     return (
         <html lang="ru" suppressHydrationWarning>
-            <body className="font-sans antialiased">{children}</body>
+            <body className="font-sans antialiased">
+                <Providers>
+                    {children}
+                </Providers>
+            </body>
         </html>
     );
 }

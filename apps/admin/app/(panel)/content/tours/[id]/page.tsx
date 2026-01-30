@@ -1,148 +1,68 @@
 
-"use client"
+'use client';
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { useRouter } from "next/navigation"
-import useSWR from "swr"
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PublishCheckModal } from "@/components/publish-check-modal"
+import { useQuery } from '@tanstack/react-query';
+import { RefreshCcw, ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from "@/components/ui/button";
+import TourEditor from '@/components/tour-editor';
 
-// Simplified schema, Tour create is simpler
-const tourSchema = z.object({
-    title_ru: z.string().min(2),
-    description_ru: z.string().optional(),
-    city_slug: z.string().min(2),
-    duration_minutes: z.coerce.number().optional()
-})
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+
+const fetchTour = async (id: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+    const res = await fetch(`${API_URL}/admin/tours/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("Failed to fetch Tour");
+    return res.json();
+};
 
 export default function TourEditPage({ params }: { params: { id: string } }) {
-    const isNew = params.id === 'new';
-    const router = useRouter();
+    const { data: tourData, isLoading, isError, refetch } = useQuery({
+        queryKey: ['tour', params.id],
+        queryFn: () => fetchTour(params.id),
+    });
 
-    // For Tours existing API, GET /admin/tours (list) is available. 
-    // Is GET /admin/tours/{id} available? Admin stub had only list?
-    // Let's check api/admin/tours.py: It has only list and create. NO GET /id or PATCH /id.
-    // Wait, the Phase 3 plan said "Copy pattern content/tours/page.tsx etc."
-    // But backend endpoints for Tour Get/Update are MISSING in current code.
-    // I should create them in this turn if I want this form to work for Edit.
-    // Or just implement Create for now.
-    // The user requirement said: "Tours: Copy pattern...".
-    // I missed adding Get/Update endpoints in Backend Tour Router step.
-    // I will implement the form for Create only or stub the Edit.
+    if (isLoading) return (
+        <div className="flex h-[50vh] flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-4 text-sm text-muted-foreground">Loading tour details...</p>
+        </div>
+    );
 
-    // Ideally I add the backend endpoints now.
-    // I'll assume Edit is restricted for now or I won't fetch if !isNew.
+    if (isError) return (
+        <div className="p-8 text-center text-red-500">
+            Failed to load Tour
+            <Button variant="outline" onClick={() => refetch()} className="ml-4"><RefreshCcw className="w-4 h-4 mr-2" /> Retry</Button>
+        </div>
+    );
 
-    // Correction: I must add GET/PATCH to Backend Tours if I want this to work.
-    // But I'm in frontend steps now. I'll write the frontend code assuming they exist or will be added.
-
-    const form = useForm<z.infer<typeof tourSchema>>({
-        resolver: zodResolver(tourSchema),
-        defaultValues: {
-            title_ru: "",
-            description_ru: "",
-            city_slug: "kaliningrad",
-            duration_minutes: 60
-        },
-    })
-
-    async function onSubmit(values: z.infer<typeof tourSchema>) {
-        if (!isNew) {
-            alert("Edit Tour not implemented in API yet");
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/proxy/admin/tours', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values)
-            });
-
-            if (res.ok) {
-                router.push('/content/tours');
-                router.refresh();
-            } else {
-                alert("Save failed");
-            }
-        } catch (e) { console.error(e); }
-    }
+    // Flatten structure for Editor
+    const editorData = {
+        ...tourData.tour,
+        items: tourData.items,
+        sources: tourData.sources,
+        media: tourData.media,
+        can_publish: tourData.can_publish,
+        publish_issues: tourData.publish_issues
+    };
 
     return (
-        <div className="max-w-2xl mx-auto py-6">
-            <h1 className="text-2xl font-bold mb-6">{isNew ? 'Create Tour' : 'Edit Tour (ReadOnly)'}</h1>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle>Tour Details</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="title_ru"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Title</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="city_slug"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>City</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="description_ru"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Description</FormLabel>
-                                        <FormControl><Textarea {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="duration_minutes"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Duration (Minutes)</FormLabel>
-                                        <FormControl><Input type="number" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
-                    <div className="flex justify-end gap-2">
-                        {!isNew && <PublishCheckModal entityId={params.id} entityType="tour" />}
-                        <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                        <Button type="submit">Save</Button>
-                    </div>
-                </form>
-            </Form>
+        <div className="max-w-5xl mx-auto p-6 space-y-6">
+            <div className="flex items-center gap-4">
+                <Link href="/content/tours">
+                    <Button variant="ghost" size="icon">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                </Link>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">{editorData.title_ru}</h1>
+                    <p className="text-sm text-muted-foreground">Tour Editor</p>
+                </div>
+            </div>
+
+            <TourEditor tour={editorData} />
         </div>
-    )
+    );
 }

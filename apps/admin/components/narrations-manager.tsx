@@ -1,0 +1,315 @@
+
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDropzone } from 'react-dropzone';
+import { Trash, Upload, Mic, FileAudio, Play } from 'lucide-react';
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+
+// Types
+type NarrationItem = {
+    id: string;
+    url: string;
+    locale: string;
+    duration_seconds: number;
+    transcript: string;
+};
+
+type Props = {
+    poiId: string;
+    narrations: NarrationItem[];
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+
+export function NarrationsManager({ poiId, narrations: initialNarrations }: Props) {
+    const [list, setList] = useState<NarrationItem[]>(initialNarrations || []);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [currentFile, setCurrentFile] = useState<File | null>(null);
+    const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+    const [audioDuration, setAudioDuration] = useState<number>(0);
+
+    // Form State
+    const [locale, setLocale] = useState('ru');
+    const [transcript, setTranscript] = useState('');
+
+    const queryClient = useQueryClient();
+
+    // 1. Get Presigned URL & Upload
+    const uploadMutation = useMutation({
+        mutationFn: async (file: File) => {
+            const token = localStorage.getItem('admin_token');
+            const preRes = await fetch(`${API_URL}/admin/media/presign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    filename: file.name,
+                    content_type: file.type,
+                    entity_type: 'poi', // narrations technically under POI folder logic
+                    entity_id: poiId
+                })
+            });
+
+            if (!preRes.ok) throw new Error("Presign failed");
+            const { upload_url, final_url, method, headers } = await preRes.json();
+
+            const uploadRes = await fetch(upload_url, {
+                method: method || 'PUT',
+                body: file,
+                headers: headers || {}
+            });
+
+            if (!uploadRes.ok) throw new Error("Upload to storage failed");
+
+            // Extract duration if possible
+            const audio = new Audio(URL.createObjectURL(file));
+            audio.onloadedmetadata = () => {
+                setAudioDuration(audio.duration);
+            };
+
+            return final_url;
+        },
+        onSuccess: (url) => {
+            setUploadedUrl(url);
+        }
+    });
+
+    // 2. Save Metadata to DB
+    const saveMetaMutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`${API_URL}/admin/pois/${poiId}/narrations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify({
+                    url: uploadedUrl,
+                    locale: locale,
+                    duration_seconds: audioDuration,
+                    transcript: transcript
+                })
+            });
+            if (!res.ok) throw new Error("Failed to save narration");
+            return res.json();
+        },
+        onSuccess: (data) => {
+            setIsUploadModalOpen(false);
+            setList([...list, {
+                id: data.id,
+                url: uploadedUrl!,
+                locale,
+                duration_seconds: audioDuration,
+                transcript
+            }]);
+            resetForm();
+            queryClient.invalidateQueries({ queryKey: ['poi', poiId] });
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await fetch(`${API_URL}/admin/pois/${poiId}/narrations/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+            });
+            return id;
+        },
+        onSuccess: (id) => {
+            setList(list.filter(n => n.id !== id));
+            queryClient.invalidateQueries({ queryKey: ['poi', poiId] });
+        }
+    });
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
+        const file = acceptedFiles[0];
+        if (!file) return;
+        setCurrentFile(file);
+        setIsUploadModalOpen(true);
+        uploadMutation.mutate(file);
+    }, [uploadMutation]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        maxFiles: 1,
+        accept: { 'audio/*': ['.mp3', '.wav', '.ogg', '.m4a'] }
+    });
+
+    const resetForm = () => {
+        setLocale('ru');
+        setTranscript('');
+        setUploadedUrl(null);
+        setCurrentFile(null);
+        setAudioDuration(0);
+    };
+
+    const formatDuration = (sec: number) => {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg">Audio Narrations</CardTitle>
+                <CardDescription>Upload professional voiceovers for this POI.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    {list.map((n) => (
+                        <div key={n.id} className="flex items-center justify-between p-3 border rounded-lg bg-slate-50 dark:bg-slate-900">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                                    <Play className="w-5 h-5 ml-1" />
+                                </div>
+                                <div>
+                                    <div className="font-medium flex items-center gap-2">
+                                        <span className="uppercase text-xs font-bold bg-slate-200 px-1.5 py-0.5 rounded">{n.locale}</span>
+                                        <span>{formatDuration(n.duration_seconds)}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                        {n.transcript || "No transcript"}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => deleteMutation.mutate(n.id)}>
+                                    <Trash className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div {...getRootProps()} className={`
+                    border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer transition-colors
+                    ${isDragActive ? 'border-primary bg-primary/10' : 'border-slate-200 hover:border-primary/50'}
+                `}>
+                    <input {...getInputProps()} />
+                    <Mic className="w-8 h-8 text-slate-400 mb-2" />
+                    <span className="text-sm text-slate-500 font-medium">
+                        {isDragActive ? 'Drop audio file...' : 'Drop audio file or click to upload'}
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">MP3, WAV, M4A supported</span>
+                </div>
+
+                <div className="flex justify-center border-t pt-4">
+                    <GenerateAIButton poiId={poiId} />
+                </div>
+
+                <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add Narration</DialogTitle>
+                        </DialogHeader>
+
+                        {uploadMutation.isPending && <div className="text-blue-600 text-sm">Uploading...</div>}
+
+                        <div className="space-y-4 py-4">
+                            <div className="grid gap-2">
+                                <Label>Language</Label>
+                                <Select value={locale} onValueChange={setLocale}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ru">Russian</SelectItem>
+                                        <SelectItem value="en">English</SelectItem>
+                                        <SelectItem value="de">German</SelectItem>
+                                        <SelectItem value="zh">Chinese</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Transcript</Label>
+                                <Textarea
+                                    value={transcript}
+                                    onChange={e => setTranscript(e.target.value)}
+                                    placeholder="Text of the narration..."
+                                    rows={5}
+                                />
+                            </div>
+                            {audioDuration > 0 && <div className="text-xs text-slate-500">Detected Duration: {audioDuration.toFixed(1)}s</div>}
+                        </div>
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
+                            <Button
+                                onClick={() => saveMetaMutation.mutate()}
+                                disabled={!uploadedUrl || saveMetaMutation.isPending}
+                            >
+                                {saveMetaMutation.isPending ? 'Saving...' : 'Save Narration'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </CardContent>
+        </Card>
+    );
+}
+
+function GenerateAIButton({ poiId }: { poiId: string }) {
+    const { toast } = useToast();
+    const mutation = useMutation({
+        mutationFn: async () => {
+            const res = await fetch(`${API_URL}/admin/pois/${poiId}/generate-tts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+                },
+                body: JSON.stringify({ locale: 'ru' })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || "Failed to start generation");
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            toast({
+                title: "Generation Started",
+                description: `Job ID: ${data.job_id}. Check Jobs dashboard.`
+            });
+        },
+        onError: (err) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        }
+    });
+
+    return (
+        <Button
+            variant="outline"
+            className="w-full sm:w-auto border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+        >
+            <Mic className="w-4 h-4 mr-2" />
+            {mutation.isPending ? 'Queuing Job...' : 'Generate with AI (TTS)'}
+        </Button>
+    )
+}

@@ -10,6 +10,19 @@ import uuid
 class CityBase(SQLModel):
     slug: str = Field(index=True, unique=True)
     name_ru: str
+    name_en: Optional[str] = None
+    description_ru: Optional[str] = None
+    description_en: Optional[str] = None
+    cover_image: Optional[str] = None
+    
+    # Map configuration
+    bounds_lat_min: Optional[float] = None
+    bounds_lat_max: Optional[float] = None
+    bounds_lon_min: Optional[float] = None
+    bounds_lon_max: Optional[float] = None
+    default_zoom: Optional[float] = None
+    timezone: Optional[str] = None
+    
     is_active: bool = Field(default=True)
     osm_relation_id: Optional[int] = Field(default=None)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -22,7 +35,16 @@ class City(CityBase, table=True):
 class PoiBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
-    description_ru: Optional[str] = None 
+    description_ru: Optional[str] = None
+    title_en: Optional[str] = None
+    description_en: Optional[str] = None
+    category: str = Field(default="landmark", index=True)
+    address: Optional[str] = None
+    cover_image: Optional[str] = None
+    
+    opening_hours: Optional[Any] = Field(default=None, sa_column=Column(sa.JSON))
+    external_links: Optional[List[str]] = Field(default=None, sa_column=Column(sa.JSON))
+    
     published_at: Optional[datetime] = Field(default=None, index=True)
     lat: Optional[float] = Field(default=None)
     lon: Optional[float] = Field(default=None)
@@ -41,6 +63,10 @@ class Poi(PoiBase, table=True):
     sources: List["PoiSource"] = Relationship(back_populates="poi")
     media: List["PoiMedia"] = Relationship(back_populates="poi")
     narrations: List["Narration"] = Relationship(back_populates="poi")
+    
+    # Soft Delete
+    is_deleted: bool = Field(default=False, index=True)
+    deleted_at: Optional[datetime] = None
 
 class PoiSource(SQLModel, table=True):
     __tablename__ = "poi_sources"
@@ -68,6 +94,7 @@ class Narration(SQLModel, table=True):
     locale: str = Field(default="ru")
     url: str
     duration_seconds: float = Field(default=0.0)
+    transcript: Optional[str] = None
     voice_id: Optional[str] = None
     filesize_bytes: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -78,6 +105,14 @@ class TourBase(SQLModel):
     title_ru: str
     city_slug: str = Field(index=True, foreign_key="city.slug")
     description_ru: Optional[str] = None
+    title_en: Optional[str] = None
+    description_en: Optional[str] = None
+    cover_image: Optional[str] = None
+    
+    tour_type: str = Field(default="walking") # walking, driving, cycling, boat
+    difficulty: str = Field(default="easy") # easy, moderate, hard
+    distance_km: Optional[float] = None
+    
     duration_minutes: Optional[int] = None
     published_at: Optional[datetime] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -89,6 +124,10 @@ class Tour(TourBase, table=True):
     items: List["TourItem"] = Relationship(back_populates="tour")
     sources: List["TourSource"] = Relationship(back_populates="tour")
     media: List["TourMedia"] = Relationship(back_populates="tour")
+    
+    # Soft Delete
+    is_deleted: bool = Field(default=False, index=True)
+    deleted_at: Optional[datetime] = None
 
 class TourItem(SQLModel, table=True):
     __tablename__ = "tour_items"
@@ -96,6 +135,8 @@ class TourItem(SQLModel, table=True):
     tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
     poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id")
     order_index: int = Field(default=0)
+    transition_text_ru: Optional[str] = None
+    duration_seconds: Optional[int] = None # Recommended stay time
     tour: Optional[Tour] = Relationship(back_populates="items")
     poi: Optional[Poi] = Relationship(back_populates="tour_items")
 
@@ -186,12 +227,17 @@ class Job(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: str
     status: str = Field(default="PENDING", index=True)
+    progress: int = Field(default=0)
     payload: Optional[str] = None
     result: Optional[str] = None
     error: Optional[str] = None
     idempotency_key: Optional[str] = Field(default=None, unique=True, index=True)
+    trace_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: Optional[uuid.UUID] = None
 
 class AuditLog(SQLModel, table=True):
     __tablename__ = "audit_logs"
@@ -422,4 +468,19 @@ class FunnelConversion(SQLModel, table=True):
     date: datetime = Field(index=True)
     funnel_id: uuid.UUID = Field(foreign_key="funnels.id", index=True) # Logical link, maybe cascade delete manually
     step_order: int
+
     users_count: int = 0
+
+class QRMapping(SQLModel, table=True):
+    __tablename__ = "qr_mappings"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    code: str = Field(unique=True, index=True)  # "SPB001"
+    target_type: str  # "poi", "tour", "city"
+    target_id: uuid.UUID = Field(index=True)
+    label: Optional[str] = None 
+    is_active: bool = Field(default=True)
+    scans_count: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_scanned_at: Optional[datetime] = None
+

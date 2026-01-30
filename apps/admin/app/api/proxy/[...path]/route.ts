@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.audiogid.app';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!BACKEND_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 export async function GET(request: Request, { params }: { params: { path: string[] } }) {
     return proxy(request, params.path, 'GET');

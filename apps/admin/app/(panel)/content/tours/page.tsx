@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Tour = {
     id: string;
@@ -246,3 +246,4 @@ export default function TourListPage() {
         </div>
     );
 }
+

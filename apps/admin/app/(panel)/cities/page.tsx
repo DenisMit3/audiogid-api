@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type City = {
     id: string;
@@ -299,3 +299,4 @@ export default function CitiesListPage() {
         </div>
     );
 }
+

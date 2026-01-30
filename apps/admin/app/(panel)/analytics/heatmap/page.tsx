@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetchHeatmap = async (days: number) => {
     const token = localStorage.getItem('admin_token');
@@ -116,3 +116,4 @@ export default function HeatmapPage() {
         </div>
     );
 }
+

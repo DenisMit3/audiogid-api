@@ -32,7 +32,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from '@/components/ui/label';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type QRMapping = {
     id: string;
@@ -240,3 +240,4 @@ export default function QRManagementPage() {
         </div>
     );
 }
+

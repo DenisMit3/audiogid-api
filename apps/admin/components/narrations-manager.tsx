@@ -314,3 +314,4 @@ function GenerateAIButton({ poiId }: { poiId: string }) {
         </Button>
     )
 }
+

@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Schema for Push Settings
 const notificationsSchema = z.object({
@@ -295,3 +295,4 @@ export default function NotificationsSettingsPage() {
         </div>
     );
 }
+

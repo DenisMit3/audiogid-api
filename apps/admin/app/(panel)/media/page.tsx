@@ -27,7 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type MediaItem = {
     id: string;
@@ -206,3 +206,4 @@ export default function MediaLibraryPage() {
         </div>
     );
 }
+

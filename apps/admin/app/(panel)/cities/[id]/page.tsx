@@ -7,7 +7,8 @@ import { useParams } from "next/navigation";
 
 import { CityForm } from "@/components/cities/city-form";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 const fetchCity = async (id: string) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';

@@ -11,7 +11,8 @@ import Link from "next/link"
 import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 type ValidationIssue = {
     id: string;
@@ -116,3 +117,4 @@ export default function ValidationPage() {
         </div>
     )
 }
+

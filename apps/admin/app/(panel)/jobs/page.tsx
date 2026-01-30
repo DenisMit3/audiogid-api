@@ -43,7 +43,7 @@ import {
 
 import { useJobsWebSocket } from '@/hooks/useJobsWebSocket';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Job = {
     id: string;
@@ -275,3 +275,4 @@ export default function JobsDashboard() {
         </div>
     );
 }
+

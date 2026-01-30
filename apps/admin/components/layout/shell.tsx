@@ -128,3 +128,4 @@ export function Topbar({ user, onLogout }: { user: any, onLogout: () => void }) 
         </header>
     )
 }
+

@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const citySchema = z.object({
     slug: z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-_]+$/, "Slug must use only lowercase letters, numbers, hyphens or underscores"),
@@ -387,3 +387,4 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
         </Form>
     );
 }
+

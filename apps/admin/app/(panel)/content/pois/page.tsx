@@ -36,7 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Poi = {
     id: string;
@@ -352,3 +352,4 @@ export default function PoiListPage() {
         </div>
     );
 }
+

@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import PoiForm from '@/components/PoiForm';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://audiogid-api.vercel.app/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 const fetchPoi = async (id: string) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';

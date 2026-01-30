@@ -424,3 +424,4 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
         </div>
     );
 }
+

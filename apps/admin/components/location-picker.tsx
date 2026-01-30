@@ -11,12 +11,15 @@ import { Label } from "@/components/ui/label";
 import { Search } from 'lucide-react';
 
 // Fix Leaflet Icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+if (typeof window !== 'undefined') {
+    // @ts-ignore
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+}
 
 function LocationMarker({ position, onChange }: { position: L.LatLngExpression | null, onChange: (lat: number, lon: number) => void }) {
     const map = useMapEvents({
@@ -37,6 +40,9 @@ function LocationMarker({ position, onChange }: { position: L.LatLngExpression |
 }
 
 export function LocationPicker({ lat, lon, onChange }: { lat?: number, lon?: number, onChange: (lat: number, lon: number) => void }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const [search, setSearch] = useState('');
     const [position, setPosition] = useState<[number, number] | null>(lat && lon ? [lat, lon] : null);
 
@@ -72,20 +78,24 @@ export function LocationPicker({ lat, lon, onChange }: { lat?: number, lon?: num
             </div>
 
             <div className="h-[400px] w-full rounded-md overflow-hidden border">
-                <MapContainer
-                    center={position || [54.71, 20.51]} // Kaliningrad default
-                    zoom={13}
-                    style={{ height: '100%', width: '100%' }}
-                >
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    <LocationMarker position={position} onChange={(lat, lng) => {
-                        setPosition([lat, lng]);
-                        onChange(lat, lng);
-                    }} />
-                </MapContainer>
+                {!mounted ? (
+                    <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Loading Map Engine...</div>
+                ) : (
+                    <MapContainer
+                        center={position || [54.71, 20.51]} // Kaliningrad default
+                        zoom={13}
+                        style={{ height: '100%', width: '100%' }}
+                    >
+                        <TileLayer
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        />
+                        <LocationMarker position={position} onChange={(lat, lng) => {
+                            setPosition([lat, lng]);
+                            onChange(lat, lng);
+                        }} />
+                    </MapContainer>
+                )}
             </div>
             <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                 <div>Lat: {position?.[0].toFixed(6) || '-'}</div>

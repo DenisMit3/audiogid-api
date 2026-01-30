@@ -12,7 +12,7 @@ import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+
 
 type ValidationIssue = {
     id: string;
@@ -24,6 +24,7 @@ type ValidationIssue = {
 };
 
 const fetchIssues = async (): Promise<ValidationIssue[]> => {
+    if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
     const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/content/issues`, {
         headers: { Authorization: `Bearer ${token}` }

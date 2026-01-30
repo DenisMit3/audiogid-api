@@ -1,18 +1,21 @@
 
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet Icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+if (typeof window !== 'undefined') {
+    // @ts-ignore
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+}
 
 type RouteItem = {
     id: string;
@@ -47,6 +50,9 @@ function MapBounds({ items }: { items: RouteItem[] }) {
 }
 
 export function RouteMap({ items }: { items: RouteItem[] }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const polylinePositions = useMemo(() => {
         return items
             .filter(i => i.poi_lat && i.poi_lon)
@@ -54,6 +60,10 @@ export function RouteMap({ items }: { items: RouteItem[] }) {
     }, [items]);
 
     const center: [number, number] = polylinePositions.length > 0 ? polylinePositions[0] : [54.71, 20.51];
+
+    if (!mounted) {
+        return <div className="h-[400px] w-full rounded-md bg-slate-100 flex items-center justify-center border">Loading Map...</div>;
+    }
 
     return (
         <div className="h-[400px] w-full rounded-md overflow-hidden border">

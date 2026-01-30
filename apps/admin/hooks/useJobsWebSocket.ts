@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
-if (!WS_URL) throw new Error("NEXT_PUBLIC_WS_URL is required");
+
 
 type JobUpdate = {
     job_id: string;
@@ -16,6 +16,7 @@ export const useJobsWebSocket = (onUpdate?: (update: JobUpdate) => void) => {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
+        if (!WS_URL) return; // or throw if strictly needed at runtime
         const token = localStorage.getItem('admin_token');
         const socketInstance = io(WS_URL, {
             query: { token },

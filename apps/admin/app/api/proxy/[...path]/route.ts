@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!BACKEND_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+
 
 export async function GET(request: Request, { params }: { params: { path: string[] } }) {
     return proxy(request, params.path, 'GET');
@@ -22,6 +22,7 @@ export async function DELETE(request: Request, { params }: { params: { path: str
 }
 
 async function proxy(request: Request, pathSegments: string[], method: string) {
+    if (!BACKEND_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
     const path = pathSegments.join('/');
     const cookieStore = cookies();
     const token = cookieStore.get('token');

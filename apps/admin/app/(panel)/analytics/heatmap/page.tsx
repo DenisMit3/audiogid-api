@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,12 +10,15 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix Leaflet Icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+if (typeof window !== 'undefined') {
+    // @ts-ignore
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -59,6 +62,9 @@ function HeatmapLayer({ points, max }: { points: number[][], max: number }) {
 }
 
 export default function HeatmapPage() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const [days, setDays] = useState('30');
 
     const { data } = useQuery({
@@ -88,17 +94,21 @@ export default function HeatmapPage() {
 
             <Card className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 relative">
-                    <MapContainer
-                        center={[54.71, 20.51]} // Kaliningrad
-                        zoom={12}
-                        style={{ height: '100%', width: '100%' }}
-                    >
-                        <TileLayer
-                            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        />
-                        <HeatmapLayer points={points} max={max} />
-                    </MapContainer>
+                    {!mounted ? (
+                        <div className="h-full w-full flex items-center justify-center bg-slate-100">Loading Map...</div>
+                    ) : (
+                        <MapContainer
+                            center={[54.71, 20.51]} // Kaliningrad
+                            zoom={12}
+                            style={{ height: '100%', width: '100%' }}
+                        >
+                            <TileLayer
+                                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            />
+                            <HeatmapLayer points={points} max={max} />
+                        </MapContainer>
+                    )}
 
                     {/* Legend */}
                     <div className="absolute bottom-4 right-4 bg-white/90 p-4 rounded-lg shadow-lg z-[1000] text-xs">

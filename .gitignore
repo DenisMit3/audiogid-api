@@ -31,3 +31,9 @@ node_modules/
 .npm/
 
 .env*.local
+
+# Keystore
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist

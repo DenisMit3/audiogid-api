@@ -194,13 +194,20 @@ def create_poi(
     session.refresh(db_poi)
     return db_poi
 
+from sqlalchemy.orm import selectinload
+
 @router.get("/admin/pois/{poi_id}", response_model=PoiDetailResponse)
 def get_poi(
     poi_id: uuid.UUID,
     session: Session = Depends(get_session),
     user: User = Depends(require_permission('poi:read'))
 ):
-    poi = session.get(Poi, poi_id)
+    query = select(Poi).where(Poi.id == poi_id).options(
+        selectinload(Poi.sources),
+        selectinload(Poi.media),
+        selectinload(Poi.narrations)
+    )
+    poi = session.exec(query).first()
     if not poi or poi.is_deleted: raise HTTPException(404, "POI not found")
     
     # Logic for can_publish

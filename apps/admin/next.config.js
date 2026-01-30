@@ -9,19 +9,18 @@ const nextConfig = {
             },
         ],
     },
-    async rewrites() {
+    async headers() {
         return [
             {
-                source: '/api/proxy/:path*',
-                destination: (process.env.NEXT_PUBLIC_API_URL || 'https://api.audiogid.app') + '/v1/:path*',
-            },
-        ]
-    },
-    typescript: {
-        ignoreBuildErrors: true,
-    },
-    eslint: {
-        ignoreDuringBuilds: true,
+                source: '/:path*',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+                    }
+                ]
+            }
+        ];
     },
 };
 

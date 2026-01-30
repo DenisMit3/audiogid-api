@@ -86,6 +86,28 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
   Stream<List<Poi>> watchFavorites() {
     return (select(pois)..where((t) => t.isFavorite.equals(true))).watch();
   }
+
+  Future<List<Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
+    // 1 deg ~ 111km. 
+    const degreesPerMeterLat = 1 / 111320.0;
+    // Approximating longitude factor (max 2.0 at 60deg lat, infinite at poles but we limit app to cities)
+    // We use a safe upper bound factor for longitude to catch candidates.
+    const safeLonFactor = 2.0; 
+    
+    final latDelta = radiusMeters * degreesPerMeterLat;
+    final lonDelta = latDelta * safeLonFactor;
+
+    return (select(pois)
+      ..where((t) => 
+        t.lat.isBetween(lat - latDelta, lat + latDelta) & 
+        t.lon.isBetween(lon - lonDelta, lon + lonDelta)
+      )
+    ).get();
+  }
+
+  Future<List<Poi>> getPoisByIds(List<String> ids) {
+    return (select(pois)..where((t) => t.id.isIn(ids))).get();
+  }
 }
 
 class PoiWithDetails {

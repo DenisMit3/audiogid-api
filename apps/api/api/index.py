@@ -177,6 +177,14 @@ except Exception as e:
 
 if auth_router: app.include_router(auth_router, prefix="/v1")
 
+try:
+    from .push.router import router as push_router
+except Exception as e:
+    logger.error(f"Failed to import push router: {e}")
+    push_router = None
+
+if push_router: app.include_router(push_router, prefix="/v1")
+
 receiver = Receiver(
     current_signing_key=config.QSTASH_CURRENT_SIGNING_KEY,
     next_signing_key=config.QSTASH_NEXT_SIGNING_KEY,

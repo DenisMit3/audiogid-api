@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:firebase_performance/firebase_performance.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,10 @@ import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/widgets/paywall_widget.dart';
 import 'package:mobile_flutter/core/audio/audio_player_service.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:mobile_flutter/data/repositories/itinerary_repository.dart';
+import 'package:mobile_flutter/data/services/analytics_service.dart';
 
 class PoiDetailScreen extends ConsumerStatefulWidget {
   final String poiId;
@@ -30,9 +36,14 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
   }
 
   Future<void> _syncData() async {
-    final selectedCity = ref.read(selectedCityProvider).valueOrNull;
-    if (selectedCity != null) {
-      ref.read(poiRepositoryProvider).syncPoi(widget.poiId, selectedCity).ignore();
+    // Performance tracing removed
+    try {
+      final selectedCity = ref.read(selectedCityProvider).valueOrNull;
+      if (selectedCity != null) {
+        await ref.read(poiRepositoryProvider).syncPoi(widget.poiId, selectedCity);
+      }
+    } finally {
+      // trace.stop() removed
     }
   }
 
@@ -58,7 +69,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           return Scaffold(
             appBar: AppBar(),
             body: ErrorStateWidget.generic(
-              message: snapshot.error.toString(),
+              error: snapshot.error,
               onRetry: () => setState(() {}),
             ),
           );
@@ -177,11 +188,15 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                     PageView.builder(
                       itemCount: images.length,
                       itemBuilder: (context, index) {
-                        return Image.network(
-                          images[index].url,
+                        return CachedNetworkImage(
+                          imageUrl: images[index].url,
                           fit: BoxFit.cover,
-                          semanticLabel: '${poi.titleRu} - фото ${index + 1}',
-                          errorBuilder: (_, __, ___) => Container(
+                          memCacheWidth: 800,
+                          placeholder: (context, url) => Container(
+                            color: colorScheme.surfaceVariant,
+                            child: const Center(child: CircularProgressIndicator()),
+                          ),
+                          errorWidget: (context, url, error) => Container(
                             color: colorScheme.surfaceVariant,
                             child: Icon(
                               Icons.broken_image,
@@ -234,7 +249,10 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           tooltip: 'Поделиться',
           onPressed: () {
             HapticFeedback.lightImpact();
-            // TODO: Implement share
+            Share.share(
+              'Посмотри ${poi.titleRu} в приложении Аудиогид!\n${poi.address ?? ''}\nhttps://audiogid.app/dl/poi/${poi.id}', 
+              subject: poi.titleRu
+            );
           },
         ),
       ],
@@ -374,23 +392,45 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                   ),
                 ),
               ),
+              ),
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: 'Добавить в маршрут',
-                  child: TextButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Добавлено в маршрут'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.playlist_add_outlined),
-                    label: const Text('В маршрут'),
-                  ),
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final itineraryIdsAsync = ref.watch(itineraryIdsProvider);
+                    final ids = itineraryIdsAsync.valueOrNull ?? [];
+                    final isInItinerary = ids.contains(poi.id);
+
+                    return Semantics(
+                      button: true,
+                      label: isInItinerary ? 'Удалить из маршрута' : 'Добавить в маршрут',
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          if (isInItinerary) {
+                            ref.read(itineraryIdsProvider.notifier).remove(poi.id);
+                            ref.read(analyticsServiceProvider).logEvent('remove_from_itinerary', {'poi_id': poi.id});
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Удалено из маршрута')),
+                            );
+                          } else {
+                            ref.read(itineraryIdsProvider.notifier).add(poi.id);
+                            ref.read(analyticsServiceProvider).logEvent('add_to_itinerary', {'poi_id': poi.id});
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Добавлено в маршрут'),
+                                action: SnackBarAction(
+                                  label: 'Открыть',
+                                  onPressed: () => context.push('/itinerary'),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: Icon(isInItinerary ? Icons.playlist_add_check : Icons.playlist_add_outlined),
+                        label: Text(isInItinerary ? 'В маршруте' : 'В маршрут'),
+                      ),
+                    );
+                  }
                 ),
               ),
             ],
@@ -506,8 +546,11 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
               label: 'Источник: ${s.name}',
               child: InkWell(
                 onTap: () {
-                  // TODO: Open URL
+                  // Open URL
                   HapticFeedback.lightImpact();
+                  if (s.url != null) {
+                     launchUrl(Uri.parse(s.url!), mode: LaunchMode.externalApplication);
+                  }
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(

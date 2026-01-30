@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
+import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 
 class AudioPlayerService {
@@ -93,11 +94,47 @@ class AudioPlayerService {
   Future<void> skipToNext() => _handler.skipToNext();
   Future<void> skipToPrevious() => _handler.skipToPrevious();
   Future<void> seek(Duration position) => _handler.seek(position);
+
+  void _initAnalytics() {
+    _handler.mediaItem.listen((item) {
+      if (item != null && item.extras != null) {
+        final poiId = item.extras!['poiId'];
+        final isPreview = item.extras!['isPreview'] == true;
+        
+        if (poiId != null) {
+          _ref.read(analyticsServiceProvider).logEvent('poi_played', {
+            'poi_id': poiId,
+            'is_preview': isPreview,
+            'tour_id': item.extras!['tourId'],
+          });
+          _ref.read(analyticsServiceProvider).logAudioPlay(item.title);
+        }
+      }
+    });
+    
+    _handler.playbackState.listen((state) {
+      if (state.processingState == AudioProcessingState.completed) {
+        final item = _handler.mediaItem.value;
+        if (item != null && item.extras != null) {
+          final poiId = item.extras!['poiId'];
+          if (poiId != null) {
+            _ref.read(analyticsServiceProvider).logEvent('poi_completed', {
+              'poi_id': poiId,
+              'duration': item.duration?.inSeconds,
+              'tour_id': item.extras!['tourId'],
+            });
+          }
+        }
+      }
+    });
+  }
 }
 
 final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
-  return AudioPlayerService(
+  final service = AudioPlayerService(
     ref.watch(audioHandlerProvider),
     ref,
   );
+  service._initAnalytics();
+  return service;
 });

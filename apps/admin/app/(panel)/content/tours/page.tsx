@@ -77,7 +77,7 @@ export default function TourListPage() {
         {
             accessorKey: "title_ru",
             header: "Title",
-            cell: ({ row }) => <div className="font-medium">{row.getValue("title_ru")}</div>,
+            cell: ({ row }) => <div className="font-medium">{row.getValue<string>("title_ru")}</div>,
         },
         {
             accessorKey: "city_slug",

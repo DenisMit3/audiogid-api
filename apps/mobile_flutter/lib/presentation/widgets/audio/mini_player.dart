@@ -1,8 +1,10 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
+import 'package:flutter/services.dart';
 
 class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
@@ -21,6 +23,7 @@ class MiniPlayer extends ConsumerWidget {
           key: const Key('mini_player'),
           direction: DismissDirection.down,
           onDismissed: (_) {
+            HapticFeedback.lightImpact();
             audioHandler.stop();
           },
           child: Material(
@@ -37,10 +40,11 @@ class MiniPlayer extends ConsumerWidget {
                     if (mediaItem.artUri != null)
                       AspectRatio(
                         aspectRatio: 1,
-                        child: Image.network(
-                          mediaItem.artUri!.toString(),
+                        child: CachedNetworkImage(
+                          imageUrl: mediaItem.artUri!.toString(),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.music_note),
+                          memCacheWidth: 200, // Small for mini player
+                          errorWidget: (_, __, ___) => const Icon(Icons.music_note),
                         ),
                       )
                     else
@@ -88,13 +92,19 @@ class MiniPlayer extends ConsumerWidget {
 
                         return IconButton(
                           icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                          onPressed: playing ? audioHandler.pause : audioHandler.play,
+                          onPressed: () {
+                             HapticFeedback.selectionClick();
+                             playing ? audioHandler.pause() : audioHandler.play();
+                          },
                         );
                       },
                     ),
                     IconButton(
                         icon: const Icon(Icons.close),
-                        onPressed: audioHandler.stop,
+                        onPressed: () {
+                           HapticFeedback.selectionClick();
+                           audioHandler.stop();
+                        },
                     ),
                   ],
                 ),

@@ -6,7 +6,8 @@ from pydantic import BaseModel
 import logging
 
 from ..core.database import engine
-from ..core.models import Poi, Tour, TourItem, PoiSource, PoiMedia, User
+from ..core.models import Poi, Tour, TourItem, PoiSource, PoiMedia, User, Entitlement
+
 from ..auth.deps import get_session, require_permission
 
 router = APIRouter()
@@ -74,32 +75,85 @@ def get_validation_issues(
                 message="Cover image is missing."
             ))
             
-        # Check Sources
+        # Check Sources (Require >= 2)
         sources_count = session.exec(select(func.count(PoiSource.id)).where(PoiSource.poi_id == p.id)).one()
-        if sources_count == 0:
+        if sources_count < 2:
              issues.append(ValidationIssue(
                 id=f"poi_{p.id}_source",
                 entity_id=str(p.id),
                 entity_type="poi",
                 issue_type="missing_sources",
-                severity="warning",
-                message="No sources cited."
+                severity="blocker", # Promoted to blocker
+                message=f"Not enough sources ({sources_count}). Minimum 2 required."
             ))
 
-        # Check Media/Narrations (Basic check if any media exists)
-        # Assuming Narrations are stored in PoiMedia with specific type or specialized table?
-        # Current model check:
-        # Narrations are separate table? Or PoiMedia?
-        # Let's check for ANY media
+        # Check Media/Narrations (Require >= 1 Licensed Media)
+        # Assuming we check 'license_type' in PoiMedia or similar.
+        # For now, just checking count >= 1 is a good start, but let's try to be specific if model allows.
+        # Checking simply if any media exists for now.
         media_count = session.exec(select(func.count(PoiMedia.id)).where(PoiMedia.poi_id == p.id)).one()
-        if media_count == 0:
+        if media_count < 1:
              issues.append(ValidationIssue(
                 id=f"poi_{p.id}_media",
                 entity_id=str(p.id),
                 entity_type="poi",
                 issue_type="no_media",
-                severity="info",
-                message="No media files attached."
+                severity="blocker",
+                message="No media files attached. At least 1 licensed media required."
+            ))
+
+        # Preview Content (Audio + Bullets)
+        if not p.preview_audio_url:
+            issues.append(ValidationIssue(
+                id=f"poi_{p.id}_preview_audio_check", # Renamed ID to avoid conflict
+                entity_id=str(p.id),
+                entity_type="poi",
+                issue_type="missing_preview_audio",
+                severity="blocker", # Promoted
+                message="Preview audio (10-25s) is required."
+            ))
+            
+        # Check Preview Bullets (>= 3)
+        # Assuming preview_bullets is a JSON list or similar in DB model
+        bullets = p.preview_bullets or []
+        if len(bullets) < 3:
+            issues.append(ValidationIssue(
+                id=f"poi_{p.id}_preview_bullets_check",
+                entity_id=str(p.id),
+                entity_type="poi",
+                issue_type="missing_preview_bullets",
+                severity="blocker",
+                message=f"Preview bullets ({len(bullets)}) are too few. Minimum 3 required."
+            ))
+
+        # Transcript (Description as proxy)
+        if not p.description_ru or len(p.description_ru) < 100:
+             issues.append(ValidationIssue(
+                id=f"poi_{p.id}_transcript",
+                entity_id=str(p.id),
+                entity_type="poi",
+                issue_type="short_transcript",
+                severity="warning",
+                message="Transcript/Description is too short (<100 chars)."
+            ))
+
+        # Pricing/Entitlement Check
+        # Check if there is an Entitlement referencing this POI or the City it belongs to.
+        entitlement_exists = session.exec(select(Entitlement).where(
+            or_(
+                Entitlement.ref == str(p.id),
+                Entitlement.ref == p.city_slug
+            )
+        )).first()
+
+        if not entitlement_exists:
+             issues.append(ValidationIssue(
+                id=f"poi_{p.id}_pricing",
+                entity_id=str(p.id),
+                entity_type="poi",
+                issue_type="missing_pricing",
+                severity="warning",
+                message="No pricing/entitlement found for this POI or its City."
             ))
             
     # --- Tour Validation ---

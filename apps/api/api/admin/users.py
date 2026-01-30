@@ -34,18 +34,16 @@ def list_users(
     session: Session = Depends(get_session),
     admin: User = Depends(require_permission('users:manage'))
 ):
-    query = select(User)
+    query = select(User).distinct()
     if role:
         query = query.where(User.role == role)
     if search:
-        # Search by ID or Joined Identity
-        # Complex in SQLModel without join
-        # Just searching by ID if uuid, or no search for MVP
         try:
             uid = uuid.UUID(search)
             query = query.where(User.id == uid)
-        except:
-            pass
+        except ValueError:
+            # Search by phone/email in UserIdentity
+            query = query.join(UserIdentity).where(UserIdentity.provider_id.ilike(f"%{search}%"))
             
     query = query.offset(offset).limit(limit).order_by(User.created_at.desc())
     users = session.exec(query).all()

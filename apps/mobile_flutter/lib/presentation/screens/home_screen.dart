@@ -30,7 +30,10 @@ class HomeScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const TitleText('Аудиогид', maxLines: 1),
+                        Semantics(
+                          header: true,
+                          child: const TitleText('Аудиогид', maxLines: 1),
+                        ),
                         const SizedBox(height: 4),
                         BodyText(
                           'Выберите город для путешествия',
@@ -39,10 +42,10 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined),
+                  AccessibleIconButton(
+                    icon: Icons.settings_outlined,
                     tooltip: 'Настройки',
-                       onPressed: () {
+                    onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => const SettingsScreen(),
@@ -60,9 +63,15 @@ class HomeScreen extends ConsumerWidget {
                 builder: (context, snapshot) {
                   // Loading State
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                     return ListView.builder(
+                     return GridView.builder(
                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                        itemCount: 5,
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                           maxCrossAxisExtent: 600,
+                           mainAxisExtent: 140,
+                           crossAxisSpacing: AppSpacing.md,
+                           mainAxisSpacing: AppSpacing.md,
+                        ),
+                        itemCount: 6,
                         itemBuilder: (_, __) => const SkeletonListTile(hasLeading: true),
                      );
                   }
@@ -102,80 +111,95 @@ class HomeScreen extends ConsumerWidget {
                       // or better, using a FutureProvider if we could defined it. 
                       // Let's assume the repo call fetches fresh data.
                     },
-                    child: ListView.builder(
+                    child: GridView.builder(
                       padding: EdgeInsets.symmetric(
                         vertical: AppSpacing.sm,
                         horizontal: context.horizontalPadding,
+                      ),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 600,
+                        mainAxisExtent: 140,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
                       ),
                       itemCount: cities.length,
                       itemBuilder: (context, index) {
                         final city = cities[index];
                         return Card(
                           elevation: 0,
-                          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                          // Margin handled by GridView spacing
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: BorderSide(
                               color: Theme.of(context).colorScheme.outlineVariant,
                             ),
                           ),
-                          child: InkWell(
-                            onTap: () async {
-                              HapticFeedback.lightImpact();
-                              // Save selected city and navigate
-                              await ref.read(settingsRepositoryProvider).setSelectedCity(city.slug);
-                              if (context.mounted) {
-                                context.go('/'); // Or wherever the main flow is
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              child: Row(
-                                children: [
-                                  // City Image
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: Theme.of(context).colorScheme.surfaceVariant,
-                                      image: city.imageUrl != null
-                                          ? DecorationImage(
-                                              image: NetworkImage(city.imageUrl!),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : null,
-                                    ),
-                                    child: city.imageUrl == null
-                                        ? const Icon(Icons.location_city, size: 30)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  
-                                  // Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        TitleText(
-                                          city.name,
-                                          style: Theme.of(context).textTheme.titleMedium,
+                          child: Semantics(
+                            label: 'Выбрать город ${city.name}',
+                            button: true,
+                            hint: 'Нажмите для просмотра каталога',
+                            child: InkWell(
+                              onTap: () async {
+                                HapticFeedback.lightImpact();
+                                // Save selected city and navigate
+                                await ref.read(settingsRepositoryProvider).setSelectedCity(city.slug);
+                                if (context.mounted) {
+                                  context.go('/'); // Or wherever the main flow is
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: Row(
+                                  children: [
+                                    // City Image
+                                    Semantics(
+                                      label: 'Фото города ${city.name}',
+                                      image: true,
+                                      child: Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(12),
+                                          color: Theme.of(context).colorScheme.surfaceVariant,
+                                          image: city.imageUrl != null
+                                              ? DecorationImage(
+                                                  image: NetworkImage(city.imageUrl!),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
                                         ),
-                                        if (city.description != null) ...[
-                                          const SizedBox(height: 4),
-                                          BodyText(
-                                            city.description!,
-                                            maxLines: 2,
-                                            style: Theme.of(context).textTheme.bodySmall,
-                                          ),
-                                        ],
-                                      ],
+                                        child: city.imageUrl == null
+                                            ? const Icon(Icons.location_city, size: 30)
+                                            : null,
+                                      ),
                                     ),
-                                  ),
-                                  
-                                  const Icon(Icons.chevron_right, color: Colors.grey),
-                                ],
+                                    const SizedBox(width: AppSpacing.md),
+                                    
+                                    // Info
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          TitleText(
+                                            city.name,
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                          ),
+                                          if (city.description != null) ...[
+                                            const SizedBox(height: 4),
+                                            BodyText(
+                                              city.description!,
+                                              maxLines: 2,
+                                              style: Theme.of(context).textTheme.bodySmall,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    
+                                    const Icon(Icons.chevron_right, color: Colors.grey),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

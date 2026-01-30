@@ -3,6 +3,21 @@ from typing import Any, Type, Optional
 from fastapi import Request, Response, HTTPException
 from sqlmodel import Session, select, func
 from datetime import datetime
+import redis
+import os
+import logging
+import json
+
+logger = logging.getLogger(__name__)
+
+# Redis Connection
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("KV_URL")
+redis_client = None
+if REDIS_URL:
+    try:
+        redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+    except Exception as e:
+        logger.warning(f"Redis connection failed: {e}")
 
 SCHEMA_VERSION = "v1"
 

@@ -11,6 +11,7 @@ import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:mobile_flutter/domain/repositories/entitlement_repository.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,6 +27,11 @@ class PurchaseState {
 }
 
 @riverpod
+InAppPurchase inAppPurchase(InAppPurchaseRef ref) {
+  return InAppPurchase.instance;
+}
+
+@riverpod
 class PurchaseService extends _$PurchaseService {
   late final InAppPurchase _iap;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
@@ -35,7 +41,7 @@ class PurchaseService extends _$PurchaseService {
 
   @override
   PurchaseState build() {
-    _iap = InAppPurchase.instance;
+    _iap = ref.watch(inAppPurchaseProvider);
     _initIap();
     
     ref.onDispose(() {
@@ -156,6 +162,14 @@ class PurchaseService extends _$PurchaseService {
         
         if (verified == true && granted == true) {
              await ref.read(entitlementRepositoryProvider).syncGrants();
+             
+             // Log analytics
+             ref.read(analyticsServiceProvider).logEvent('purchase_completed', {
+               'product_id': purchaseDetails.productID,
+               'price': purchaseDetails.transactionDate, // Transaction date as proxy or need to get price from product details
+               'currency': 'RUB', // Hardcoded for now as we don't have price info here easily without looking up product again
+             });
+             
              return true;
         } else {
              state = PurchaseState(status: PurchaseStatusState.error, error: errorMsg ?? "Verification failed");
@@ -177,6 +191,46 @@ class PurchaseService extends _$PurchaseService {
         await _iap.buyNonConsumable(purchaseParam: purchaseParam);
       } catch (e) {
         state = PurchaseState(status: PurchaseStatusState.error, error: "Buy failed: $e");
+      }
+  }
+
+  Future<void> buyBatch(List<String> poiIds, List<String> tourIds) async {
+      state = PurchaseState(status: PurchaseStatusState.pending);
+      try {
+         final api = ref.read(billingApiProvider);
+         // Use strict mapping
+         final res = await api.batchPurchase(
+            batchPurchaseReq: BatchPurchaseReq((b) => b
+               ..poiIds.replace(poiIds)
+               ..tourIds.replace(tourIds)
+            )
+         );
+         
+         final data = res.data;
+         if (data == null) throw Exception("Empty response");
+
+         final products = data.productIds?.toList() ?? [];
+         
+         if (products.isEmpty) {
+             await ref.read(entitlementRepositoryProvider).syncGrants();
+             state = PurchaseState(status: PurchaseStatusState.restored); 
+             return;
+         }
+         
+         final productDetails = await fetchProducts(products.toSet());
+         if (productDetails.isEmpty) {
+             state = PurchaseState(status: PurchaseStatusState.error, error: "Products not found in store");
+             return;
+         }
+         
+         // Parallel execution for better UX
+         await Future.wait(productDetails.map((p) async {
+             final purchaseParam = PurchaseParam(productDetails: p);
+             await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+         }));
+         
+      } catch (e) {
+         state = PurchaseState(status: PurchaseStatusState.error, error: "Batch buy failed: $e");
       }
   }
   

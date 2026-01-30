@@ -285,4 +285,51 @@ class BillingApi {
     }
     return null;
   }
+  /// Batch Purchase Validation
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
+  Future<http.Response> batchPurchaseWithHttpInfo(BatchPurchaseRequest batchPurchaseRequest) async {
+    // ignore: prefer_const_declarations
+    final path = r'/billing/batch-purchase';
+
+    // ignore: prefer_final_locals
+    Object? postBody = batchPurchaseRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Batch Purchase Validation
+  ///
+  /// Parameters:
+  ///
+  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
+  Future<BatchPurchaseResponse?> batchPurchase({required BatchPurchaseRequest batchPurchaseRequest}) async {
+    final response = await batchPurchaseWithHttpInfo(batchPurchaseRequest);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BatchPurchaseResponse') as BatchPurchaseResponse;
+    }
+    return null;
+  }
 }
+

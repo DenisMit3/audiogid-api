@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "YourTeamID.app.audiogid.mobileFlutter",
+        "paths": [
+          "/dl/*",
+          "/tour/*",
+          "/poi/*"
+        ]
+      }
+    ]
+  }
+}

@@ -1,37 +1,38 @@
-
-# In a real scenario, we would use SlowAPI here.
-# Since I cannot easily install packages in this environment without risk,
-# I will create a placeholder Middleware that mocks rate limiting or uses simple in-memory logic.
-
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 import time
 from collections import defaultdict
 
-# Simple In-Memory Rate Limiting (Single Worker)
-# For production with multiple workers, reuse Redis or similar.
 _rate_limit_store = defaultdict(list)
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, requests_per_minute: int = 100):
+    def __init__(self, app):
         super().__init__(app)
-        self.limit = requests_per_minute
+        self.default_limit = 100 
 
     async def dispatch(self, request, call_next):
         client_ip = request.client.host if request.client else "unknown"
+        path = request.url.path
         
+        # Determine limit based on path
+        limit = self.default_limit
+        if path.startswith("/v1/public"):
+             limit = 60 # 1 per sec
+        elif path.startswith("/v1/auth"):
+             limit = 20 # Protect auth
+        elif path.startswith("/v1/admin"):
+             limit = 300 # Higher for admin
+        elif path.startswith("/v1/ops"):
+             limit = 1000 # High for ops/health
+
         # Prune old timestamps
         now = time.time()
-        # Key: IP
         timestamps = _rate_limit_store[client_ip]
-        # Remove timestamps older than 60s
         timestamps = [t for t in timestamps if now - t < 60]
         _rate_limit_store[client_ip] = timestamps
         
-        if len(timestamps) >= self.limit:
-            return JSONResponse({"error": "Too many requests"}, status_code=429)
+        if len(timestamps) >= limit:
+            return JSONResponse({"error": "Too many requests", "detail": "Rate limit exceeded"}, status_code=429)
             
         timestamps.append(now)
-        # Store back (unnecessary for list ref, but clean)
-        
         return await call_next(request)

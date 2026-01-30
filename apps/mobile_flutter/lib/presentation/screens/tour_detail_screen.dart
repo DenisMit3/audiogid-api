@@ -8,7 +8,12 @@ import 'package:mobile_flutter/core/audio/audio_player_service.dart';
 import 'package:mobile_flutter/data/services/tour_mode_service.dart';
 import 'package:mobile_flutter/data/services/download_service.dart';
 import 'package:mobile_flutter/data/services/notification_service.dart';
+import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'package:mobile_flutter/data/services/purchase_service.dart';
 
 class TourDetailScreen extends ConsumerStatefulWidget {
   final String tourId;
@@ -21,6 +26,7 @@ class TourDetailScreen extends ConsumerStatefulWidget {
 
 class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
   bool _isMultiSelectMode = false;
+  bool _isBuying = false;
   final Set<String> _selectedPoiIds = {};
 
   @override
@@ -60,9 +66,11 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
     );
   }
 
+
+
   Widget _buildAppBar(BuildContext context, Tour tour) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 250,
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
@@ -73,22 +81,33 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
             shadows: [Shadow(blurRadius: 10, color: Colors.black)],
           ),
         ),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary,
-              ],
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Semantics(
+              label: 'Карта маршрута: ${tour.titleRu}',
+              image: true,
+              excludeSemantics: true,
+              child: _buildMapPreview(context, tour),
             ),
-          ),
-          child: const Icon(Icons.map, size: 100, color: Colors.white24),
+            // Gradient for text readability
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.1),
+                    Colors.black.withOpacity(0.8),
+                  ],
+                  stops: const [0.6, 1.0],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
-        // Reminder button
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           tooltip: 'Напомнить о туре',
@@ -110,6 +129,74 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
             tooltip: 'Выбрать места',
             onPressed: () => setState(() => _isMultiSelectMode = true),
           ),
+      ],
+    );
+  }
+
+  Widget _buildMapPreview(BuildContext context, Tour tour) {
+    final items = tour.items ?? [];
+    if (items.isEmpty) return Container(color: Colors.grey[300]);
+
+    final points = <LatLng>[];
+    for (var item in items) {
+      if (item.poi != null) {
+        points.add(LatLng(item.poi!.lat, item.poi!.lon));
+      }
+    }
+
+    if (points.isEmpty) return Container(color: Colors.grey[300]);
+
+    // Calculate center
+    double latSum = 0;
+    double lonSum = 0;
+    for (var p in points) {
+      latSum += p.latitude;
+      lonSum += p.longitude;
+    }
+    final center = LatLng(latSum / points.length, lonSum / points.length);
+
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 13, // TODO: Calculate fit bounds
+        interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.audiogid.app',
+        ),
+        PolylineLayer(
+          polylines: [
+             Polyline(
+               points: points,
+               color: Theme.of(context).colorScheme.primary,
+               strokeWidth: 4,
+             ),
+          ],
+        ),
+        MarkerLayer(
+          markers: points.asMap().entries.map((entry) {
+             return Marker(
+               point: entry.value,
+               width: 30,
+               height: 30,
+               child: Container(
+                 decoration: BoxDecoration(
+                   color: Theme.of(context).colorScheme.primary,
+                   shape: BoxShape.circle,
+                   border: Border.all(color: Colors.white, width: 2),
+                 ),
+                 child: Center(
+                    child: Text(
+                      '${entry.key + 1}', 
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)
+                    ),
+                 ),
+               ),
+             );
+          }).toList(),
+        ),
       ],
     );
   }
@@ -299,6 +386,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                         _selectedPoiIds.add(poi.id);
                       }
                     });
+                  } else {
+                    context.push('/poi/${poi.id}');
                   }
                 },
                 leading: CircleAvatar(
@@ -367,18 +456,45 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: _selectedPoiIds.isEmpty 
+                onPressed: (_selectedPoiIds.isEmpty || _isBuying)
                   ? null 
-                  : () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Покупка ${_selectedPoiIds.length} POI')),
-                      );
+                  : () async {
+                      setState(() => _isBuying = true);
+                      try {
+                        await ref.read(purchaseServiceProvider).buyBatch(
+                          _selectedPoiIds.toList(), 
+                          [], // No tours selected here
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Покупка успешно завершена')),
+                          );
+                          setState(() {
+                             _isMultiSelectMode = false;
+                             _selectedPoiIds.clear();
+                          });
+                        }
+                      } catch (e) {
+                         if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(content: Text('Ошибка покупки: $e')),
+                           );
+                         }
+                      } finally {
+                        if (mounted) setState(() => _isBuying = false);
+                      }
                     },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
-                child: const Text('Купить выбранное'),
+                child: _isBuying 
+                  ? const SizedBox(
+                      width: 20, 
+                      height: 20, 
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                    )
+                  : const Text('Купить выбранное'),
               ),
             ],
           ),
@@ -393,15 +509,20 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
       ),
       child: SafeArea(
-        child: ElevatedButton.icon(
-          onPressed: () => _onStartTour(context, ref, tour),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Semantics(
+          button: true,
+          label: 'Начать тур',
+          hint: 'Запустить режим навигации',
+          child: ElevatedButton.icon(
+            onPressed: () => _onStartTour(context, ref, tour),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            icon: const Icon(Icons.play_circle_filled),
+            label: const Text('НАЧАТЬ ТУР', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
-          icon: const Icon(Icons.play_circle_filled),
-          label: const Text('НАЧАТЬ ТУР', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -474,6 +595,12 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
 
     if (proceed) {
       if (context.mounted) {
+        // Log analytics
+        ref.read(analyticsServiceProvider).logEvent('tour_started', {
+          'tour_id': tour.id,
+          'tour_name': tour.titleRu,
+        });
+
         ref.read(tourModeServiceProvider.notifier).startTour(tour, startIndex: startIndex);
         context.push('/tour_mode');
       }
@@ -489,19 +616,22 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.labelLarge),
-        ],
+    return Semantics(
+      label: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Text(label, style: Theme.of(context).textTheme.labelLarge),
+          ],
+        ),
       ),
     );
   }

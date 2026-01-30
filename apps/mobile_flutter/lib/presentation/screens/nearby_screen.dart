@@ -14,6 +14,8 @@ import 'package:mobile_flutter/domain/entities/poi.dart' as entity;
 import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:mobile_flutter/data/services/free_walking_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class NearbyScreen extends ConsumerStatefulWidget {
   const NearbyScreen({super.key});
@@ -79,6 +81,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     final cityAsync = ref.watch(selectedCityProvider);
     final citySlug = cityAsync.valueOrNull;
     final colorScheme = Theme.of(context).colorScheme;
+    final freeWalkState = ref.watch(freeWalkingServiceProvider);
 
     final poisAsync = citySlug != null
         ? ref.watch(poiRepositoryProvider).watchPoisForCity(citySlug)
@@ -252,6 +255,30 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      // Share Location
+                      Semantics(
+                        button: true,
+                        label: 'Поделиться геолокацией',
+                        child: FloatingActionButton.small(
+                          heroTag: 'share_loc',
+                          backgroundColor: colorScheme.surface,
+                          foregroundColor: colorScheme.onSurface,
+                          onPressed: () {
+                             final pos = ref.read(userLocationStreamProvider).value;
+                             if (pos != null) {
+                               Share.share('Я здесь! https://maps.google.com/?q=${pos.latitude},${pos.longitude}');
+                             } else {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(content: Text('Местоположение не определено')),
+                               );
+                             }
+                          },
+                          child: const Icon(Icons.share),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.sm),
+
                       // My location button
                       Semantics(
                         button: true,
@@ -268,6 +295,34 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                             }
                           },
                           child: const Icon(Icons.my_location),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Free Walking Toggle
+                      Semantics(
+                        button: true,
+                        label: freeWalkState.isActive ? 'Выключить прогулку' : 'Включить свободную прогулку',
+                        child: FloatingActionButton.extended(
+                          heroTag: 'free_walk',
+                          isExtended: true,
+                          elevation: 4,
+                          backgroundColor: freeWalkState.isActive ? colorScheme.primary : colorScheme.surface,
+                          foregroundColor: freeWalkState.isActive ? colorScheme.onPrimary : colorScheme.primary,
+                          onPressed: () {
+                             HapticFeedback.mediumImpact();
+                             if (freeWalkState.isActive) {
+                               ref.read(freeWalkingServiceProvider.notifier).stop();
+                             } else {
+                               ref.read(freeWalkingServiceProvider.notifier).start();
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(content: Text('Свободная прогулка включена. Мы расскажем о местах рядом!')),
+                               );
+                             }
+                          },
+                          icon: Icon(freeWalkState.isActive ? Icons.hearing : Icons.directions_walk),
+                          label: Text(freeWalkState.isActive ? 'Слушаем...' : 'Прогулка'),
                         ),
                       ),
 

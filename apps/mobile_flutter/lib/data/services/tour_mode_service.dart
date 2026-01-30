@@ -189,12 +189,15 @@ class TourModeService extends StateNotifier<TourModeState> {
       );
       
       // ETA Calculation
-      // Use current speed if valid, else fallback to walking speed
+      // Use current speed if valid (and moving), else fallback to walking speed
       final speed = (position.speedAccuracy > 0 || position.speed > 0.5) 
           ? (position.speed > 0.1 ? position.speed : PREF_WALKING_SPEED_M_S)
           : PREF_WALKING_SPEED_M_S;
-          
-      final eta = distance / speed;
+      
+      // Apply Urban Tortuosity Factor (approx 1.3)
+      // Straight line distance (Euclidean) is rarely possible in cities.
+      final adjustedDistance = distance * 1.3;
+      final eta = adjustedDistance / speed;
 
       // Off-route logic
       final isOffRoute = distance > OFF_ROUTE_THRESHOLD_METERS;
@@ -249,7 +252,14 @@ class TourModeService extends StateNotifier<TourModeState> {
 
     _playbackSubscription?.cancel();
     _playbackSubscription = audioHandler.playbackState.listen((playbackState) {
-       // Optional: Handle 'completed'
+      if (playbackState.processingState == AudioProcessingState.completed) {
+        if (state.isAutoPlayEnabled) {
+          // Auto-advance to next step after a short delay
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) nextStep();
+          });
+        }
+      }
     });
   }
   

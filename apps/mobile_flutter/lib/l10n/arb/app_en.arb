@@ -1,0 +1,15 @@
+{
+    "@@locale": "en",
+    "appTitle": "Audioguide",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "noInternet": "No internet connection",
+    "deleteAccount": "Delete Account",
+    "settings": "Settings",
+    "routes": "Routes",
+    "catalog": "Catalog",
+    "map": "Map",
+    "favorites": "Favorites",
+    "share": "Share"
+}

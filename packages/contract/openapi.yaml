@@ -160,6 +160,25 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OpsHealthResponse' }
 
+  /auth/refresh:
+    post:
+      summary: Refresh Access Token
+      operationId: refreshAccessToken
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshReq' }
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Invalid token
+
   # --- Deletion ---
   /public/account/delete/request:
     post:
@@ -264,6 +283,25 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OfflineJobRead' }
 
+  /billing/batch/purchase:
+    post:
+      tags: [Billing]
+      summary: Batch Purchase Validation
+      operationId: batchPurchase
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchPurchaseReq' }
+      responses:
+        '200':
+          description: Validated Products
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BatchPurchaseResponse' }
+
 
 
   # --- Billing (Stores) ---
@@ -353,9 +391,13 @@ paths:
                 idempotency_key: { type: string }
                 device_anon_id: { type: string }
                 apple_receipt: { type: string, description: "Latest Apple App Store receipt (base64)" }
-                google_purchase_token: { type: string, description: "A Google purchase token (optional if server has none)" }
-                product_id: { type: string, description: "Product ID (Required for Google single-token verify)" }
-                package_name: { type: string, description: "Package Name (Optional, defaults to app)" }
+                google_purchases: 
+                  type: array
+                  items: { $ref: '#/components/schemas/GooglePurchaseItem' }
+                  description: "List of Google purchases to restore (Batch mode)"
+                google_purchase_token: { type: string, description: "DEPRECATED: Use google_purchases" }
+                product_id: { type: string, description: "DEPRECATED: Use google_purchases" }
+                package_name: { type: string, description: "DEPRECATED: Use google_purchases" }
       responses:
         '202':
           description: Accepted
@@ -408,6 +450,10 @@ components:
         Vary: { $ref: '#/components/headers/Vary' }
 
   securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     YookassaSignature:
       type: apiKey
       in: header
@@ -444,6 +490,8 @@ components:
         has_access: { type: boolean }
         narrations: { type: array, items: { $ref: '#/components/schemas/Narration' } }
         media: { type: array, items: { $ref: '#/components/schemas/Media' } }
+        sources: { type: array, items: { $ref: '#/components/schemas/PoiSource' } }
+        category: { type: string, nullable: true }
 
     Narration:
       type: object
@@ -452,6 +500,7 @@ components:
         url: { type: string }
         locale: { type: string }
         duration_seconds: { type: number }
+        transcript: { type: string, nullable: true }
 
     Media:
       type: object
@@ -461,6 +510,14 @@ components:
         media_type: { type: string }
         author: { type: string }
         source_page_url: { type: string }
+        license_type: { type: string }
+
+    PoiSource:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string, nullable: true }
 
     IngestionRunRead:
       type: object
@@ -532,6 +589,10 @@ components:
             grants_created: { type: integer }
             grants_existing: { type: integer }
             grants_total: { type: integer }
+            failed_count: { type: integer }
+            items: 
+              type: array
+              items: { $ref: '#/components/schemas/RestoreItemResult' }
           nullable: true
         last_error: { type: string, nullable: true }
         trace_id: { type: string }
@@ -543,4 +604,47 @@ components:
         checks: { type: array, items: { type: string } }
         error: { type: string, nullable: true }
 
+    GooglePurchaseItem:
+      type: object
+      required: [purchase_token]
+      properties:
+        package_name: { type: string }
+        product_id: { type: string }
+        purchase_token: { type: string }
 
+    RestoreItemResult:
+      type: object
+      properties:
+        product_id: { type: string, nullable: true }
+        status: { type: string, enum: [created, existing, failed] }
+        error_code: { type: string, nullable: true }
+        order_id: { type: string, nullable: true }
+        source_ref_hash_prefix: { type: string, nullable: true }
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string, nullable: true }
+        token_type: { type: string }
+
+    RefreshReq:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+
+    BatchPurchaseReq:
+      type: object
+      properties:
+        poi_ids: { type: array, items: { type: string, format: uuid } }
+        tour_ids: { type: array, items: { type: string, format: uuid } }
+
+    BatchPurchaseResponse:
+      type: object
+      properties:
+        product_ids: { type: array, items: { type: string } }
+        total_price: { type: number }
+        currency: { type: string }
+        payment_url: { type: string, nullable: true }

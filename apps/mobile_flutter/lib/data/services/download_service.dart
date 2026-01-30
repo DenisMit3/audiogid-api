@@ -117,8 +117,7 @@ class DownloadService extends _$DownloadService {
     };
 
     try {
-      final client = ref.read(apiClientProvider);
-      final offlineApi = OfflineApi(client.dio, client.dio.options.baseUrl);
+      final offlineApi = ref.read(offlineApiProvider);
       
       // 1. Enqueue Build
       final idempotencyKey = const Uuid().v4();
@@ -144,18 +143,34 @@ class DownloadService extends _$DownloadService {
       
       while (attempts < maxAttempts) {
         await Future.delayed(Duration(seconds: delaySeconds));
-        final pollRes = await offlineApi.getOfflineBundleStatus(jobId: jobId);
-        final status = pollRes.data?.status;
-        
-        if (status == 'COMPLETED') {
-          jobResult = pollRes.data!;
-          break;
-        } else if (status == 'FAILED') {
-          throw Exception('Bundle build failed: ${pollRes.data?.lastError}');
+        try {
+          final pollRes = await offlineApi.getOfflineBundleStatus(jobId: jobId);
+          final status = pollRes.data?.status;
+          
+          if (status == 'COMPLETED') {
+            jobResult = pollRes.data!;
+            break;
+          } else if (status == 'FAILED') {
+            throw Exception('Bundle build failed: ${pollRes.data?.lastError}');
+          }
+        } on DioException catch (e) {
+          // Retry on network/timeout errors
+          if (e.type == DioExceptionType.connectionTimeout || 
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.connectionError) {
+             // Just continue to next attempt, but maybe backoff more
+             if (delaySeconds < 10) delaySeconds += 2;
+             attempts++; // Count this as an attempt
+             continue;
+          }
+          rethrow;
+        } catch (e) {
+          rethrow;
         }
         
         attempts++;
-        if (delaySeconds < 5) delaySeconds++; // Exponential backoff up to 5s
+        if (delaySeconds < 5) delaySeconds++; // Normal backoff
       }
       
       if (jobResult == null) {
@@ -261,19 +276,28 @@ class DownloadService extends _$DownloadService {
 
       if (!await zipFile.exists()) throw Exception("Zip file not found");
 
-      // Verify Checksum (SHA-256)
+      // Verify Checksum
       if (state[citySlug]?.contentHash != null) {
          state = {
           ...state,
           citySlug: state[citySlug]!.copyWith(stage: DownloadStage.verifying)
         };
         
+        final expectedHash = state[citySlug]!.contentHash!.toLowerCase();
         final fileBytes = await zipFile.readAsBytes();
-        final digest = sha256.convert(fileBytes);
         
-        // Ensure comparison is case-insensitive
-        if (digest.toString().toLowerCase() != state[citySlug]!.contentHash!.toLowerCase()) {
-           throw Exception("Checksum mismatch");
+        String calculatedHash;
+        if (expectedHash.length == 32) {
+            calculatedHash = md5.convert(fileBytes).toString();
+        } else if (expectedHash.length == 40) {
+            calculatedHash = sha1.convert(fileBytes).toString();
+        } else {
+            // Default to SHA256
+            calculatedHash = sha256.convert(fileBytes).toString();
+        }
+        
+        if (calculatedHash.toLowerCase() != expectedHash) {
+           throw Exception("Checksum mismatch ($calculatedHash != $expectedHash)");
         }
       }
 

@@ -28,7 +28,8 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
 
 const fetchOverview = async () => {
     const token = localStorage.getItem('admin_token');

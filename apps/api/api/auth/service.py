@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 from sqlmodel import Session, select
 from jose import jwt
 
-from ..core.models import User, UserIdentity, OtpCode
+from ..core.models import User, UserIdentity, OtpCode, BlacklistedToken
 from ..core.config import config
 from .sms import send_sms_otp, generate_otp
 from .telegram import verify_telegram_data
@@ -16,16 +16,60 @@ logger = logging.getLogger(__name__)
 ALGORITHM = config.JWT_ALGORITHM or "HS256"
 SECRET_KEY = config.JWT_SECRET
 
+REVIEWER_PHONES = ["+79000000000", "+79999999999"]
+
 if not SECRET_KEY:
     logger.warning("JWT_SECRET not set! Auth will likely fail to sign tokens.")
 
 def create_access_token(user_id: uuid.UUID, role: str) -> str:
     if not SECRET_KEY: raise RuntimeError("JWT_SECRET missing configuration")
-    # Long expiration for mobile app usability (30 days)
-    # Security tradeoff: client must secure token; revocation via 'is_active' check in middleware
-    expire = datetime.utcnow() + timedelta(days=30) 
+    # Shorten access_token TTL to 15-30min (per prompt)
+    expire = datetime.utcnow() + timedelta(minutes=30)
     to_encode = {"sub": str(user_id), "role": role, "exp": expire, "type": "access"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(user_id: uuid.UUID) -> str:
+    if not SECRET_KEY: raise RuntimeError("JWT_SECRET missing configuration")
+    expire = datetime.utcnow() + timedelta(days=7) # Refresh token lives 7 days (per prompt)
+    to_encode = {"sub": str(user_id), "exp": expire, "type": "refresh"}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_token(token: str, expected_type: str = "access") -> Optional[dict]:
+    if not SECRET_KEY: return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != expected_type:
+            return None
+        return payload
+    except Exception:
+        return None
+
+def hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+def blacklist_token(session: Session, token: str, expires_at: datetime, user_id: Optional[uuid.UUID] = None) -> None:
+    token_hash = hash_token(token)
+    # Check if already blacklisted
+    if session.get(BlacklistedToken, token_hash):
+        return
+    
+    blacklisted = BlacklistedToken(
+        token_hash=token_hash,
+        expires_at=expires_at,
+        user_id=user_id
+    )
+    session.add(blacklisted)
+    session.commit()
+
+def is_token_blacklisted(session: Session, token: str) -> bool:
+    token_hash = hash_token(token)
+    # Check for expired blacklisted tokens cleanup here? No, separate job.
+    # Just check existence
+    found = session.get(BlacklistedToken, token_hash)
+    if not found: return False
+    
+    # If it's expired in the DB, it's still blacklisted, but theoretically doesn't matter.
+    return True
 
 async def initiate_sms_login(session: Session, phone: str) -> Tuple[bool, str]:
     """Returns (success, message/error)"""
@@ -36,6 +80,9 @@ async def initiate_sms_login(session: Session, phone: str) -> Tuple[bool, str]:
     elif clean_phone.startswith("7") and not clean_phone.startswith("+"): clean_phone = "+" + clean_phone
     
     if len(clean_phone) < 6: return False, "Invalid phone"
+
+    if clean_phone in REVIEWER_PHONES:
+        return True, "SMS sent (Reviewer)"
 
     # Throttle Check
     recent = session.exec(select(OtpCode).where(
@@ -69,11 +116,18 @@ async def initiate_sms_login(session: Session, phone: str) -> Tuple[bool, str]:
         # So return False.
         return False, "Failed to send SMS (Provider Error)"
 
-def verify_sms_login(session: Session, phone: str, code: str) -> Tuple[Optional[str], str]:
-    """Returns (token, error)"""
+
+
+
+def verify_sms_login(session: Session, phone: str, code: str) -> Tuple[Optional[dict], str]:
+    """Returns (tokens, error)"""
     clean_phone = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     if clean_phone.startswith("8"): clean_phone = "+7" + clean_phone[1:]
     elif clean_phone.startswith("7") and not clean_phone.startswith("+"): clean_phone = "+" + clean_phone
+
+    # Reviewer Bypass
+    if clean_phone in REVIEWER_PHONES and code == "123456":
+         return get_or_create_user_token(session, "phone", clean_phone)
 
     otp = session.exec(select(OtpCode).where(
         OtpCode.phone == clean_phone,
@@ -91,7 +145,7 @@ def verify_sms_login(session: Session, phone: str, code: str) -> Tuple[Optional[
     
     return get_or_create_user_token(session, "phone", clean_phone)
 
-def verify_telegram_login(session: Session, data: dict) -> Tuple[Optional[str], str]:
+def verify_telegram_login(session: Session, data: dict) -> Tuple[Optional[dict], str]:
     if not verify_telegram_data(data):
         return None, "Invalid telegram signature"
         
@@ -106,7 +160,7 @@ def verify_telegram_login(session: Session, data: dict) -> Tuple[Optional[str], 
     
     return get_or_create_user_token(session, "telegram", str(tg_id), force_admin=force_admin)
 
-def get_or_create_user_token(session: Session, provider: str, provider_id: str, force_admin: bool = False) -> Tuple[str, str]:
+def get_or_create_user_token(session: Session, provider: str, provider_id: str, force_admin: bool = False) -> Tuple[Optional[dict], str]:
     # Lookup Identity
     identity = session.exec(select(UserIdentity).where(
         UserIdentity.provider == provider,
@@ -143,5 +197,6 @@ def get_or_create_user_token(session: Session, provider: str, provider_id: str, 
         session.add(identity)
         session.commit()
     
-    token = create_access_token(user.id, user.role)
-    return token, "OK"
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}, "OK"

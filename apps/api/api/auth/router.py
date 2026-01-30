@@ -3,16 +3,54 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from pydantic import BaseModel
+import uuid
 
 from ..core.database import engine
 from ..core.config import config
 from ..core.models import User, UserIdentity
 from . import service
 from .service import create_access_token
+from .deps import get_current_user, oauth2_scheme
 
 router = APIRouter()
 
+@router.get("/auth/me")
+def get_me(user = Depends(get_current_user)):
+    return user
+
+class RefreshReq(BaseModel):
+    refresh_token: str
+
+@router.post("/auth/logout")
+def logout(
+    req: Optional[RefreshReq] = None, 
+    token: str = Depends(oauth2_scheme), 
+    session: Session = Depends(service.Session) # Workaround: service doesn't expose clean session getter, using deps direct
+):
+    # We need session here to write blacklist
+    from .deps import get_session
+    session = next(get_session())
+
+    # Blacklist Access Token
+    payload = service.verify_token(token, "access")
+    if payload:
+        # Use simple expiry from payload, or default 30m if missing (should not happen)
+        exp = datetime.fromtimestamp(payload["exp"])
+        user_id = uuid.UUID(payload["sub"])
+        service.blacklist_token(session, token, exp, user_id)
+        
+    # Blacklist Refresh Token if provided
+    if req and req.refresh_token:
+         rf_payload = service.verify_token(req.refresh_token, "refresh")
+         if rf_payload:
+              exp = datetime.fromtimestamp(rf_payload["exp"])
+              user_id = uuid.UUID(rf_payload["sub"])
+              service.blacklist_token(session, req.refresh_token, exp, user_id)
+
+    return {"status": "ok"}
+
 def get_session():
+
     with Session(engine) as session:
         yield session
 
@@ -42,10 +80,39 @@ async def login_sms_init(req: PhoneInit, session: Session = Depends(get_session)
 
 @router.post("/auth/login/sms/verify")
 def login_sms_verify(req: PhoneVerify, session: Session = Depends(get_session)):
-    token, msg = service.verify_sms_login(session, req.phone, req.code)
-    if not token:
+    tokens, msg = service.verify_sms_login(session, req.phone, req.code)
+    if not tokens:
         raise HTTPException(status_code=401, detail=msg)
-    return {"access_token": token, "token_type": "bearer"}
+    return tokens
+
+@router.post("/auth/refresh")
+def refresh_token(req: RefreshReq, session: Session = Depends(get_session)):
+    # Check if refresh token is blacklisted
+    if service.is_token_blacklisted(session, req.refresh_token):
+        raise HTTPException(status_code=401, detail="Refresh token revoked")
+
+    payload = service.verify_token(req.refresh_token, "refresh")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    
+    user_id = payload["sub"]
+    user = session.get(User, user_id)
+    if not user or not user.is_active:
+         raise HTTPException(status_code=401, detail="User inactive")
+         
+    # Rotation: Blacklist old refresh token to prevent reuse (strict security)
+    # Expiry for blacklist record = token expiry
+    exp = datetime.fromtimestamp(payload["exp"])
+    service.blacklist_token(session, req.refresh_token, exp, user.id)
+
+    new_access = service.create_access_token(user.id, user.role)
+    new_refresh = service.create_refresh_token(user.id)
+    
+    return {
+        "access_token": new_access,
+        "refresh_token": new_refresh, 
+        "token_type": "bearer"
+    }
 
 @router.post("/auth/login/dev-admin")
 def dev_admin_login(
@@ -87,12 +154,13 @@ def dev_admin_login(
         session.add(identity)
         session.commit()
     
-    token = create_access_token(user.id, "admin")
-    return {"access_token": token, "token_type": "bearer"}
+    access_token = create_access_token(user.id, "admin")
+    refresh_token = service.create_refresh_token(user.id)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 @router.post("/auth/login/telegram")
 def login_telegram(req: TelegramLogin, session: Session = Depends(get_session)):
-    token, msg = service.verify_telegram_login(session, req.dict())
-    if not token:
+    tokens, msg = service.verify_telegram_login(session, req.dict())
+    if not tokens:
          raise HTTPException(status_code=401, detail=msg)
-    return {"access_token": token, "token_type": "bearer"}
+    return tokens

@@ -1,14 +1,11 @@
-import 'dart:async';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:dio/dio.dart';
+import '../../core/api/api_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:mobile_flutter/core/router/app_router.dart';
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
-  return NotificationService();
+  return NotificationService(ref);
 });
 
 /// Notification channel IDs
@@ -25,9 +22,12 @@ class NotificationIds {
 }
 
 class NotificationService {
+  final Ref _ref;
   final _firebaseMessaging = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
+
+  NotificationService(this._ref);
 
   Future<void> init() async {
     if (_isInitialized) return;
@@ -63,21 +63,52 @@ class NotificationService {
     // Create Android notification channels
     await _createNotificationChannels();
 
-    // 3. Get Token
+    // 3. Get Token and Register
     try {
       final token = await _firebaseMessaging.getToken();
       debugPrint('FCM Token: $token'); 
-      // TODO: Send to backend
+      if (token != null) {
+         await _registerToken(token);
+      }
+      
+      // Listen for refresh
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+         _registerToken(newToken);
+      });
+
     } catch (e) {
       debugPrint('Error getting FCM token: $e');
     }
 
+
+
+  // ... inside init() ...
     // 4. Foreground Handler
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
        _showLocalNotification(message);
     });
     
+    // 5. Background Tap Handler
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessageOpened);
+    
     _isInitialized = true;
+  }
+
+  Future<void> _registerToken(String token) async {
+      try {
+           final dio = _ref.read(dioProvider);
+           final prefs = await SharedPreferences.getInstance();
+           final deviceId = prefs.getString('device_anon_id') ?? 'unknown';
+           
+           await dio.post('/push/register', data: {
+              'token': token,
+              'device_id': deviceId,
+              'platform': Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown') 
+           });
+           debugPrint("Push Token registered");
+      } catch (e) {
+          debugPrint("Failed to register push token: $e");
+      }
   }
 
   Future<void> _createNotificationChannels() async {
@@ -114,6 +145,26 @@ class NotificationService {
     }
   }
 
+  void _handleRemoteMessageOpened(RemoteMessage message) {
+     debugPrint('Notification opened app: ${message.data}');
+     final data = message.data;
+     _navigateFromData(data);
+  }
+
+  void _navigateFromData(Map<String, dynamic> data) {
+      final type = data['type'];
+      final id = data['id'] ?? data['target_id']; // Handle dynamic keys
+      
+      if (type != null && id != null) {
+          final router = _ref.read(routerProvider);
+          if (type == 'tour') {
+              router.push('/tour/$id');
+          } else if (type == 'poi') {
+              router.push('/poi/$id');
+          }
+      }
+  }
+
   void _onNotificationTap(NotificationResponse response) {
     debugPrint('Notification clicked: ${response.payload}');
     
@@ -126,11 +177,22 @@ class NotificationService {
         final type = parts[0];
         final id = parts[1];
         debugPrint('Navigate to $type with id $id');
-        // Navigation will be handled by the app's navigation system
-        // Store in preferences for the app to read on resume
-        SharedPreferences.getInstance().then((prefs) {
-          prefs.setString('pending_notification_navigation', payload);
-        });
+        
+        // Navigation using Router
+        try {
+            final router = _ref.read(routerProvider);
+            if (type == 'tour') {
+                router.push('/tour/$id');
+            } else if (type == 'poi') {
+                router.push('/poi/$id');
+            }
+        } catch (e) {
+            debugPrint("Navigation error: $e");
+            // Fallback to storing in prefs
+             SharedPreferences.getInstance().then((prefs) {
+              prefs.setString('pending_notification_navigation', payload);
+            });
+        }
       }
     }
   }

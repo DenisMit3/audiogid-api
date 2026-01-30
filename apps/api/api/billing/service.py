@@ -32,7 +32,8 @@ async def grant_entitlement(
     source_ref: str, 
     product_id: str, 
     device_anon_id: str,
-    trace_id: str
+    trace_id: str,
+    user_id: Optional[uuid.UUID] = None
 ) -> tuple[EntitlementGrant, bool]:
     """
     Maps SKU -> Entitlement and grants it. Idempotent and race-safe.
@@ -53,6 +54,7 @@ async def grant_entitlement(
     # 2. Try to create grant (race-safe via DB unique constraint)
     grant = EntitlementGrant(
         device_anon_id=device_anon_id,
+        user_id=user_id,
         entitlement_id=entitlement.id,
         source=source,
         source_ref=source_ref,

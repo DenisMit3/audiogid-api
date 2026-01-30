@@ -1,8 +1,10 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:flutter/services.dart';
 
 class AudioPlayerScreen extends ConsumerWidget {
   const AudioPlayerScreen({super.key});
@@ -33,7 +35,12 @@ class AudioPlayerScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: mediaItem.artUri != null
-                        ? Image.network(mediaItem.artUri!.toString(), fit: BoxFit.contain)
+                        ? CachedNetworkImage(
+                            imageUrl: mediaItem.artUri!.toString(),
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => const Icon(Icons.music_note, size: 120),
+                            errorWidget: (context, url, error) => const Icon(Icons.music_note, size: 120),
+                          )
                         : const Icon(Icons.music_note, size: 120),
                   ),
                 ),
@@ -69,6 +76,7 @@ class AudioPlayerScreen extends ConsumerWidget {
                        Slider(
                          value: position.inMilliseconds.toDouble().clamp(0, (total.inMilliseconds > 0 ? total.inMilliseconds.toDouble() : position.inMilliseconds.toDouble() + 1000)),
                          max: (total.inMilliseconds > 0 ? total.inMilliseconds.toDouble() : position.inMilliseconds.toDouble() + 1000),
+                         onChangeStart: (_) => HapticFeedback.selectionClick(),
                          onChanged: (value) {
                              audioHandler.seek(Duration(milliseconds: value.toInt()));
                          },
@@ -101,17 +109,26 @@ class AudioPlayerScreen extends ConsumerWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.skip_previous, size: 48),
-                        onPressed: audioHandler.skipToPrevious,
+                        onPressed: () {
+                           HapticFeedback.lightImpact();
+                           audioHandler.skipToPrevious();
+                        },
                       ),
                       const SizedBox(width: 24),
                       IconButton(
                         icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 64),
-                        onPressed: playing ? audioHandler.pause : audioHandler.play,
+                        onPressed: () {
+                           HapticFeedback.mediumImpact();
+                           playing ? audioHandler.pause() : audioHandler.play();
+                        },
                       ),
                       const SizedBox(width: 24),
                       IconButton(
                         icon: const Icon(Icons.skip_next, size: 48),
-                        onPressed: audioHandler.skipToNext,
+                        onPressed: () {
+                           HapticFeedback.lightImpact();
+                           audioHandler.skipToNext();
+                        },
                       ),
                     ],
                   );

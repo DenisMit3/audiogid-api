@@ -179,6 +179,12 @@ class OfflinePoiRepository implements PoiRepository {
     );
   }
 
+  @override
+  Future<List<domain.Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
+    final list = await _db.poiDao.getNearbyCandidates(lat, lon, radiusMeters);
+    return list.map(_mapTablePoiToDomain).toList();
+  }
+
   domain.Poi _mapTablePoiToDomain(Poi p) {
     return domain.Poi(
       id: p.id,

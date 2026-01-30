@@ -14,6 +14,8 @@ class AppConfig:
         
         # ADMIN_API_TOKEN is OPTIONAL at startup (fail-closed check at endpoint level)
         self.ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN")
+        if not self.ADMIN_API_TOKEN and os.getenv("VERCEL_ENV") == "production":
+             raise RuntimeError("CRITICAL: ADMIN_API_TOKEN is required in production.")
         
         # Optional with default
         self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
@@ -39,11 +41,18 @@ class AppConfig:
         self.GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON_BASE64")  # Base64 encoded
 
         # Auth (PR-58)
-        self.SMSRU_API_ID = os.getenv("SMSRU_API_ID")
+        self.SMS_RU_API_KEY = os.getenv("SMS_RU_API_KEY")
         self.TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-        self.JWT_SECRET = os.getenv("JWT_SECRET") 
+        self.JWT_SECRET = os.getenv("JWT_SECRET")
+        if self.JWT_SECRET and len(self.JWT_SECRET) < 32:
+            raise RuntimeError("CRITICAL: JWT_SECRET must be at least 32 characters long.")
+        if not self.JWT_SECRET and os.getenv("VERCEL_ENV") == "production":
+            raise RuntimeError("CRITICAL: JWT_SECRET is required in production.") 
         self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
         self.OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))
+        
+        # Monitoring
+        self.SENTRY_DSN = os.getenv("SENTRY_DSN")
 
             
     def _get_required(self, key: str) -> str:

@@ -1,69 +1,35 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/app.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:mobile_flutter/core/audio/audio_handler.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import 'package:mobile_flutter/core/config/app_config.dart';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:mobile_flutter/data/services/deep_link_service.dart';
 import 'package:mobile_flutter/data/services/notification_service.dart';
+import 'package:mobile_flutter/data/services/analytics_service.dart';
+import 'package:mobile_flutter/data/services/security_service.dart';
+import 'package:mobile_flutter/core/services/api_health_service.dart';
 
-/// Background message handler for FCM
-/// Must be a top-level function (not a class method)
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
-  await Firebase.initializeApp();
-  
-  debugPrint('Handling a background message: ${message.messageId}');
-  debugPrint('Message data: ${message.data}');
-  debugPrint('Message notification: ${message.notification?.title}');
-  
-  // Handle background message data
-  // For deep links from push: data might contain 'type' and 'target_id'
-  final data = message.data;
-  if (data['type'] == 'poi' || data['type'] == 'tour') {
-    // Store in local storage for handling when app opens
-    // The deep link service will pick this up on app resume
-    debugPrint('Background push for ${data['type']}: ${data['target_id']}');
-  }
-}
+// Firebase imports removed
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FlutterDownloader.initialize(debug: true);
-
-  try {
-    await Firebase.initializeApp();
-    
-    // Register background message handler for FCM
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    
-    // Handle notification taps when app was terminated
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      debugPrint('App opened from terminated state via notification: ${initialMessage.data}');
-      // The deep link service will handle this
-    }
-    
-    // Handle notification taps when app was in background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('Notification opened app from background: ${message.data}');
-      // Navigate based on message data
-      final data = message.data;
-      if (data['type'] == 'poi') {
-        // Navigate to POI - will be handled by deep link service
-      } else if (data['type'] == 'tour') {
-        // Navigate to Tour
-      }
+  if (kDebugMode) {
+    MemoryAllocations.instance.addListener((event) {
+      debugPrint('Memory: ${event.toString()}');
     });
-  } catch (e) {
-    debugPrint("Firebase init failed: $e");
   }
+  await FlutterDownloader.initialize(debug: true);
+  
+  // Firebase initialization removed
   
   final audioHandler = await AudioService.init(
     builder: () => AudiogidAudioHandler(),
@@ -83,6 +49,33 @@ void main() async {
   // Initialize global services
   container.read(deepLinkServiceProvider).init();
   container.read(notificationServiceProvider).init();
+  container.read(analyticsServiceProvider).logEvent('app_open');
+  // Check for root/jailbreak
+  container.read(securityServiceProvider).checkDeviceSecurity();
+
+  // API Connectivity Check
+  try {
+    final isHealthy = await container.read(apiHealthServiceProvider).checkHealth();
+    if (!isHealthy) {
+      debugPrint('API health check failed');
+      // Potential UI feedback could go here
+    }
+  } catch (e) {
+    debugPrint('API unreachable: $e');
+  }
+
+  // Check for pending deep link from terminated state
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final pendingLink = prefs.getString('pending_deep_link');
+    if (pendingLink != null) {
+      final data = jsonDecode(pendingLink);
+      container.read(deepLinkServiceProvider).handleDeepLink(data);
+      await prefs.remove('pending_deep_link');
+    }
+  } catch (e) {
+    debugPrint("Failed to handle pending deep link: $e");
+  }
 
   runApp(
     UncontrolledProviderScope(

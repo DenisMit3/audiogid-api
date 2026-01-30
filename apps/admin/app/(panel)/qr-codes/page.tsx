@@ -3,9 +3,10 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, QrCode, RefreshCcw, Search, ExternalLink, Printer } from 'lucide-react';
+import { Download, QrCode, RefreshCcw, Search, ExternalLink, Printer, Activity } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
     Table,
     TableBody,

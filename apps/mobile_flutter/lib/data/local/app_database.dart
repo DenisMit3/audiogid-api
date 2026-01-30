@@ -32,6 +32,8 @@ class Tours extends Table {
   IntColumn get durationMinutes => integer().nullable()();
   TextColumn get transportType => text().nullable()();
   RealColumn get distanceKm => real().nullable()();
+  TextColumn get tourType => text().withDefault(const Constant('walking'))();
+  TextColumn get difficulty => text().withDefault(const Constant('easy'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -58,9 +60,20 @@ class Pois extends Table {
   BoolColumn get hasAccess => boolean().withDefault(const Constant(false))();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   TextColumn get category => text().nullable()();
+  TextColumn get wikidataId => text().nullable()();
+  TextColumn get osmId => text().nullable()();
+  RealColumn get confidenceScore => real().withDefault(const Constant(0.0))();
+  TextColumn get openingHours => text().nullable()();
+  TextColumn get externalLinks => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {citySlug, osmId}, // Composite unique
+    {citySlug, category}, // Index hint
+  ];
 }
 
 class Narrations extends Table {
@@ -71,6 +84,8 @@ class Narrations extends Table {
   RealColumn get durationSeconds => real().nullable()();
   TextColumn get transcript => text().nullable()();
   TextColumn get localPath => text().nullable()();
+  TextColumn get voiceId => text().nullable()();
+  IntColumn get filesizeBytes => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -132,6 +147,16 @@ class QrMappingsCache extends Table {
   Set<Column> get primaryKey => {code};
 }
 
+class AnalyticsPendingEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get eventType => text()();
+  TextColumn get payloadJson => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Cities,
@@ -144,6 +169,7 @@ class QrMappingsCache extends Table {
     EntitlementGrants,
     Etags,
     QrMappingsCache,
+    AnalyticsPendingEvents,
   ],
   daos: [
     CityDao,
@@ -157,7 +183,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -170,8 +196,9 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
              await m.addColumn(tours, tours.transportType);
              await m.addColumn(tours, tours.distanceKm);
-          }
-          if (from < 5) {
+           }
+           // ... (existing migrations) ...
+           if (from < 5) {
             await m.addColumn(pois, pois.isFavorite);
             await m.addColumn(pois, pois.category);
             await m.addColumn(media, media.licenseType);
@@ -187,6 +214,26 @@ class AppDatabase extends _$AppDatabase {
           if (from < 8) {
             await m.createTable(qrMappingsCache);
           }
+          if (from < 9) {
+            await m.addColumn(pois, pois.wikidataId);
+            await m.addColumn(pois, pois.osmId);
+            await m.addColumn(pois, pois.confidenceScore);
+            await m.addColumn(pois, pois.openingHours);
+            await m.addColumn(pois, pois.externalLinks);
+            await m.addColumn(tours, tours.tourType);
+            await m.addColumn(tours, tours.difficulty);
+            await m.addColumn(narrations, narrations.voiceId);
+            await m.addColumn(narrations, narrations.filesizeBytes);
+          }
+           if (from < 10) {
+            await m.createTable(analyticsPendingEvents);
+          }
+          if (from < 11) {
+            await m.createIndex(Index('idx_pois_city_category', 'CREATE INDEX idx_pois_city_category ON pois(city_slug, category)'));
+          }
+           if (from < 12) {
+             await m.createIndex(Index('idx_tour_items_tour_order', 'CREATE INDEX idx_tour_items_tour_order ON tour_items(tour_id, order_index)'));
+           }
         },
       );
 }

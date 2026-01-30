@@ -18,21 +18,23 @@ class AppConfig {
   });
 
   factory AppConfig.fromFlavor(AppFlavor flavor) {
+    const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
+
     switch (flavor) {
       case AppFlavor.dev:
         return AppConfig(
           flavor: AppFlavor.dev,
-          apiBaseUrl: 'https://dev.api.audiogid.app/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://localhost:8000/v1',
         );
       case AppFlavor.staging:
         return AppConfig(
           flavor: AppFlavor.staging,
-          apiBaseUrl: 'https://staging.api.audiogid.app/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'https://audiogid-api-staging.vercel.app/v1',
         );
       case AppFlavor.prod:
         return AppConfig(
           flavor: AppFlavor.prod,
-          apiBaseUrl: 'https://api.audiogid.app/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'https://audiogid-api.vercel.app/v1',
         );
     }
   }

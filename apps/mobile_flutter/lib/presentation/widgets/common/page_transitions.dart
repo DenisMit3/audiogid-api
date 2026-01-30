@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 
@@ -228,12 +229,24 @@ class HeroImage extends StatelessWidget {
         ),
       );
     } else {
-      imageWidget = Image.network(
-        imageUrl!,
+      imageWidget = CachedNetworkImage(
+        imageUrl: imageUrl!,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stack) => placeholder ?? Container(
+        placeholder: (context, url) => placeholder ?? Container(
+           width: width,
+           height: height,
+           decoration: BoxDecoration(
+             gradient: LinearGradient(
+               colors: [
+                 colorScheme.primary.withOpacity(0.6),
+                 colorScheme.secondary.withOpacity(0.6),
+               ],
+             ),
+           ),
+        ),
+        errorWidget: (context, error, stack) => placeholder ?? Container(
           width: width,
           height: height,
           color: colorScheme.surfaceVariant,

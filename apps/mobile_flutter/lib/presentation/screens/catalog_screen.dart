@@ -7,8 +7,11 @@ import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
+import 'package:mobile_flutter/data/services/purchase_service.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
+
   const CatalogScreen({super.key});
 
   @override
@@ -64,9 +67,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     }
 
     final poisStream = ref.watch(poiRepositoryProvider).watchPoisForCity(selectedCity);
+    final selectedIds = ref.watch(selectionNotifierProvider);
+    final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
     return Scaffold(
-      appBar: _buildAppBar(context),
+      appBar: _buildAppBar(context, selectedIds),
       body: StreamBuilder<List<Poi>>(
         stream: poisStream,
         builder: (context, snapshot) {
@@ -117,10 +122,10 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                           padding: EdgeInsets.only(
                             left: context.horizontalPadding,
                             right: context.horizontalPadding,
-                            bottom: _isMultiSelectMode ? 100 : AppSpacing.xl,
+                            bottom: isMultiSelectMode ? 100 : AppSpacing.xl,
                           ),
                           itemBuilder: (context, index) {
-                            return _buildPoiItem(context, filteredPois[index]);
+                            return _buildPoiItem(context, filteredPois[index], selectedIds);
                           },
                         ),
                       ),
@@ -129,8 +134,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           );
         },
       ),
-      bottomNavigationBar: _isMultiSelectMode ? _buildBottomBar(context) : null,
-      floatingActionButton: !_isMultiSelectMode
+      bottomNavigationBar: isMultiSelectMode ? _buildBottomBar(context, selectedIds) : null,
+      floatingActionButton: !isMultiSelectMode
           ? SafeFloatingActionButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
@@ -157,24 +162,20 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    if (_isMultiSelectMode) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, Set<String> selectedIds) {
+    if (selectedIds.isNotEmpty || _isMultiSelectMode) {
       return AppBar(
         title: Semantics(
-          label: 'Выбрано ${_selectedPoiIds.length} мест',
-          child: Text('Выбрано: ${_selectedPoiIds.length}'),
+          label: 'Выбрано ${selectedIds.length} мест',
+          child: Text('Выбрано: ${selectedIds.length}'),
         ),
         leading: AccessibleIconButton(
           icon: Icons.close,
           tooltip: 'Отменить выбор',
           onPressed: () {
             HapticFeedback.lightImpact();
-            setState(() {
-              _isMultiSelectMode = false;
-              _selectedPoiIds.clear();
-            });
+            setState(() => _isMultiSelectMode = false);
+            ref.read(selectionNotifierProvider.notifier).clear();
           },
         ),
         actions: [
@@ -183,12 +184,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             tooltip: 'Выбрать все',
             onPressed: () {
               HapticFeedback.lightImpact();
-              // Select all visible POIs
+              // Logic to select visible would go here, for now manual
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Выбраны все места'),
-                  behavior: SnackBarBehavior.floating,
-                ),
+                const SnackBar(content: Text('Для выбора воспользуйтесь долгим нажатием')),
               );
             },
           ),
@@ -283,16 +281,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  Widget _buildPoiItem(BuildContext context, Poi poi) {
+  Widget _buildPoiItem(BuildContext context, Poi poi, Set<String> selectedIds) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedPoiIds.contains(poi.id);
+    final isSelected = selectedIds.contains(poi.id);
 
     return Semantics(
       button: true,
       selected: isSelected,
       label: '${poi.titleRu}, категория ${_translateCategory(poi.category)}',
-      hint: _isMultiSelectMode 
+      hint: (selectedIds.isNotEmpty || _isMultiSelectMode)
           ? (isSelected ? 'Нажмите чтобы убрать из выбора' : 'Нажмите чтобы выбрать')
           : 'Нажмите для просмотра',
       child: Card(
@@ -300,25 +298,17 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
-            if (_isMultiSelectMode) {
-              setState(() {
-                if (isSelected) {
-                  _selectedPoiIds.remove(poi.id);
-                } else {
-                  _selectedPoiIds.add(poi.id);
-                }
-              });
+            if (selectedIds.isNotEmpty || _isMultiSelectMode) {
+              ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
             } else {
               context.push('/poi/${poi.id}');
             }
           },
-          onLongPress: !_isMultiSelectMode
+          onLongPress: !(selectedIds.isNotEmpty || _isMultiSelectMode)
               ? () {
                   HapticFeedback.mediumImpact();
-                  setState(() {
-                    _isMultiSelectMode = true;
-                    _selectedPoiIds.add(poi.id);
-                  });
+                  setState(() => _isMultiSelectMode = true);
+                  ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
                 }
               : null,
           borderRadius: BorderRadius.circular(16),
@@ -326,10 +316,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             padding: EdgeInsets.all(context.cardPadding),
             child: Row(
               children: [
-                // Thumbnail
                 HeroImage(
                   tag: 'poi-image-${poi.id}',
-                  imageUrl: null, // TODO: Add POI thumbnail
+                  imageUrl: null, 
                   width: 64,
                   height: 64,
                   borderRadius: BorderRadius.circular(12),
@@ -354,7 +343,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
                 const SizedBox(width: AppSpacing.md),
 
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,7 +363,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                   ),
                 ),
 
-                // Actions
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -388,18 +375,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
                       },
                     ),
-                    if (_isMultiSelectMode)
+                    if (selectedIds.isNotEmpty || _isMultiSelectMode)
                       Checkbox(
                         value: isSelected,
                         onChanged: (val) {
                           HapticFeedback.selectionClick();
-                          setState(() {
-                            if (val == true) {
-                              _selectedPoiIds.add(poi.id);
-                            } else {
-                              _selectedPoiIds.remove(poi.id);
-                            }
-                          });
+                          ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
                         },
                       ),
                   ],
@@ -412,9 +393,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context, Set<String> selectedIds) {
     final colorScheme = Theme.of(context).colorScheme;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    final purchaseState = ref.watch(purchaseServiceProvider);
+    final isBuying = purchaseState.status == PurchaseStatusState.pending;
 
     return AnimatedContainer(
       duration: AppDurations.fast,
@@ -436,62 +420,55 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       ),
       child: Row(
         children: [
-          Expanded(
+           Expanded(
             child: Semantics(
               button: true,
-              enabled: _selectedPoiIds.isNotEmpty,
-              label: 'Скачать ${_selectedPoiIds.length} мест',
+              enabled: selectedIds.isNotEmpty && !isBuying,
+              label: 'Купить ${selectedIds.length} мест',
               child: ElevatedButton.icon(
-                onPressed: _selectedPoiIds.isEmpty
+                onPressed: (selectedIds.isEmpty || isBuying)
                     ? null
-                    : () {
+                    : () async {
                         HapticFeedback.lightImpact();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Загрузка ${_selectedPoiIds.length} мест...'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                        setState(() {
-                          _isMultiSelectMode = false;
-                          _selectedPoiIds.clear();
-                        });
+                        await ref.read(purchaseServiceProvider.notifier).buyBatch(selectedIds.toList(), []);
+                        
+                        // Check result
+                        if (context.mounted) {
+                           final state = ref.read(purchaseServiceProvider);
+                           if (state.status == PurchaseStatusState.restored || state.status == PurchaseStatusState.success) {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Покупка успешна!')));
+                                ref.read(selectionNotifierProvider.notifier).clear();
+                                setState(() => _isMultiSelectMode = false);
+                           } else if (state.status == PurchaseStatusState.error) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error ?? 'Не удалось купить')));
+                           }
+                        }
                       },
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Скачать'),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Semantics(
-              button: true,
-              enabled: _selectedPoiIds.isNotEmpty,
-              label: 'Добавить ${_selectedPoiIds.length} мест в маршрут',
-              child: ElevatedButton.icon(
-                onPressed: _selectedPoiIds.isEmpty
-                    ? null
-                    : () {
-                        HapticFeedback.lightImpact();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Добавлено ${_selectedPoiIds.length} мест в маршрут'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                        setState(() {
-                          _isMultiSelectMode = false;
-                          _selectedPoiIds.clear();
-                        });
-                      },
-                icon: const Icon(Icons.playlist_add_outlined),
-                label: const Text('В маршрут'),
+                icon: isBuying 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                    : const Icon(Icons.shopping_cart_checkout),
+                label: Text(isBuying ? 'Обработка...' : 'Купить (${selectedIds.length})'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.secondaryContainer,
-                  foregroundColor: colorScheme.onSecondaryContainer,
+                   backgroundColor: colorScheme.primary,
+                   foregroundColor: colorScheme.onPrimary,
                 ),
               ),
             ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          IconButton(
+            onPressed: selectedIds.isEmpty
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Добавлено ${selectedIds.length} мест в маршрут')),
+                    );
+                    ref.read(selectionNotifierProvider.notifier).clear();
+                    setState(() => _isMultiSelectMode = false);
+                  },
+              icon: const Icon(Icons.playlist_add),
+              tooltip: 'В маршрут',
           ),
         ],
       ),
@@ -526,3 +503,4 @@ class _CategoryItem {
     required this.icon,
   });
 }
+

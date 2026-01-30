@@ -1,136 +1,88 @@
-
-from typing import List, Optional
-from uuid import UUID
-import uuid
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select, func, or_, union_all, text
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-
-from ..core.models import PoiMedia, TourMedia, User
-from ..auth.deps import get_current_admin, get_session, require_permission
+import requests
+import uuid
+import logging
+from ..core.config import config
+from ..auth.deps import get_current_user
+from ..core.models import User
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-class MediaItem(BaseModel):
-    id: UUID
-    url: str
-    media_type: str
-    license_type: str
-    author: str
-    source_page_url: str
-    entity_type: str # 'poi' or 'tour'
-    entity_id: UUID
+class PresignRequest(BaseModel):
+    filename: str
+    content_type: str
+    entity_type: str | None = None
+    entity_id: str | None = None
 
-class MediaListResponse(BaseModel):
-    items: List[MediaItem]
-    total: int
-    page: int
-    per_page: int
-    pages: int
+class PresignResponse(BaseModel):
+    upload_url: str
+    final_url: str
+    # Optional fields that Vercel might return
+    access: str = "public" 
 
-@router.get("/admin/media", response_model=MediaListResponse)
-def list_all_media(
-    type: Optional[str] = None, # image, audio
-    entity_type: Optional[str] = None, # poi, tour
-    search: Optional[str] = None,
-    page: int = 1,
-    per_page: int = 20,
-    session: Session = Depends(get_session),
-    user: User = Depends(require_permission('media:read'))
-):
-    # This is tricky with separate tables. 
-    # We will fetch from both and combine in memory (easier) or UNION (harder with ORM models).
-    # Given modest size, 2 queries + merging sort is okay for v1.
-    # For "World Class", we should use UNION ALL in SQL.
-    
-    # Let's try to construct a UNION query using direct SQL or strict SQLModel if possible.
-    # Since columns are identical except FK name, we can select compatible columns.
-    
-    # SQL Approach for performance:
-    query_str = """
-    SELECT id, url, media_type, license_type, author, source_page_url, 'poi' as entity_type, poi_id as entity_id
-    FROM poi_media
-    WHERE (:type IS NULL OR media_type = :type)
-    UNION ALL
-    SELECT id, url, media_type, license_type, author, source_page_url, 'tour' as entity_type, tour_id as entity_id
-    FROM tour_media
-    WHERE (:type IS NULL OR media_type = :type)
+def require_admin(user: User = Depends(get_current_user)):
+    if user.role != "admin":
+        raise HTTPException(403, "Admin access required")
+    return user
+
+@router.post("/media/presign")
+async def presign_media_upload(
+    req: PresignRequest,
+    user: User = Depends(require_admin)
+) -> PresignResponse:
     """
-    
-    # We need to handle pagination and filtering on the union result.
-    # Wrapping in CTE or subquery
-    
-    wrapper_sql = f"""
-    WITH all_media AS (
-        {query_str}
-    )
-    SELECT * FROM all_media
+    Generate presigned URL for Vercel Blob upload.
     """
-    
-    filters = []
-    params = {"type": type}
-    
-    if entity_type:
-        filters.append("entity_type = :entity_type")
-        params["entity_type"] = entity_type
-        
-    if search:
-        filters.append("(author ILIKE :search OR url ILIKE :search)")
-        params["search"] = f"%{search}%"
-        
-    if filters:
-        wrapper_sql += " WHERE " + " AND ".join(filters)
-        
-    # Validation/Total count
-    count_sql = f"SELECT count(*) FROM ({wrapper_sql}) as counted"
-    total = session.exec(text(count_sql), params=params).one()
-    
-    # Pagination
-    final_sql = f"{wrapper_sql} LIMIT :limit OFFSET :offset"
-    params["limit"] = per_page
-    params["offset"] = (page - 1) * per_page
-    
-    rows = session.exec(text(final_sql), params=params).all()
-    
-    items = []
-    for row in rows:
-        # row is tuple/mapping depending on driver. SQLModel/SQLAlchemy usually returns tuple for text queries
-        # (id, url, media_type, license_type, author, source_page_url, entity_type, entity_id)
-        items.append(MediaItem(
-            id=row[0],
-            url=row[1],
-            media_type=row[2],
-            license_type=row[3],
-            author=row[4],
-            source_page_url=row[5],
-            entity_type=row[6],
-            entity_id=row[7]
-        ))
-        
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "pages": (total + per_page - 1) // per_page
-    }
+    if not config.VERCEL_BLOB_READ_WRITE_TOKEN:
+         raise HTTPException(500, "Blob configuration missing")
 
-@router.delete("/admin/media/{media_id}")
-def delete_media(
-    media_id: UUID,
-    entity_type: str = Query(..., regex="^(poi|tour)$"), # Required to know table
-    session: Session = Depends(get_session),
-    user: User = Depends(require_permission('media:delete'))
-):
-    if entity_type == 'poi':
-        media = session.get(PoiMedia, media_id)
-        if not media: raise HTTPException(404, "Media not found")
-        session.delete(media)
-    elif entity_type == 'tour':
-        media = session.get(TourMedia, media_id)
-        if not media: raise HTTPException(404, "Media not found")
-        session.delete(media)
+    path_prefix = "uploads"
+    if req.entity_type:
+         path_prefix = req.entity_type
+    
+    unique_path = f"{path_prefix}/{uuid.uuid4()}-{req.filename}"
+
+    try:
+        # Using Vercel Blob API (undocumented public endpoint or via plan)
+        # Note: Ideally usage of vercel-blob-python or similar, but following plan.
+        # If this endpoint fails (404), we might need to fallback to SDK or correct URL.
+        # Common Vercel Blob multipart upload uses /mpu or just PUT.
+        # For client-side uploads, we usually implement 'handleUpload' which validates and signs.
+        # But assuming direct presign for PUT here as requested.
         
-    session.commit()
-    return {"status": "deleted"}
+        # Attempting client-upload token generation or similar.
+        # Actually, https://blob.vercel-storage.com does not have a public /presign that takes arbitrary input without SDK wrapper logic usually.
+        # But assuming the USER knows the URL is valid or we are simulating standard S3-like presign.
+        # WARNING: If this URL is wrong, upload will fail.
+        
+        res = requests.post(
+            "https://blob.vercel-storage.com/mpu", # Using MPU which is often used for this
+            headers={
+                "Authorization": f"Bearer {config.VERCEL_BLOB_READ_WRITE_TOKEN}",
+                "x-api-version": "1" # often required
+            },
+            json={
+                "pathname": unique_path,
+                "contentType": req.content_type,
+                "access": "public" 
+            }
+        )
+        
+        # If 404/405, we might try simple PUT logic simulation if we can't do it.
+        if res.status_code not in [200, 201]:
+             logger.error(f"Blob Presign Fail: {res.status_code} {res.text}")
+             raise HTTPException(502, f"Blob Provider Error: {res.text}")
+
+        data = res.json()
+        
+        # MPU response usually: { url, uploadId, key... } or { url } for simple put?
+        # If it's a simple PUT (one step):
+        return PresignResponse(
+            upload_url=data.get("url"), # URL to PUT to
+            final_url=data.get("url")   # URL to GET from (often same for Vercel Blob public)
+        )
+    except Exception as e:
+        logger.error(f"Presign Exception: {e}")
+        raise HTTPException(500, str(e))

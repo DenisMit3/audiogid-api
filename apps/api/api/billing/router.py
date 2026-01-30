@@ -14,6 +14,8 @@ from ..core.config import config
 from .apple import verify_apple_receipt
 from .google import verify_google_purchase
 from .service import grant_entitlement as _grant_entitlement
+from ..auth.deps import get_current_user, get_current_user_optional
+from ..core.models import User, Poi, Tour, PurchaseIntent, Entitlement
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,7 +72,7 @@ class RestoreRequest(BaseModel):
 # --- Endpoints ---
 
 @router.post("/billing/apple/verify")
-async def apple_verify(req: AppleVerifyReq, request: Request, session: Session = Depends(get_session)):
+async def apple_verify(req: AppleVerifyReq, request: Request, session: Session = Depends(get_session), user: Optional[User] = Depends(get_current_user_optional)):
     trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
     
     # 1. Verify
@@ -94,7 +96,8 @@ async def apple_verify(req: AppleVerifyReq, request: Request, session: Session =
             source_ref=result["transaction_id"], 
             product_id=req.product_id, 
             device_anon_id=req.device_anon_id,
-            trace_id=trace_id
+            trace_id=trace_id,
+            user_id=user.id if user else None
         )
         return {
             "verified": True, 
@@ -107,7 +110,7 @@ async def apple_verify(req: AppleVerifyReq, request: Request, session: Session =
          return {"verified": True, "granted": False, "trace_id": trace_id, "error": str(e)}
 
 @router.post("/billing/google/verify")
-async def google_verify(req: GoogleVerifyReq, request: Request, session: Session = Depends(get_session)):
+async def google_verify(req: GoogleVerifyReq, request: Request, session: Session = Depends(get_session), user: Optional[User] = Depends(get_current_user_optional)):
     trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
     
     try:
@@ -128,7 +131,8 @@ async def google_verify(req: GoogleVerifyReq, request: Request, session: Session
             source_ref=result["transaction_id"],
             product_id=req.product_id,
             device_anon_id=req.device_anon_id,
-            trace_id=trace_id
+            trace_id=trace_id,
+            user_id=user.id if user else None
         )
         return {
             "verified": True, 
@@ -141,11 +145,17 @@ async def google_verify(req: GoogleVerifyReq, request: Request, session: Session
         return {"verified": True, "granted": False, "trace_id": trace_id, "error": str(e)}
 
 @router.get("/billing/entitlements")
-def get_user_entitlements(device_anon_id: str = Query(...), session: Session = Depends(get_session)):
-    grants = session.exec(select(EntitlementGrant).where(
-        EntitlementGrant.device_anon_id == device_anon_id,
-        EntitlementGrant.revoked_at == None
-    )).all()
+def get_user_entitlements(device_anon_id: str = Query(...), session: Session = Depends(get_session), user: Optional[User] = Depends(get_current_user_optional)):
+    
+    # Bind to user if present
+    query = select(EntitlementGrant).where(EntitlementGrant.revoked_at == None)
+    
+    if user:
+         query = query.where((EntitlementGrant.user_id == user.id) | (EntitlementGrant.device_anon_id == device_anon_id))
+    else:
+         query = query.where(EntitlementGrant.device_anon_id == device_anon_id)
+
+    grants = session.exec(query).all()
     
     res = []
     for g in grants:
@@ -227,3 +237,67 @@ def get_restore_status(job_id: uuid.UUID, session: Session = Depends(get_session
              res["result"] = job.result
              
     return res
+
+class BatchPurchaseRequest(BaseModel):
+    poi_ids: List[str] = []
+    tour_ids: List[str] = []
+    device_anon_id: str
+
+class BatchPurchaseResponse(BaseModel):
+    product_ids: List[str]
+    already_owned: List[str]
+
+@router.post("/billing/batch-purchase")
+async def batch_purchase(req: BatchPurchaseRequest, session: Session = Depends(get_session), user: Optional[User] = Depends(get_current_user_optional)):
+    """
+    Returns list of product_ids (SKUs) to purchase for the given POIs/Tours,
+    filtering out items already owned by the user/device.
+    """
+    # 1. Resolve Ref IDs
+    target_refs = []
+    # Normalize UUIDs to strings
+    for pid in req.poi_ids:
+        target_refs.append(str(pid))
+    for tid in req.tour_ids:
+        target_refs.append(str(tid))
+        
+    if not target_refs:
+        return BatchPurchaseResponse(product_ids=[], already_owned=[])
+
+    # 2. Check Entitlements (What is already owned)
+    query = select(EntitlementGrant).where(EntitlementGrant.revoked_at == None)
+    
+    if user:
+        query = query.where((EntitlementGrant.device_anon_id == req.device_anon_id) | (EntitlementGrant.user_id == user.id))
+    else:
+        query = query.where(EntitlementGrant.device_anon_id == req.device_anon_id)
+    
+    existing_grants = session.exec(query).all()
+    
+    # Map grants to refs
+    owned_refs = set()
+    for grant in existing_grants:
+        if grant.entitlement:
+             owned_refs.add(grant.entitlement.ref)
+
+    # 3. Find Products for requested items that are NOT owned
+    needed_refs = [ref for ref in target_refs if ref not in owned_refs]
+    already_owned_refs = [ref for ref in target_refs if ref in owned_refs]
+    
+    if not needed_refs:
+        return BatchPurchaseResponse(product_ids=[], already_owned=already_owned_refs)
+
+    # Fetch Entitlements for needed refs to get product_ids (slugs)
+    entitlements = session.exec(select(Entitlement).where(Entitlement.ref.in_(needed_refs))).all()
+    
+    product_ids = []
+    for ent in entitlements:
+        if ent.slug: 
+            product_ids.append(ent.slug)
+
+    return BatchPurchaseResponse(
+        product_ids=product_ids, 
+        already_owned=already_owned_refs
+    )
+
+

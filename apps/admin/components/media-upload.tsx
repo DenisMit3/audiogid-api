@@ -4,7 +4,8 @@
 import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
-import { Trash, Upload, Image as ImageIcon, Music, FileAudio, ExternalLink } from 'lucide-react';
+import { Trash, Upload, Image as ImageIcon, Music, FileAudio, ExternalLink, CheckCircle2, XCircle } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,11 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [currentFile, setCurrentFile] = useState<File | null>(null);
     const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/x-wav'];
 
     // License Form State
     const [licenseType, setLicenseType] = useState('cc-by-3.0');
@@ -81,15 +87,32 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
 
             // B. Upload to Blob (PUT)
             // Note: If fields present (S3 POST), logic differs. Assuming simple PUT for now as per code.
-            const uploadRes = await fetch(upload_url, {
-                method: method || 'PUT',
-                body: file,
-                headers: headers || {}
-            });
 
-            if (!uploadRes.ok) throw new Error("Upload to storage failed");
 
-            return final_url;
+            // Simulate progress for better UX
+            const progressInterval = setInterval(() => {
+                setUploadProgress(prev => Math.min(prev + 10, 90));
+            }, 200);
+
+            try {
+                const uploadRes = await fetch(upload_url, {
+                    method: method || 'PUT',
+                    body: file,
+                    headers: headers || {}
+                });
+
+                clearInterval(progressInterval);
+                setUploadProgress(100);
+
+                if (!uploadRes.ok) throw new Error("Upload to storage failed");
+                return final_url;
+            } catch (e) {
+                clearInterval(progressInterval);
+                setUploadProgress(0);
+                throw e;
+            }
+
+
         },
         onSuccess: (url) => {
             setUploadedUrl(url);
@@ -159,6 +182,20 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
         if (!file) return;
+
+        setErrorMsg(null);
+        setUploadProgress(0);
+
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            setErrorMsg("Invalid file type. Only JPEG, PNG, WEBP, MP3, WAV are allowed.");
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            setErrorMsg("File too large. Max size is 50MB.");
+            return;
+        }
+
         setCurrentFile(file);
         setIsUploadModalOpen(true);
         // Start upload immediately? Or wait for modal "Upload"? 
@@ -211,67 +248,101 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                     ))}
 
                     {/* Upload Dropzone */}
-                    <div {...getRootProps()} className={`
-                        border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors
-                        ${isDragActive ? 'border-primary bg-primary/10' : 'border-slate-200 hover:border-primary/50'}
-                    `}>
-                        <input {...getInputProps()} />
-                        <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                        <span className="text-sm text-slate-500 font-medium text-center px-2">
-                            {isDragActive ? 'Drop file...' : 'Drop image/audio'}
-                        </span>
-                    </div>
+                    {!isUploadModalOpen && (
+                        <div {...getRootProps()} className={`
+                            border-2 border-dashed rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors relative
+                            ${isDragActive ? 'border-primary bg-primary/10' : 'border-slate-200 hover:border-primary/50'}
+                            ${errorMsg ? 'border-red-500 bg-red-50' : ''}
+                        `}>
+                            <input {...getInputProps()} />
+                            <Upload className={`w-8 h-8 mb-2 ${errorMsg ? 'text-red-400' : 'text-slate-400'}`} />
+                            <span className={`text-sm font-medium text-center px-2 ${errorMsg ? 'text-red-500' : 'text-slate-500'}`}>
+                                {errorMsg || (isDragActive ? 'Drop file...' : 'Drop image/audio')}
+                            </span>
+                            <span className="text-xs text-slate-400 mt-1">
+                                Max 50MB. Images/Audio.
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Upload & License Modal */}
-                <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+                <Dialog open={isUploadModalOpen} onOpenChange={(open) => {
+                    if (!open && uploadMutation.isPending) return; // Prevent closing while uploading
+                    setIsUploadModalOpen(open);
+                }}>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Add Media Metadata</DialogTitle>
                             <DialogDescription>
-                                Provide license information for: {currentFile?.name}
+                                {currentFile ? `File: ${currentFile.name} (${(currentFile.size / 1024 / 1024).toFixed(2)} MB)` : 'Provide media details'}
                             </DialogDescription>
                         </DialogHeader>
 
-                        {uploadMutation.isPending && (
-                            <div className="py-4 text-center text-sm text-blue-600">
-                                Uploading file... {(uploadMutation.status === 'pending') && "Please wait"}
-                            </div>
-                        )}
+                        {/* Upload Status & Progress */}
+                        <div className="py-4 space-y-2">
+                            {uploadMutation.isPending && (
+                                <div className="space-y-1">
+                                    <div className="flex justify-between text-xs text-slate-500">
+                                        <span>Uploading...</span>
+                                        <span>{uploadProgress}%</span>
+                                    </div>
+                                    <Progress value={uploadProgress} className="h-2" />
+                                </div>
+                            )}
 
-                        {!uploadMutation.isPending && !uploadedUrl && uploadMutation.isError && (
-                            <div className="py-4 text-center text-sm text-red-600">
-                                Upload Failed: {uploadMutation.error?.message}
-                            </div>
-                        )}
+                            {!uploadMutation.isPending && !uploadedUrl && uploadMutation.isError && (
+                                <div className="p-3 bg-red-50 text-red-600 rounded-md text-sm flex items-start gap-2">
+                                    <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                                    <span>Upload Failed: {uploadMutation.error?.message}</span>
+                                </div>
+                            )}
 
-                        <div className="space-y-4 py-4">
+                            {uploadedUrl && (
+                                <div className="p-3 bg-green-50 text-green-700 rounded-md text-sm flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>File uploaded successfully!</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label>License Type</Label>
+                                <Label>License Type <span className="text-red-500">*</span></Label>
                                 <Select value={licenseType} onValueChange={setLicenseType}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="cc-by-3.0">CC BY 3.0</SelectItem>
-                                        <SelectItem value="cc-by-sa-3.0">CC BY-SA 3.0</SelectItem>
+                                        <SelectItem value="cc-by-3.0">Creative Commons BY 3.0</SelectItem>
+                                        <SelectItem value="cc-by-sa-3.0">Creative Commons BY-SA 3.0</SelectItem>
                                         <SelectItem value="cc-0">CC0 (Public Domain)</SelectItem>
-                                        <SelectItem value="own-work">Own Work</SelectItem>
+                                        <SelectItem value="own-work">Own Work (I created this)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label>Author / Attribution</Label>
-                                <Input value={author} onChange={e => setAuthor(e.target.value)} placeholder="e.g. John Doe / Wikimedia" />
+                                <Label>Author / Attribution <span className="text-red-500">*</span></Label>
+                                <Input
+                                    value={author}
+                                    onChange={e => setAuthor(e.target.value)}
+                                    placeholder="e.g. John Doe / Wikimedia Commons"
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Source URL</Label>
-                                <Input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://commons.wikimedia.org/..." />
+                                <Input
+                                    value={sourceUrl}
+                                    onChange={e => setSourceUrl(e.target.value)}
+                                    placeholder="https://commons.wikimedia.org/wiki/File:..."
+                                />
                             </div>
                         </div>
 
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
+                        <DialogFooter className="mt-4">
+                            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)} disabled={uploadMutation.isPending}>
+                                Cancel
+                            </Button>
                             <Button
                                 onClick={() => saveMetaMutation.mutate()}
                                 disabled={!uploadedUrl || !author || saveMetaMutation.isPending}

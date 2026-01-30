@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from qstash import Receiver
 import logging
+import os
 
 logger = logging.getLogger("api.boot")
 
@@ -81,6 +82,28 @@ admin_media_router = safe_import_router("api.admin.media")
 admin_validation_router = safe_import_router("api.admin.validation")
 offline_router = safe_import_router("api.offline.router")
 
+# --- Sentry Initialization ---
+if config.SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        
+        sentry_sdk.init(
+            dsn=config.SENTRY_DSN,
+            environment=os.getenv("VERCEL_ENV", "development"),
+            traces_sample_rate=0.1, # 10% sampling
+            integrations=[
+                FastApiIntegration(transaction_style="endpoint"),
+                SqlalchemyIntegration(),
+            ],
+        )
+        logger.info("Sentry initialized")
+    except ImportError:
+        logger.warning("sentry-sdk not found, skipping Sentry init")
+    except Exception as e:
+        logger.error(f"Sentry init failed: {e}")
+
 app = FastAPI(
     title="Audio Guide 2026 API",
     version="1.15.6",
@@ -89,16 +112,28 @@ app = FastAPI(
 )
 
 # --- CORS Middleware (MUST be before other middleware) ---
+allowed_origins = [
+    "https://audiogid.app",
+    "https://admin.audiogid.app",
+    "https://*.vercel.app",  # Preview deployments
+]
+
+if os.getenv("VERCEL_ENV") == "preview":
+    vercel_url = os.getenv("VERCEL_URL")
+    if vercel_url:
+        allowed_origins.append(f"https://{vercel_url}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount Security Middleware (Global) - DISABLED for debug
-# app.add_middleware(SecurityMiddleware)
+# Mount Security Middleware (Global) - enabled in production
+if os.getenv("VERCEL_ENV") == "production":
+    app.add_middleware(SecurityMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(TimeoutMiddleware)
 app.add_middleware(AuditMiddleware)
@@ -123,11 +158,14 @@ if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if yookassa_router: app.include_router(yookassa_router)
 if billing_router: app.include_router(billing_router, prefix="/v1")
-if billing_router: app.include_router(billing_router, prefix="/v1")
+
 if auth_router: app.include_router(auth_router, prefix="/v1")  # PR-58: Auth routes
 if admin_media_router: app.include_router(admin_media_router, prefix="/v1")
 if admin_validation_router: app.include_router(admin_validation_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")
+
+deeplinks_router = safe_import_router("api.deeplinks")
+if deeplinks_router: app.include_router(deeplinks_router) # No prefix for .well-known
 
 analytics_router = safe_import_router("api.analytics.router")
 if analytics_router: app.include_router(analytics_router, prefix="/v1") # Phase 5
@@ -222,3 +260,14 @@ async def job_callback(request: Request):
         session.add(job)
         session.commit()
     return {"status": "processed", "job_id": job_id}
+
+import signal
+import sys
+
+def shutdown_handler(signum, frame):
+    logger.info("Received shutdown signal, cleaning up...")
+    # Close DB connections, flush logs, etc.
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)

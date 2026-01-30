@@ -11,7 +11,11 @@ import 'package:mobile_flutter/presentation/screens/audio_player_screen.dart';
 import 'package:mobile_flutter/presentation/screens/offline/offline_manager_screen.dart';
 import 'package:mobile_flutter/presentation/screens/tour_mode_screen.dart';
 import 'package:mobile_flutter/presentation/screens/qr_scanner_screen.dart';
+import 'package:mobile_flutter/presentation/screens/login_screen.dart';
+import 'package:mobile_flutter/presentation/screens/itinerary_screen.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_flutter/core/analytics/analytics_observer.dart';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_router.g.dart';
@@ -20,9 +24,11 @@ part 'app_router.g.dart';
 GoRouter router(RouterRef ref) {
   final selectedCityAsync = ref.watch(selectedCityProvider);
 
+  final analyticsObserver = AnalyticsObserver(ref);
+
   return GoRouter(
     initialLocation: '/',
-    observers: [routeObserver],
+    observers: [analyticsObserver],
     redirect: (context, state) {
       if (selectedCityAsync.isLoading) return null;
 
@@ -90,6 +96,15 @@ GoRouter router(RouterRef ref) {
         path: '/qr_scanner',
         builder: (context, state) => const QrScannerScreen(),
       ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/itinerary',
+        builder: (context, state) => const ItineraryScreen(),
+      ),
+
       // Deep Link Redirects
       GoRoute(
         path: '/dl/tour/:id',

@@ -63,7 +63,8 @@ part 'model/restore_purchases_request.dart';
 part 'model/tour_snippet.dart';
 part 'model/verify_apple_receipt_request.dart';
 part 'model/verify_google_purchase_request.dart';
-
+part 'model/batch_purchase_request.dart';
+part 'model/batch_purchase_response.dart';
 
 /// An [ApiClient] instance that uses the default values obtained from
 /// the OpenAPI specification file.

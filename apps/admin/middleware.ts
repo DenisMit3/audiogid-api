@@ -7,10 +7,6 @@ import { jwtVerify } from 'jose';
 const PUBLIC_PATHS = ['/login', '/_next', '/favicon.ico', '/api/auth'];
 
 export async function middleware(request: NextRequest) {
-    // TEMPORARY FULL BYPASS FOR DEBUGGING AS REQUESTED
-    return NextResponse.next();
-
-    /* Original auth logic preserved for restoration
     const { pathname } = request.nextUrl;
 
     if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
@@ -27,7 +23,10 @@ export async function middleware(request: NextRequest) {
 
     try {
         // Verify JWT signature using Jose
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-for-dev-only');
+        // Allow fallback for dev, but in prod it should be set
+        const secretText = process.env.JWT_SECRET;
+        if (!secretText) throw new Error("JWT_SECRET is required");
+        const secret = new TextEncoder().encode(secretText);
         await jwtVerify(token, secret);
 
         return NextResponse.next();
@@ -40,7 +39,6 @@ export async function middleware(request: NextRequest) {
         response.cookies.delete('token');
         return response;
     }
-    */
 }
 
 export const config = {

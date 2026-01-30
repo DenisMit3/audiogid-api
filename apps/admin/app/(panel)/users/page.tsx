@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,9 +54,10 @@ type User = {
     phone: string | null;
 };
 
-const fetchUsers = async () => {
+const fetchUsers = async (search: string = "") => {
     const token = localStorage.getItem('admin_token');
-    const res = await fetch(`${API_URL}/admin/users`, {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await fetch(`${API_URL}/admin/users${query}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error("Failed to fetch users");
@@ -64,15 +65,27 @@ const fetchUsers = async () => {
 };
 
 export default function UsersPage() {
+    const [search, setSearch] = useState("");
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [roleDialogOpen, setRoleDialogOpen] = useState(false);
     const [newRole, setNewRole] = useState("user");
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
+    // Debounce search for query
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    // Effect to handle debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
     const { data: users, isLoading } = useQuery({
-        queryKey: ['users'],
-        queryFn: fetchUsers
+        queryKey: ['users', debouncedSearch],
+        queryFn: () => fetchUsers(debouncedSearch)
     });
 
     const updateMutation = useMutation({
@@ -120,7 +133,11 @@ export default function UsersPage() {
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Users</h1>
                 <div className="flex w-full max-w-sm items-center space-x-2">
-                    <Input placeholder="Search users..." disabled />
+                    <Input
+                        placeholder="Search users..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
             </div>
 

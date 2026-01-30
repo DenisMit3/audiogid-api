@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter admin dev",
-    "build": "pnpm --filter admin build",
-    "lint": "pnpm --filter admin lint"
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
   },
   "packageManager": "pnpm@8.15.4",
   "devDependencies": {

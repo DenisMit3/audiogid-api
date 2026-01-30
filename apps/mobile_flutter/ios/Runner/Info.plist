@@ -25,11 +25,12 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs your location to show nearby tours and functionality.</string>
+	<string>Для навигации по туру и определения ближайших точек интереса</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs your location to track tour progress while in background.</string>
+	<string>Для отслеживания прогресса тура в фоновом режиме</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to scan QR codes.</string>
+	<string>Для сканирования QR кодов музейных экспонатов</string>
+
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -56,7 +57,19 @@
 		<string>audio</string>
         <string>fetch</string>
         <string>location</string>
-        <string>remote-notification</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>audiogid</string>
+			</array>
+		</dict>
+	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:audiogid.app</string>
 	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

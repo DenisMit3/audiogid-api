@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
+import 'package:mobile_flutter/core/error/error_utils.dart';
 
 /// Empty state widget for when there's no content
 class EmptyStateWidget extends StatelessWidget {
@@ -328,12 +329,12 @@ class ErrorStateWidget extends StatelessWidget {
 
   /// Factory for generic errors with message
   factory ErrorStateWidget.generic({
-    required String message,
+    required dynamic error,
     VoidCallback? onRetry,
   }) {
     return ErrorStateWidget(
       title: 'Произошла ошибка',
-      subtitle: message,
+      subtitle: error is String ? error : ErrorUtils.getErrorMessage(error),
       onRetry: onRetry,
     );
   }

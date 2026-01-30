@@ -9,7 +9,11 @@ import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:api_client/api.dart';
 import 'package:uuid/uuid.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Direct use mostly for grabbing ID if not in repo
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_flutter/data/services/auth_service.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:in_app_review/in_app_review.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -20,11 +24,24 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _version = '';
+  bool _kidsMode = false;
+  bool _isLoadingSettings = true;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    if (mounted) {
+      setState(() {
+        _kidsMode = repo.getKidsModeEnabled();
+        _isLoadingSettings = false;
+      });
+    }
   }
 
   Future<void> _loadVersion() async {
@@ -151,6 +168,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(currentUserProvider);
+    final user = userAsync.valueOrNull;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Настройки'),
@@ -159,13 +179,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
+            // Account Section
+            _buildSectionHeader(context, 'Аккаунт'),
+            if (user == null)
+               ListTile(
+                 title: const Text('Войти / Регистрация'),
+                 subtitle: const Text('Синхронизация покупок'),
+                 leading: const Icon(Icons.login),
+                 onTap: () => context.push('/login'),
+               )
+            else ...[
+               ListTile(
+                 title: const Text('Выйти'),
+                 subtitle: Text('ID: ${user.id.substring(0, 8)}...'),
+                 leading: const Icon(Icons.logout),
+                 onTap: () => ref.read(currentUserProvider.notifier).logout(),
+               ),
+            ],
+            const Divider(),
+
+            // Preferences Section
+            _buildSectionHeader(context, 'Предпочтения'),
+            SwitchListTile(
+              title: const Text('Режим "С детьми"'),
+              subtitle: const Text('Упрощенный язык и короткие рассказы'),
+              secondary: const Icon(Icons.child_care),
+              value: _kidsMode,
+              onChanged: _isLoadingSettings ? null : (value) async {
+                 setState(() => _kidsMode = value);
+                 final repo = await ref.read(settingsRepositoryProvider.future);
+                 await repo.setKidsModeEnabled(value);
+              },
+            ),
+            const Divider(),
+
             // General Section
+
             _buildSectionHeader(context, 'О приложении'),
+            ListTile(
+              title: const Text('Мой маршрут'),
+              leading: const Icon(Icons.map_outlined),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/itinerary'),
+            ),
             ListTile(
               title: const Text('Оценить приложение'),
               leading: const Icon(Icons.star_outline),
+              onTap: () async {
+                final inAppReview = InAppReview.instance;
+
+                if (await inAppReview.isAvailable()) {
+                   inAppReview.requestReview();
+                } else {
+                   // Fallback
+                   final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+                   if (isAndroid) {
+                     _launchUrl('market://details?id=com.audiogid.app');
+                   } else {
+                     _launchUrl('https://apps.apple.com/app/id6470000000');
+                   }
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('Рассказать друзьям'),
+              leading: const Icon(Icons.share_outlined),
               onTap: () {
-                // TODO: Open store page
+                Share.share('Я исследую город с Audiogid! Присоединяйся: https://audiogid.app');
               },
             ),
             ListTile(

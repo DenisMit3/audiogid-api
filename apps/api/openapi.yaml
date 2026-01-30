@@ -160,6 +160,109 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/OpsHealthResponse' }
 
+  /auth/me:
+    get:
+      summary: Get Current User
+      operationId: me
+      security:
+        - BearerAuth: []
+      tags: [Auth]
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /auth/logout:
+    post:
+      summary: Logout
+      description: Revokes current access token and optional refresh token.
+      operationId: logout
+      security:
+        - BearerAuth: []
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshReq' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { type: string } } }
+
+  /auth/login/sms/init:
+    post:
+      summary: Init SMS Login
+      operationId: loginSmsInit
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoneInit' }
+      responses:
+        '200':
+          description: SMS sent
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { type: string }, detail: { type: string } } }
+
+  /auth/login/sms/verify:
+    post:
+      summary: Verify SMS Login
+      operationId: loginSmsVerify
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoneVerify' }
+      responses:
+        '200':
+          description: Tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+
+  /auth/login/telegram:
+    post:
+      summary: Telegram Login
+      operationId: loginTelegram
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TelegramLogin' }
+      responses:
+        '200':
+          description: Tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+
+  /auth/refresh:
+    post:
+      summary: Refresh Access Token
+      operationId: refreshToken
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshReq' }
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Invalid token
+
   # --- Deletion ---
   /public/account/delete/request:
     post:
@@ -222,6 +325,25 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/IngestionRunRead' }
 
+  /admin/media/presign:
+    post:
+      tags: [Admin, Media]
+      summary: Presign Media Upload
+      operationId: presignMedia
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PresignRequest' }
+      responses:
+        '200':
+          description: Upload URL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PresignResponse' }
+
   # --- Offline Bundles (ADR-013) ---
   /offline/bundles:build:
     post:
@@ -263,6 +385,25 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OfflineJobRead' }
+
+  /billing/batch-purchase:
+    post:
+      tags: [Billing]
+      summary: Batch Purchase Validation
+      operationId: batchPurchase
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchPurchaseRequest' }
+      responses:
+        '200':
+          description: Validated Products
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BatchPurchaseResponse' }
 
 
 
@@ -412,6 +553,10 @@ components:
         Vary: { $ref: '#/components/headers/Vary' }
 
   securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     YookassaSignature:
       type: apiKey
       in: header
@@ -578,3 +723,81 @@ components:
         error_code: { type: string, nullable: true }
         order_id: { type: string, nullable: true }
         source_ref_hash_prefix: { type: string, nullable: true }
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string, nullable: true }
+        token_type: { type: string }
+
+    RefreshReq:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token: { type: string }
+
+    BatchPurchaseRequest:
+      type: object
+      required: [device_anon_id]
+      properties:
+        poi_ids: { type: array, items: { type: string, format: uuid } }
+        tour_ids: { type: array, items: { type: string, format: uuid } }
+        device_anon_id: { type: string }
+
+    BatchPurchaseResponse:
+      type: object
+      required: [product_ids, already_owned]
+      properties:
+        product_ids: { type: array, items: { type: string } }
+        already_owned: { type: array, items: { type: string } }
+
+    PresignRequest:
+      type: object
+      required: [filename, content_type]
+      properties:
+        filename: { type: string }
+        content_type: { type: string }
+        entity_type: { type: string, nullable: true }
+        entity_id: { type: string, nullable: true }
+
+    PresignResponse:
+      type: object
+      required: [upload_url, final_url]
+      properties:
+        upload_url: { type: string }
+        final_url: { type: string }
+        access: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    PhoneInit:
+      type: object
+      required: [phone]
+      properties:
+        phone: { type: string }
+
+    PhoneVerify:
+      type: object
+      required: [phone, code]
+      properties:
+        phone: { type: string }
+        code: { type: string }
+
+    TelegramLogin:
+      type: object
+      required: [id, auth_date, hash]
+      properties:
+        id: { type: string }
+        first_name: { type: string, nullable: true }
+        username: { type: string, nullable: true }
+        photo_url: { type: string, nullable: true }
+        auth_date: { type: string }
+        hash: { type: string }

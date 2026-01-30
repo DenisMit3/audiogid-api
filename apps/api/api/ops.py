@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Header
 from sqlmodel import Session, text
 from .core.database import engine
 
@@ -92,11 +92,15 @@ def init_skus(session: Session = Depends(get_session)):
     return {"status": "exists", "slug": slug}
 
 @router.post("/ops/migrate")
-def run_migrations():
+def run_migrations(token: str = Header(None)):
     """
     Run alembic migrations programmatically.
-    n/a: out of scope; requires separate ADR security model.
+    Protected by ADMIN_API_TOKEN.
     """
+    from .core.config import config
+    if token != config.ADMIN_API_TOKEN:
+         raise HTTPException(401, detail="Invalid token")
+
     try:
         # Assume alembic.ini is in current working directory (apps/api)
         ini_path = "alembic.ini"
@@ -104,7 +108,20 @@ def run_migrations():
              return {"status": "error", "detail": "alembic.ini not found"}
              
         alembic_cfg = alembic.config.Config(ini_path)
+        # Force stdout capture if needed, but for now just running it
         alembic.command.upgrade(alembic_cfg, "head")
         return {"status": "migrated"}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+@router.get("/ops/cron/cleanup-tokens")
+def cron_cleanup_tokens(session: Session = Depends(get_session)):
+    """
+    Cron job to remove expired blacklisted tokens.
+    Protected by simple obscurity or Vercel Cron protection header (implement header check if needed).
+    For now public but harmless (cleaning up garbage).
+    """
+    from .auth.tasks import cleanup_blacklisted_tokens
+    count = cleanup_blacklisted_tokens(session)
+    return {"status": "ok", "deleted_count": count}
+

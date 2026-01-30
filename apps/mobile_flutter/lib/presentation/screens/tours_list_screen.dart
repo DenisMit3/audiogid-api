@@ -7,6 +7,9 @@ import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/domain/repositories/tour_repository.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
+import 'package:mobile_flutter/data/services/purchase_service.dart';
+
 
 class ToursListScreen extends ConsumerStatefulWidget {
   const ToursListScreen({super.key});
@@ -20,6 +23,8 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
   String? _selectedFilter;
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+
+  bool _isMultiSelectMode = false;
 
   @override
   void dispose() {
@@ -41,9 +46,134 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
     }
 
     final toursStream = ref.watch(tourRepositoryProvider).watchTours(selectedCity);
+    final selectedIds = ref.watch(selectionNotifierProvider);
+    final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
     return Scaffold(
-      appBar: ResponsiveAppBar(
+      appBar: _buildAppBar(context, selectedCity, selectedIds),
+      body: StreamBuilder<List<Tour>>(
+        stream: toursStream,
+        builder: (context, snapshot) {
+          // Loading state with skeleton
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildLoadingSkeleton();
+          }
+
+          // Error state
+          if (snapshot.hasError) {
+            return RefreshableContent(
+              onRefresh: () async {
+                // Trigger refresh
+                setState(() {});
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: ErrorStateWidget.generic(
+                    message: snapshot.error.toString(),
+                    onRetry: () => setState(() {}),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          var tours = snapshot.data ?? [];
+
+          // Apply search filter
+          if (_searchQuery.isNotEmpty) {
+            tours = tours.where((t) => 
+              t.titleRu.toLowerCase().contains(_searchQuery.toLowerCase())
+            ).toList();
+          }
+
+          // Apply type filters
+          if (_selectedFilter == 'short') {
+            tours = tours.where((t) => (t.durationMinutes ?? 0) < 60).toList();
+          } else if (_selectedFilter == 'walking') {
+            tours = tours.where((t) => t.transportType == 'walking').toList();
+          } else if (_selectedFilter == 'driving') {
+            tours = tours.where((t) => t.transportType == 'driving').toList();
+          }
+
+          // Empty state
+          if (tours.isEmpty) {
+            if (_searchQuery.isNotEmpty) {
+              return EmptyStateWidget.searchResults(query: _searchQuery);
+            }
+            return EmptyStateWidget.tours(
+              onRefresh: () => setState(() {}),
+            );
+          }
+
+          // Tour list with staggered animation
+          return RefreshableContent(
+            onRefresh: () async {
+              HapticFeedback.lightImpact();
+              setState(() {});
+            },
+            child: StaggeredListBuilder(
+              itemCount: tours.length,
+              padding: EdgeInsets.only(
+                left: context.horizontalPadding,
+                right: context.horizontalPadding,
+                bottom: isMultiSelectMode ? 100 : AppSpacing.md,
+              ),
+              itemBuilder: (context, index) {
+                return _TourCard(
+                  tour: tours[index],
+                  isSelected: selectedIds.contains(tours[index].id),
+                  isSelectionMode: isMultiSelectMode,
+                  onToggle: () {
+                    ref.read(selectionNotifierProvider.notifier).toggle(tours[index].id);
+                    if (!isMultiSelectMode) {
+                        setState(() => _isMultiSelectMode = true);
+                    }
+                  },
+                );
+              },
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: isMultiSelectMode ? _buildBottomBar(context, selectedIds) : null,
+      floatingActionButton: !isMultiSelectMode
+          ? SafeFloatingActionButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                setState(() => _isMultiSelectMode = true);
+              },
+              tooltip: 'Режим множественного выбора',
+              child: const Icon(Icons.checklist),
+            )
+          : null,
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, String selectedCity, Set<String> selectedIds) {
+    if (selectedIds.isNotEmpty || _isMultiSelectMode) {
+       return AppBar(
+        title: Text('Выбрано: ${selectedIds.length}'),
+        leading: AccessibleIconButton(
+          icon: Icons.close,
+          onPressed: () {
+             setState(() => _isMultiSelectMode = false);
+             ref.read(selectionNotifierProvider.notifier).clear();
+          },
+        ),
+        actions: [
+          AccessibleIconButton(
+            icon: Icons.select_all,
+            onPressed: () {
+               // Logic to select all visible
+            },
+          )
+        ],
+       );
+    }
+  
+    return ResponsiveAppBar(
         title: selectedCity == 'kaliningrad_city' ? 'Туры по Калининграду' : 'Туры по области',
         actions: [
           AccessibleIconButton(
@@ -130,78 +260,67 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
             ),
           ),
         ),
-      ),
-      body: StreamBuilder<List<Tour>>(
-        stream: toursStream,
-        builder: (context, snapshot) {
-          // Loading state with skeleton
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoadingSkeleton();
-          }
+      );
+  }
 
-          // Error state
-          if (snapshot.hasError) {
-            return RefreshableContent(
-              onRefresh: () async {
-                // Trigger refresh
-                setState(() {});
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.7,
-                  child: ErrorStateWidget.generic(
-                    message: snapshot.error.toString(),
-                    onRetry: () => setState(() {}),
-                  ),
+  Widget _buildBottomBar(BuildContext context, Set<String> selectedIds) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    final purchaseState = ref.watch(purchaseServiceProvider);
+    final isBuying = purchaseState.status == PurchaseStatusState.pending;
+
+    return AnimatedContainer(
+      duration: AppDurations.fast,
+      padding: EdgeInsets.only(
+        left: context.horizontalPadding,
+        right: context.horizontalPadding,
+        top: AppSpacing.md,
+        bottom: bottomPadding + AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+           Expanded(
+            child: ElevatedButton.icon(
+                onPressed: (selectedIds.isEmpty || isBuying)
+                    ? null
+                    : () async {
+                        HapticFeedback.lightImpact();
+                        await ref.read(purchaseServiceProvider.notifier).buyBatch([], selectedIds.toList());
+                        
+                        // Check result
+                        if (context.mounted) {
+                           final state = ref.read(purchaseServiceProvider);
+                            if (state.status == PurchaseStatusState.restored || state.status == PurchaseStatusState.success) {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Покупка успешна!')));
+                                ref.read(selectionNotifierProvider.notifier).clear();
+                                setState(() => _isMultiSelectMode = false);
+                           } else if (state.status == PurchaseStatusState.error) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error ?? 'Не удалось купить')));
+                           }
+                        }
+                      },
+                icon: isBuying 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                    : const Icon(Icons.shopping_cart_checkout),
+                label: Text(isBuying ? 'Обработка...' : 'Купить (${selectedIds.length})'),
+                style: ElevatedButton.styleFrom(
+                   backgroundColor: colorScheme.primary,
+                   foregroundColor: colorScheme.onPrimary,
                 ),
               ),
-            );
-          }
-
-          var tours = snapshot.data ?? [];
-
-          // Apply search filter
-          if (_searchQuery.isNotEmpty) {
-            tours = tours.where((t) => 
-              t.titleRu.toLowerCase().contains(_searchQuery.toLowerCase())
-            ).toList();
-          }
-
-          // Apply type filters
-          if (_selectedFilter == 'short') {
-            tours = tours.where((t) => (t.durationMinutes ?? 0) < 60).toList();
-          } else if (_selectedFilter == 'walking') {
-            tours = tours.where((t) => t.transportType == 'walking').toList();
-          } else if (_selectedFilter == 'driving') {
-            tours = tours.where((t) => t.transportType == 'driving').toList();
-          }
-
-          // Empty state
-          if (tours.isEmpty) {
-            if (_searchQuery.isNotEmpty) {
-              return EmptyStateWidget.searchResults(query: _searchQuery);
-            }
-            return EmptyStateWidget.tours(
-              onRefresh: () => setState(() {}),
-            );
-          }
-
-          // Tour list with staggered animation
-          return RefreshableContent(
-            onRefresh: () async {
-              HapticFeedback.lightImpact();
-              setState(() {});
-            },
-            child: StaggeredListBuilder(
-              itemCount: tours.length,
-              padding: EdgeInsets.all(context.horizontalPadding),
-              itemBuilder: (context, index) {
-                return _TourCard(tour: tours[index]);
-              },
-            ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -268,8 +387,16 @@ class _FilterChip extends StatelessWidget {
 
 class _TourCard extends StatelessWidget {
   final Tour tour;
+  final bool isSelected;
+  final bool isSelectionMode;
+  final VoidCallback onToggle;
 
-  const _TourCard({required this.tour});
+  const _TourCard({
+    required this.tour,
+    required this.isSelected,
+    required this.isSelectionMode,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -293,88 +420,110 @@ class _TourCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
-              HapticFeedback.lightImpact();
-              context.push('/tour/${tour.id}');
+               if (isSelectionMode) {
+                 onToggle();
+               } else {
+                 HapticFeedback.lightImpact();
+                 context.push('/tour/${tour.id}');
+               }
             },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            onLongPress: !isSelectionMode ? () {
+               HapticFeedback.mediumImpact();
+               onToggle();
+            } : null,
+            child: Stack(
               children: [
-                // Image with hero animation
-                HeroImage(
-                  tag: 'tour-image-${tour.id}',
-                  imageUrl: null, // TODO: Add tour cover image
-                  height: context.responsive(
-                    smallPhone: 140.0,
-                    phone: 160.0,
-                    tablet: 200.0,
+                Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Image with hero animation
+                  HeroImage(
+                    tag: 'tour-image-${tour.id}',
+                    imageUrl: null, // TODO: Add tour cover image
+                    height: context.responsive(
+                      smallPhone: 140.0,
+                      phone: 160.0,
+                      tablet: 200.0,
+                    ),
                   ),
-                ),
-                
-                // Content
-                Padding(
-                  padding: EdgeInsets.all(context.cardPadding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title row
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TitleText(
-                              tour.titleRu,
-                              maxLines: 2,
-                              style: textTheme.titleMedium,
+                  
+                  // Content
+                  Padding(
+                    padding: EdgeInsets.all(context.cardPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TitleText(
+                                tour.titleRu,
+                                maxLines: 2,
+                                style: textTheme.titleMedium,
+                              ),
                             ),
-                          ),
-                          if (tour.durationMinutes != null) ...[
-                            const SizedBox(width: AppSpacing.sm),
-                            TextBadge.duration(tour.durationMinutes!),
+                            if (tour.durationMinutes != null) ...[
+                              const SizedBox(width: AppSpacing.sm),
+                              TextBadge.duration(tour.durationMinutes!),
+                            ],
                           ],
-                        ],
-                      ),
-                      
-                      const SizedBox(height: AppSpacing.sm),
-                      
-                      // Description
-                      BodyText(
-                        tour.descriptionRu ?? 'Увлекательный маршрут по знаковым местам региона.',
-                        maxLines: 2,
-                      ),
-                      
-                      const SizedBox(height: AppSpacing.sm),
-                      
-                      // Metadata row
-                      Row(
-                        children: [
-                          if (tour.distanceKm != null) ...[
-                            TextBadge.distance(tour.distanceKm!),
-                            const SizedBox(width: AppSpacing.sm),
-                          ],
-                          if (tour.transportType != null) ...[
+                        ),
+                        
+                        const SizedBox(height: AppSpacing.sm),
+                        
+                        // Description
+                        BodyText(
+                          tour.descriptionRu ?? 'Увлекательный маршрут по знаковым местам региона.',
+                          maxLines: 2,
+                        ),
+                        
+                        const SizedBox(height: AppSpacing.sm),
+                        
+                        // Metadata row
+                        Row(
+                          children: [
+                            if (tour.distanceKm != null) ...[
+                              TextBadge.distance(tour.distanceKm!),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                            if (tour.transportType != null) ...[
+                              Icon(
+                                tour.transportType == 'walking' 
+                                    ? Icons.directions_walk 
+                                    : Icons.directions_car,
+                                size: 16,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              LabelText(
+                                tour.transportType == 'walking' ? 'Пешком' : 'На машине',
+                              ),
+                            ],
+                            const Spacer(),
+                            if (!isSelectionMode)
                             Icon(
-                              tour.transportType == 'walking' 
-                                  ? Icons.directions_walk 
-                                  : Icons.directions_car,
-                              size: 16,
+                              Icons.arrow_forward_ios,
+                              size: 14,
                               color: colorScheme.onSurfaceVariant,
                             ),
-                            const SizedBox(width: 4),
-                            LabelText(
-                              tour.transportType == 'walking' ? 'Пешком' : 'На машине',
-                            ),
                           ],
-                          const Spacer(),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
+              ),
+              if (isSelectionMode)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Checkbox(
+                       value: isSelected,
+                       onChanged: (v) => onToggle(),
+                    ),
+                  ),
               ],
             ),
           ),

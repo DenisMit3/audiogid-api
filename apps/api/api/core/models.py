@@ -322,6 +322,13 @@ class OtpCode(SQLModel, table=True):
     attempts: int = 0
     used: bool = False
 
+class BlacklistedToken(SQLModel, table=True):
+    __tablename__ = "blacklisted_tokens"
+    token_hash: str = Field(primary_key=True)
+    expires_at: datetime
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 # --- Content Versions (Phase 3) ---
 class PoiVersion(SQLModel, table=True):
     __tablename__ = "poi_versions"
@@ -483,4 +490,12 @@ class QRMapping(SQLModel, table=True):
     scans_count: int = Field(default=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_scanned_at: Optional[datetime] = None
+
+class UserPushToken(SQLModel, table=True):
+    __tablename__ = "user_push_tokens"
+    token: str = Field(primary_key=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    device_id: str = Field(index=True)
+    platform: str = Field(default="unknown") # android, ios
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 

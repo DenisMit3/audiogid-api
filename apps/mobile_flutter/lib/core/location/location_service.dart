@@ -52,8 +52,8 @@ class LocationService {
     LocationSettings locationSettings;
     if (Platform.isAndroid) {
       locationSettings = AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 10,
         foregroundNotificationConfig: backgroundEnabled ? const ForegroundNotificationConfig(
           notificationTitle: "Аудиогид",
           notificationText: "Отслеживание маршрута",
@@ -62,16 +62,16 @@ class LocationService {
       );
     } else if (Platform.isIOS) {
       locationSettings = AppleSettings(
-        accuracy: LocationAccuracy.best,
+        accuracy: LocationAccuracy.nearestTenMeters,
         activityType: ActivityType.fitness,
-        distanceFilter: 5,
+        distanceFilter: 10,
         pauseLocationUpdatesAutomatically: !backgroundEnabled,
         showBackgroundLocationIndicator: backgroundEnabled,
       );
     } else {
       locationSettings = const LocationSettings(
-        accuracy: LocationAccuracy.high, 
-        distanceFilter: 5,
+        accuracy: LocationAccuracy.medium, 
+        distanceFilter: 10,
       );
     }
 

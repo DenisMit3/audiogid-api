@@ -32,6 +32,16 @@ class SettingsRepository {
     await _prefs.setBool(_bgStartKey, enabled);
   }
 
+  static const _kidsModeKey = 'kids_mode_enabled';
+
+  bool getKidsModeEnabled() {
+    return _prefs.getBool(_kidsModeKey) ?? false;
+  }
+
+  Future<void> setKidsModeEnabled(bool enabled) async {
+    await _prefs.setBool(_kidsModeKey, enabled);
+  }
+
   // Tour Progress
   Future<void> saveTourProgress(String tourId, int stepIndex, bool autoPlay) async {
     final jsonString = '$tourId|$stepIndex|$autoPlay|${DateTime.now().millisecondsSinceEpoch}';

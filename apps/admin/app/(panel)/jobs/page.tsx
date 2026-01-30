@@ -33,6 +33,13 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 import { useJobsWebSocket } from '@/hooks/useJobsWebSocket';
 
@@ -51,24 +58,28 @@ type Job = {
     result?: string;
 };
 
-// Fetcher
-const fetchJobs = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-    const res = await fetch(`${API_URL}/admin/jobs?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error("Failed to fetch jobs");
-    return res.json();
-};
-
 export default function JobsDashboard() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    // Fetcher
+    const fetchJobs = async () => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
+        const params = new URLSearchParams({ limit: '20' });
+        if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+
+        const res = await fetch(`${API_URL}/admin/jobs?${params}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch jobs");
+        return res.json();
+    };
 
     // Initial Data
     const { data, isLoading, refetch } = useQuery({
-        queryKey: ['jobs'],
+        queryKey: ['jobs', statusFilter],
         queryFn: fetchJobs,
-        refetchInterval: 10000 // Fallback polling
+        refetchInterval: 5000 // Fallback polling
     });
 
     const queryClient = useQueryClient();
@@ -132,10 +143,26 @@ export default function JobsDashboard() {
                         <span className="text-xs text-muted-foreground">{isConnected ? 'Live Connected' : 'Disconnected'}</span>
                     </div>
                 </div>
-                <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
-                    <RefreshCcw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="RUNNING">Running</SelectItem>
+                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                            <SelectItem value="FAILED">Failed</SelectItem>
+                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+                        <RefreshCcw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
             {/* Quick Stats Cards could go here */}

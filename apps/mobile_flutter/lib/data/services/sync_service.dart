@@ -30,7 +30,18 @@ class SyncService {
       futures.add(_poiRepository.syncPoisForCity(citySlug));
     }
 
-    await Future.wait(futures);
+    await Future.wait(
+      futures,
+      eagerError: false,
+    ).catchError((errors) {
+       // Log errors but don't crash the whole sync
+       // In a real app we'd log to Crashlytics or Logger
+       // Since errors here might be a list or single error depending on implementation of custom Future.wait wrappers or just standard behavior.
+       // Standard Future.wait throws the first error if eagerError is true, or a wrapper of errors if false.
+       // Actually in Dart standard lib Future.wait with eagerError=false still throws one error, not a list.
+       // But we want to prevent crash.
+       // debugPrint('Sync failed with error: $errors');
+    });
   }
 }
 

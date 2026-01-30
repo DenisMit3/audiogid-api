@@ -9,12 +9,60 @@ All URIs are relative to *https://audiogid-api.vercel.app/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**batchPurchase**](BillingApi.md#batchpurchase) | **POST** /billing/batch-purchase | Batch Purchase Validation
 [**getEntitlements**](BillingApi.md#getentitlements) | **GET** /billing/entitlements | Get current user entitlements
 [**getRestoreJobStatus**](BillingApi.md#getrestorejobstatus) | **GET** /billing/restore/{job_id} | Get Restore Job Status
 [**restorePurchases**](BillingApi.md#restorepurchases) | **POST** /billing/restore | Enqueue Restore Purchases (Async)
 [**verifyAppleReceipt**](BillingApi.md#verifyapplereceipt) | **POST** /billing/apple/verify | Verify Apple App Store Receipt
 [**verifyGooglePurchase**](BillingApi.md#verifygooglepurchase) | **POST** /billing/google/verify | Verify Google Play Purchase
 
+
+# **batchPurchase**
+> BatchPurchaseResponse batchPurchase(batchPurchaseRequest)
+
+Batch Purchase Validation
+
+### Example
+```dart
+import 'package:api_client/api.dart';
+// TODO Configure HTTP Bearer authorization: BearerAuth
+// Case 1. Use String Token
+//defaultApiClient.getAuthentication<HttpBearerAuth>('BearerAuth').setAccessToken('YOUR_ACCESS_TOKEN');
+// Case 2. Use Function which generate token.
+// String yourTokenGeneratorFunction() { ... }
+//defaultApiClient.getAuthentication<HttpBearerAuth>('BearerAuth').setAccessToken(yourTokenGeneratorFunction);
+
+final api_instance = BillingApi();
+final batchPurchaseRequest = BatchPurchaseRequest(); // BatchPurchaseRequest | 
+
+try {
+    final result = api_instance.batchPurchase(batchPurchaseRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling BillingApi->batchPurchase: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **batchPurchaseRequest** | [**BatchPurchaseRequest**](BatchPurchaseRequest.md)|  | 
+
+### Return type
+
+[**BatchPurchaseResponse**](BatchPurchaseResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getEntitlements**
 > List<EntitlementGrantRead> getEntitlements(deviceAnonId)

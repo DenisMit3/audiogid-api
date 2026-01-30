@@ -18,6 +18,7 @@ class BatchPurchaseResponse {
   });
 
   List<String> productIds;
+
   List<String> alreadyOwned;
 
   @override
@@ -27,6 +28,7 @@ class BatchPurchaseResponse {
 
   @override
   int get hashCode =>
+    // ignore: unnecessary_parenthesis
     (productIds.hashCode) +
     (alreadyOwned.hashCode);
 
@@ -35,21 +37,85 @@ class BatchPurchaseResponse {
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-    json[r'product_ids'] = this.productIds;
-    json[r'already_owned'] = this.alreadyOwned;
+      json[r'product_ids'] = this.productIds;
+      json[r'already_owned'] = this.alreadyOwned;
     return json;
   }
 
   /// Returns a new [BatchPurchaseResponse] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
+  // ignore: prefer_constructors_over_static_methods
   static BatchPurchaseResponse? fromJson(dynamic value) {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
+
+      // Ensure that the map contains the required keys.
+      // Note 1: the values aren't checked for validity beyond being non-null.
+      // Note 2: this code is stripped in release mode!
+      assert(() {
+        requiredKeys.forEach((key) {
+          assert(json.containsKey(key), 'Required key "BatchPurchaseResponse[$key]" is missing from JSON.');
+          assert(json[key] != null, 'Required key "BatchPurchaseResponse[$key]" has a null value in JSON.');
+        });
+        return true;
+      }());
+
       return BatchPurchaseResponse(
-        productIds: json[r'product_ids'] is List ? (json[r'product_ids'] as List).cast<String>() : const [],
-        alreadyOwned: json[r'already_owned'] is List ? (json[r'already_owned'] as List).cast<String>() : const [],
+        productIds: json[r'product_ids'] is Iterable
+            ? (json[r'product_ids'] as Iterable).cast<String>().toList(growable: false)
+            : const [],
+        alreadyOwned: json[r'already_owned'] is Iterable
+            ? (json[r'already_owned'] as Iterable).cast<String>().toList(growable: false)
+            : const [],
       );
     }
     return null;
   }
+
+  static List<BatchPurchaseResponse> listFromJson(dynamic json, {bool growable = false,}) {
+    final result = <BatchPurchaseResponse>[];
+    if (json is List && json.isNotEmpty) {
+      for (final row in json) {
+        final value = BatchPurchaseResponse.fromJson(row);
+        if (value != null) {
+          result.add(value);
+        }
+      }
+    }
+    return result.toList(growable: growable);
+  }
+
+  static Map<String, BatchPurchaseResponse> mapFromJson(dynamic json) {
+    final map = <String, BatchPurchaseResponse>{};
+    if (json is Map && json.isNotEmpty) {
+      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      for (final entry in json.entries) {
+        final value = BatchPurchaseResponse.fromJson(entry.value);
+        if (value != null) {
+          map[entry.key] = value;
+        }
+      }
+    }
+    return map;
+  }
+
+  // maps a json object with a list of BatchPurchaseResponse-objects as value to a dart map
+  static Map<String, List<BatchPurchaseResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+    final map = <String, List<BatchPurchaseResponse>>{};
+    if (json is Map && json.isNotEmpty) {
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
+      for (final entry in json.entries) {
+        map[entry.key] = BatchPurchaseResponse.listFromJson(entry.value, growable: growable,);
+      }
+    }
+    return map;
+  }
+
+  /// The list of required keys that must be present in a JSON.
+  static const requiredKeys = <String>{
+    'product_ids',
+    'already_owned',
+  };
 }
+

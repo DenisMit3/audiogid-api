@@ -25,7 +25,7 @@ class IngestionApi {
   /// Parameters:
   ///
   /// * [String] city:
-  Future<http.Response> getIngestionRunsWithHttpInfo({ String? city, }) async {
+  Future<Response> getIngestionRunsWithHttpInfo({ String? city, }) async {
     // ignore: prefer_const_declarations
     final path = r'/admin/ingestion/runs';
 

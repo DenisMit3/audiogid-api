@@ -26,7 +26,7 @@ class PublicApi {
   ///
   /// * [String] ifNoneMatch:
   ///   ETag for conditional GET
-  Future<http.Response> publicCatalogGetWithHttpInfo(String city, { String? ifNoneMatch, }) async {
+  Future<Response> publicCatalogGetWithHttpInfo(String city, { String? ifNoneMatch, }) async {
     // ignore: prefer_const_declarations
     final path = r'/public/catalog';
 
@@ -91,7 +91,7 @@ class PublicApi {
   ///
   /// * [String] ifNoneMatch:
   ///   ETag for conditional GET
-  Future<http.Response> publicCitiesGetWithHttpInfo({ String? ifNoneMatch, }) async {
+  Future<Response> publicCitiesGetWithHttpInfo({ String? ifNoneMatch, }) async {
     // ignore: prefer_const_declarations
     final path = r'/public/cities';
 
@@ -158,7 +158,7 @@ class PublicApi {
   ///
   /// * [String] ifNoneMatch:
   ///   ETag for conditional GET
-  Future<http.Response> publicPoiPoiIdGetWithHttpInfo(String poiId, String city, { String? deviceAnonId, String? ifNoneMatch, }) async {
+  Future<Response> publicPoiPoiIdGetWithHttpInfo(String poiId, String city, { String? deviceAnonId, String? ifNoneMatch, }) async {
     // ignore: prefer_const_declarations
     final path = r'/public/poi/{poi_id}'
       .replaceAll('{poi_id}', poiId);
@@ -230,7 +230,7 @@ class PublicApi {
   ///
   /// * [String] ifNoneMatch:
   ///   ETag for conditional GET
-  Future<http.Response> publicToursGetWithHttpInfo(String city, { String? ifNoneMatch, }) async {
+  Future<Response> publicToursGetWithHttpInfo(String city, { String? ifNoneMatch, }) async {
     // ignore: prefer_const_declarations
     final path = r'/public/tours';
 

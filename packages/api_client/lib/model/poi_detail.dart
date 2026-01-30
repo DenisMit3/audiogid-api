@@ -23,6 +23,8 @@ class PoiDetail {
     this.hasAccess,
     this.narrations = const [],
     this.media = const [],
+    this.sources = const [],
+    this.category,
   });
 
   ///
@@ -87,6 +89,16 @@ class PoiDetail {
 
   List<Media> media;
 
+  List<PoiSource> sources;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? category;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is PoiDetail &&
     other.id == id &&
@@ -98,7 +110,9 @@ class PoiDetail {
     _deepEquality.equals(other.previewBullets, previewBullets) &&
     other.hasAccess == hasAccess &&
     _deepEquality.equals(other.narrations, narrations) &&
-    _deepEquality.equals(other.media, media);
+    _deepEquality.equals(other.media, media) &&
+    _deepEquality.equals(other.sources, sources) &&
+    other.category == category;
 
   @override
   int get hashCode =>
@@ -112,10 +126,12 @@ class PoiDetail {
     (previewBullets.hashCode) +
     (hasAccess == null ? 0 : hasAccess!.hashCode) +
     (narrations.hashCode) +
-    (media.hashCode);
+    (media.hashCode) +
+    (sources.hashCode) +
+    (category == null ? 0 : category!.hashCode);
 
   @override
-  String toString() => 'PoiDetail[id=$id, titleRu=$titleRu, descriptionRu=$descriptionRu, lat=$lat, lon=$lon, previewAudioUrl=$previewAudioUrl, previewBullets=$previewBullets, hasAccess=$hasAccess, narrations=$narrations, media=$media]';
+  String toString() => 'PoiDetail[id=$id, titleRu=$titleRu, descriptionRu=$descriptionRu, lat=$lat, lon=$lon, previewAudioUrl=$previewAudioUrl, previewBullets=$previewBullets, hasAccess=$hasAccess, narrations=$narrations, media=$media, sources=$sources, category=$category]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -157,6 +173,12 @@ class PoiDetail {
     }
       json[r'narrations'] = this.narrations;
       json[r'media'] = this.media;
+      json[r'sources'] = this.sources;
+    if (this.category != null) {
+      json[r'category'] = this.category;
+    } else {
+      json[r'category'] = null;
+    }
     return json;
   }
 
@@ -191,6 +213,8 @@ class PoiDetail {
         hasAccess: mapValueOfType<bool>(json, r'has_access'),
         narrations: Narration.listFromJson(json[r'narrations']),
         media: Media.listFromJson(json[r'media']),
+        sources: PoiSource.listFromJson(json[r'sources']),
+        category: mapValueOfType<String>(json, r'category'),
       );
     }
     return null;

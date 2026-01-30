@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **url** | **String** |  | [optional] 
 **locale** | **String** |  | [optional] 
 **durationSeconds** | **num** |  | [optional] 
+**transcript** | **String** |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

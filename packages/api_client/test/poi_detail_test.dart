@@ -66,6 +66,16 @@ void main() {
       // TODO
     });
 
+    // List<PoiSource> sources (default value: const [])
+    test('to test the property `sources`', () async {
+      // TODO
+    });
+
+    // String category
+    test('to test the property `category`', () async {
+      // TODO
+    });
+
 
   });
 

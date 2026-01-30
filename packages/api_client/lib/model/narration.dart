@@ -17,6 +17,7 @@ class Narration {
     this.url,
     this.locale,
     this.durationSeconds,
+    this.transcript,
   });
 
   ///
@@ -51,12 +52,21 @@ class Narration {
   ///
   num? durationSeconds;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? transcript;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is Narration &&
     other.id == id &&
     other.url == url &&
     other.locale == locale &&
-    other.durationSeconds == durationSeconds;
+    other.durationSeconds == durationSeconds &&
+    other.transcript == transcript;
 
   @override
   int get hashCode =>
@@ -64,10 +74,11 @@ class Narration {
     (id == null ? 0 : id!.hashCode) +
     (url == null ? 0 : url!.hashCode) +
     (locale == null ? 0 : locale!.hashCode) +
-    (durationSeconds == null ? 0 : durationSeconds!.hashCode);
+    (durationSeconds == null ? 0 : durationSeconds!.hashCode) +
+    (transcript == null ? 0 : transcript!.hashCode);
 
   @override
-  String toString() => 'Narration[id=$id, url=$url, locale=$locale, durationSeconds=$durationSeconds]';
+  String toString() => 'Narration[id=$id, url=$url, locale=$locale, durationSeconds=$durationSeconds, transcript=$transcript]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -90,6 +101,11 @@ class Narration {
       json[r'duration_seconds'] = this.durationSeconds;
     } else {
       json[r'duration_seconds'] = null;
+    }
+    if (this.transcript != null) {
+      json[r'transcript'] = this.transcript;
+    } else {
+      json[r'transcript'] = null;
     }
     return json;
   }
@@ -117,6 +133,7 @@ class Narration {
         url: mapValueOfType<String>(json, r'url'),
         locale: mapValueOfType<String>(json, r'locale'),
         durationSeconds: num.parse('${json[r'duration_seconds']}'),
+        transcript: mapValueOfType<String>(json, r'transcript'),
       );
     }
     return null;

@@ -60,12 +60,21 @@ Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
 *AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
+*AdminApi* | [**presignMedia**](doc//AdminApi.md#presignmedia) | **POST** /admin/media/presign | Presign Media Upload
+*AuthApi* | [**loginSmsInit**](doc//AuthApi.md#loginsmsinit) | **POST** /auth/login/sms/init | Init SMS Login
+*AuthApi* | [**loginSmsVerify**](doc//AuthApi.md#loginsmsverify) | **POST** /auth/login/sms/verify | Verify SMS Login
+*AuthApi* | [**loginTelegram**](doc//AuthApi.md#logintelegram) | **POST** /auth/login/telegram | Telegram Login
+*AuthApi* | [**logout**](doc//AuthApi.md#logout) | **POST** /auth/logout | Logout
+*AuthApi* | [**me**](doc//AuthApi.md#me) | **GET** /auth/me | Get Current User
+*AuthApi* | [**refreshToken**](doc//AuthApi.md#refreshtoken) | **POST** /auth/refresh | Refresh Access Token
+*BillingApi* | [**batchPurchase**](doc//BillingApi.md#batchpurchase) | **POST** /billing/batch-purchase | Batch Purchase Validation
 *BillingApi* | [**getEntitlements**](doc//BillingApi.md#getentitlements) | **GET** /billing/entitlements | Get current user entitlements
 *BillingApi* | [**getRestoreJobStatus**](doc//BillingApi.md#getrestorejobstatus) | **GET** /billing/restore/{job_id} | Get Restore Job Status
 *BillingApi* | [**restorePurchases**](doc//BillingApi.md#restorepurchases) | **POST** /billing/restore | Enqueue Restore Purchases (Async)
 *BillingApi* | [**verifyAppleReceipt**](doc//BillingApi.md#verifyapplereceipt) | **POST** /billing/apple/verify | Verify Apple App Store Receipt
 *BillingApi* | [**verifyGooglePurchase**](doc//BillingApi.md#verifygooglepurchase) | **POST** /billing/google/verify | Verify Google Play Purchase
 *IngestionApi* | [**getIngestionRuns**](doc//IngestionApi.md#getingestionruns) | **GET** /admin/ingestion/runs | Get Ingestion Runs
+*MediaApi* | [**presignMedia**](doc//MediaApi.md#presignmedia) | **POST** /admin/media/presign | Presign Media Upload
 *OfflineApi* | [**buildOfflineBundle**](doc//OfflineApi.md#buildofflinebundle) | **POST** /offline/bundles:build | Enqueue Offline Bundle Build
 *OfflineApi* | [**getOfflineBundleStatus**](doc//OfflineApi.md#getofflinebundlestatus) | **GET** /offline/bundles/{job_id} | Get Bundle Job Status
 *OpsApi* | [**getOpsCommit**](doc//OpsApi.md#getopscommit) | **GET** /ops/commit | Get deployed commit info
@@ -79,6 +88,8 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [BatchPurchaseRequest](doc//BatchPurchaseRequest.md)
+ - [BatchPurchaseResponse](doc//BatchPurchaseResponse.md)
  - [BuildOfflineBundle202Response](doc//BuildOfflineBundle202Response.md)
  - [BuildOfflineBundleRequest](doc//BuildOfflineBundleRequest.md)
  - [City](doc//City.md)
@@ -88,6 +99,8 @@ Class | Method | HTTP request | Description
  - [GooglePurchaseItem](doc//GooglePurchaseItem.md)
  - [IngestionRunRead](doc//IngestionRunRead.md)
  - [JobEnqueueResponse](doc//JobEnqueueResponse.md)
+ - [LoginSmsInit200Response](doc//LoginSmsInit200Response.md)
+ - [Logout200Response](doc//Logout200Response.md)
  - [Media](doc//Media.md)
  - [Narration](doc//Narration.md)
  - [OfflineJobRead](doc//OfflineJobRead.md)
@@ -95,15 +108,24 @@ Class | Method | HTTP request | Description
  - [OpsConfigCheckGet200Response](doc//OpsConfigCheckGet200Response.md)
  - [OpsConfigCheckGet200ResponseYOOKASSA](doc//OpsConfigCheckGet200ResponseYOOKASSA.md)
  - [OpsHealthResponse](doc//OpsHealthResponse.md)
+ - [PhoneInit](doc//PhoneInit.md)
+ - [PhoneVerify](doc//PhoneVerify.md)
  - [PoiDetail](doc//PoiDetail.md)
+ - [PoiSource](doc//PoiSource.md)
+ - [PresignRequest](doc//PresignRequest.md)
+ - [PresignResponse](doc//PresignResponse.md)
  - [PurchaseVerifyResponse](doc//PurchaseVerifyResponse.md)
+ - [RefreshReq](doc//RefreshReq.md)
  - [RequestDeletion202Response](doc//RequestDeletion202Response.md)
  - [RequestDeletionRequest](doc//RequestDeletionRequest.md)
  - [RestoreItemResult](doc//RestoreItemResult.md)
  - [RestoreJobRead](doc//RestoreJobRead.md)
  - [RestoreJobReadResult](doc//RestoreJobReadResult.md)
  - [RestorePurchasesRequest](doc//RestorePurchasesRequest.md)
+ - [TelegramLogin](doc//TelegramLogin.md)
+ - [TokenResponse](doc//TokenResponse.md)
  - [TourSnippet](doc//TourSnippet.md)
+ - [User](doc//User.md)
  - [VerifyAppleReceiptRequest](doc//VerifyAppleReceiptRequest.md)
  - [VerifyGooglePurchaseRequest](doc//VerifyGooglePurchaseRequest.md)
 
@@ -112,6 +134,10 @@ Class | Method | HTTP request | Description
 
 
 Authentication schemes defined for the API:
+### BearerAuth
+
+- **Type**: HTTP Bearer authentication
+
 ### YookassaSignature
 
 - **Type**: API key

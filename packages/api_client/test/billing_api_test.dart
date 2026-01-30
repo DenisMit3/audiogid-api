@@ -17,6 +17,13 @@ void main() {
   // final instance = BillingApi();
 
   group('tests for BillingApi', () {
+    // Batch Purchase Validation
+    //
+    //Future<BatchPurchaseResponse> batchPurchase(BatchPurchaseRequest batchPurchaseRequest) async
+    test('test batchPurchase', () async {
+      // TODO
+    });
+
     // Get current user entitlements
     //
     //Future<List<EntitlementGrantRead>> getEntitlements(String deviceAnonId) async

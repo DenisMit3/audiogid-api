@@ -16,6 +16,58 @@ class BillingApi {
 
   final ApiClient apiClient;
 
+  /// Batch Purchase Validation
+  ///
+  /// Note: This method returns the HTTP [Response].
+  ///
+  /// Parameters:
+  ///
+  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
+  Future<Response> batchPurchaseWithHttpInfo(BatchPurchaseRequest batchPurchaseRequest,) async {
+    // ignore: prefer_const_declarations
+    final path = r'/billing/batch-purchase';
+
+    // ignore: prefer_final_locals
+    Object? postBody = batchPurchaseRequest;
+
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+
+    const contentTypes = <String>['application/json'];
+
+
+    return apiClient.invokeAPI(
+      path,
+      'POST',
+      queryParams,
+      postBody,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Batch Purchase Validation
+  ///
+  /// Parameters:
+  ///
+  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
+  Future<BatchPurchaseResponse?> batchPurchase(BatchPurchaseRequest batchPurchaseRequest,) async {
+    final response = await batchPurchaseWithHttpInfo(batchPurchaseRequest,);
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    // When a remote server returns no body with a status of 204, we shall not decode it.
+    // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
+    // FormatException when trying to decode an empty string.
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BatchPurchaseResponse',) as BatchPurchaseResponse;
+    
+    }
+    return null;
+  }
+
   /// Get current user entitlements
   ///
   /// Note: This method returns the HTTP [Response].
@@ -23,7 +75,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [String] deviceAnonId (required):
-  Future<http.Response> getEntitlementsWithHttpInfo(String deviceAnonId,) async {
+  Future<Response> getEntitlementsWithHttpInfo(String deviceAnonId,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/entitlements';
 
@@ -80,7 +132,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [String] jobId (required):
-  Future<http.Response> getRestoreJobStatusWithHttpInfo(String jobId,) async {
+  Future<Response> getRestoreJobStatusWithHttpInfo(String jobId,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/restore/{job_id}'
       .replaceAll('{job_id}', jobId);
@@ -135,7 +187,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [RestorePurchasesRequest] restorePurchasesRequest (required):
-  Future<http.Response> restorePurchasesWithHttpInfo(RestorePurchasesRequest restorePurchasesRequest,) async {
+  Future<Response> restorePurchasesWithHttpInfo(RestorePurchasesRequest restorePurchasesRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/restore';
 
@@ -189,7 +241,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [VerifyAppleReceiptRequest] verifyAppleReceiptRequest (required):
-  Future<http.Response> verifyAppleReceiptWithHttpInfo(VerifyAppleReceiptRequest verifyAppleReceiptRequest,) async {
+  Future<Response> verifyAppleReceiptWithHttpInfo(VerifyAppleReceiptRequest verifyAppleReceiptRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/apple/verify';
 
@@ -241,7 +293,7 @@ class BillingApi {
   /// Parameters:
   ///
   /// * [VerifyGooglePurchaseRequest] verifyGooglePurchaseRequest (required):
-  Future<http.Response> verifyGooglePurchaseWithHttpInfo(VerifyGooglePurchaseRequest verifyGooglePurchaseRequest,) async {
+  Future<Response> verifyGooglePurchaseWithHttpInfo(VerifyGooglePurchaseRequest verifyGooglePurchaseRequest,) async {
     // ignore: prefer_const_declarations
     final path = r'/billing/google/verify';
 
@@ -285,51 +337,4 @@ class BillingApi {
     }
     return null;
   }
-  /// Batch Purchase Validation
-  ///
-  /// Note: This method returns the HTTP [Response].
-  ///
-  /// Parameters:
-  ///
-  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
-  Future<http.Response> batchPurchaseWithHttpInfo(BatchPurchaseRequest batchPurchaseRequest) async {
-    // ignore: prefer_const_declarations
-    final path = r'/billing/batch-purchase';
-
-    // ignore: prefer_final_locals
-    Object? postBody = batchPurchaseRequest;
-
-    final queryParams = <QueryParam>[];
-    final headerParams = <String, String>{};
-    final formParams = <String, String>{};
-
-    const contentTypes = <String>['application/json'];
-
-    return apiClient.invokeAPI(
-      path,
-      'POST',
-      queryParams,
-      postBody,
-      headerParams,
-      formParams,
-      contentTypes.isEmpty ? null : contentTypes.first,
-    );
-  }
-
-  /// Batch Purchase Validation
-  ///
-  /// Parameters:
-  ///
-  /// * [BatchPurchaseRequest] batchPurchaseRequest (required):
-  Future<BatchPurchaseResponse?> batchPurchase({required BatchPurchaseRequest batchPurchaseRequest}) async {
-    final response = await batchPurchaseWithHttpInfo(batchPurchaseRequest);
-    if (response.statusCode >= HttpStatus.badRequest) {
-      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
-    }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'BatchPurchaseResponse') as BatchPurchaseResponse;
-    }
-    return null;
-  }
 }
-

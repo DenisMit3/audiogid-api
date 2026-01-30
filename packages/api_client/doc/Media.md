@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **mediaType** | **String** |  | [optional] 
 **author** | **String** |  | [optional] 
 **sourcePageUrl** | **String** |  | [optional] 
+**licenseType** | **String** |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

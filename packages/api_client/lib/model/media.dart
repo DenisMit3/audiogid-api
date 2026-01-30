@@ -18,6 +18,7 @@ class Media {
     this.mediaType,
     this.author,
     this.sourcePageUrl,
+    this.licenseType,
   });
 
   ///
@@ -60,13 +61,22 @@ class Media {
   ///
   String? sourcePageUrl;
 
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? licenseType;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is Media &&
     other.id == id &&
     other.url == url &&
     other.mediaType == mediaType &&
     other.author == author &&
-    other.sourcePageUrl == sourcePageUrl;
+    other.sourcePageUrl == sourcePageUrl &&
+    other.licenseType == licenseType;
 
   @override
   int get hashCode =>
@@ -75,10 +85,11 @@ class Media {
     (url == null ? 0 : url!.hashCode) +
     (mediaType == null ? 0 : mediaType!.hashCode) +
     (author == null ? 0 : author!.hashCode) +
-    (sourcePageUrl == null ? 0 : sourcePageUrl!.hashCode);
+    (sourcePageUrl == null ? 0 : sourcePageUrl!.hashCode) +
+    (licenseType == null ? 0 : licenseType!.hashCode);
 
   @override
-  String toString() => 'Media[id=$id, url=$url, mediaType=$mediaType, author=$author, sourcePageUrl=$sourcePageUrl]';
+  String toString() => 'Media[id=$id, url=$url, mediaType=$mediaType, author=$author, sourcePageUrl=$sourcePageUrl, licenseType=$licenseType]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -107,6 +118,11 @@ class Media {
     } else {
       json[r'source_page_url'] = null;
     }
+    if (this.licenseType != null) {
+      json[r'license_type'] = this.licenseType;
+    } else {
+      json[r'license_type'] = null;
+    }
     return json;
   }
 
@@ -134,6 +150,7 @@ class Media {
         mediaType: mapValueOfType<String>(json, r'media_type'),
         author: mapValueOfType<String>(json, r'author'),
         sourcePageUrl: mapValueOfType<String>(json, r'source_page_url'),
+        licenseType: mapValueOfType<String>(json, r'license_type'),
       );
     }
     return null;

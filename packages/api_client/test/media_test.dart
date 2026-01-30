@@ -41,6 +41,11 @@ void main() {
       // TODO
     });
 
+    // String licenseType
+    test('to test the property `licenseType`', () async {
+      // TODO
+    });
+
 
   });
 

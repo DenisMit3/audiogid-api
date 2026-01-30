@@ -36,6 +36,11 @@ void main() {
       // TODO
     });
 
+    // String transcript
+    test('to test the property `transcript`', () async {
+      // TODO
+    });
+
 
   });
 

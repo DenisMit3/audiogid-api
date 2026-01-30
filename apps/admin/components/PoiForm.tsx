@@ -37,11 +37,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MediaUploader } from './media-upload';
 import { SourcesManager } from './sources-manager';
 import { NarrationsManager } from './narrations-manager';
-import { LocationPicker } from './location-picker';
+import dynamic from 'next/dynamic';
+const LocationPicker = dynamic(() => import('./location-picker').then(mod => mod.LocationPicker), {
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full flex items-center justify-center bg-slate-100 font-mono text-xs border rounded-md">Loading Map Engine...</div>
+});
 import { PublishCheckModal } from './publish-check-modal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+// throw removed for build
 
 const poiSchema = z.object({
     title_ru: z.string().min(3, "Title (RU) must be at least 3 characters"),
@@ -424,5 +428,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
         </div>
     );
 }
+
+
 
 

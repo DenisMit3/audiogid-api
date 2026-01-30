@@ -29,7 +29,7 @@ type Props = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+// throw removed for build
 
 export function SourcesManager({ poiId, sources: initialSources, entityType }: Props) {
     const [sources, setSources] = useState<Source[]>(initialSources || []);
@@ -210,5 +210,7 @@ function ImportWikipediaButton({ poiId }: { poiId: string }) {
         </Dialog>
     );
 }
+
+
 
 

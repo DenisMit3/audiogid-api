@@ -42,7 +42,7 @@ type Props = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+// throw removed for build
 
 export function NarrationsManager({ poiId, narrations: initialNarrations }: Props) {
     const [list, setList] = useState<NarrationItem[]>(initialNarrations || []);
@@ -314,5 +314,7 @@ function GenerateAIButton({ poiId }: { poiId: string }) {
         </Button>
     )
 }
+
+
 
 

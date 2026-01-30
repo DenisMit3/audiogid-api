@@ -46,7 +46,11 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
-import { RouteMap } from './route-map';
+import dynamic from 'next/dynamic';
+const RouteMap = dynamic(() => import('./route-map').then(mod => mod.RouteMap), {
+    ssr: false,
+    loading: () => <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Loading Map Engine...</div>
+});
 
 // --- Sortable Item Component ---
 
@@ -142,7 +146,7 @@ type Props = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+// throw removed for build
 
 export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
     const sensors = useSensors(
@@ -297,5 +301,7 @@ export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpda
         </div>
     );
 }
+
+
 
 

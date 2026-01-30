@@ -22,7 +22,7 @@ export async function DELETE(request: Request, { params }: { params: { path: str
 }
 
 async function proxy(request: Request, pathSegments: string[], method: string) {
-    if (!BACKEND_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
+    if (!BACKEND_URL) return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
     const path = pathSegments.join('/');
     const cookieStore = cookies();
     const token = cookieStore.get('token');

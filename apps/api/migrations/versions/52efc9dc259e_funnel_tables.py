@@ -49,7 +49,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_funnel_steps_funnel_id'), 'funnel_steps', ['funnel_id'], unique=False)
-    op.drop_table('spatial_ref_sys')
+    # op.drop_table('spatial_ref_sys')  # Commented out: cannot drop because extension postgis requires it
     op.drop_index(op.f('ix_entitlement_grants_source_ref_lookup'), table_name='entitlement_grants')
     op.drop_index(op.f('uq_entitlement_grants_source_source_ref'), table_name='entitlement_grants')
     op.create_index(op.f('ix_entitlement_grants_source_ref'), 'entitlement_grants', ['source_ref'], unique=True)

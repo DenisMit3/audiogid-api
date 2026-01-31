@@ -26,26 +26,6 @@ void main() {
       // TODO
     });
 
-    // String username
-    test('to test the property `username`', () async {
-      // TODO
-    });
-
-    // String photoUrl
-    test('to test the property `photoUrl`', () async {
-      // TODO
-    });
-
-    // String authDate
-    test('to test the property `authDate`', () async {
-      // TODO
-    });
-
-    // String hash
-    test('to test the property `hash`', () async {
-      // TODO
-    });
-
 
   });
 

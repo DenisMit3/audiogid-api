@@ -61,6 +61,7 @@ Class | Method | HTTP request | Description
 *AccountApi* | [**getDeletionStatus**](doc//AccountApi.md#getdeletionstatus) | **GET** /public/account/delete/status | Check Deletion Status
 *AccountApi* | [**requestDeletion**](doc//AccountApi.md#requestdeletion) | **POST** /public/account/delete/request | Request Account Deletion
 *AdminApi* | [**presignMedia**](doc//AdminApi.md#presignmedia) | **POST** /admin/media/presign | Presign Media Upload
+*AuthApi* | [**loginEmail**](doc//AuthApi.md#loginemail) | **POST** /auth/login/email | Email Login
 *AuthApi* | [**loginSmsInit**](doc//AuthApi.md#loginsmsinit) | **POST** /auth/login/sms/init | Init SMS Login
 *AuthApi* | [**loginSmsVerify**](doc//AuthApi.md#loginsmsverify) | **POST** /auth/login/sms/verify | Verify SMS Login
 *AuthApi* | [**loginTelegram**](doc//AuthApi.md#logintelegram) | **POST** /auth/login/telegram | Telegram Login
@@ -93,6 +94,7 @@ Class | Method | HTTP request | Description
  - [BuildOfflineBundle202Response](doc//BuildOfflineBundle202Response.md)
  - [BuildOfflineBundleRequest](doc//BuildOfflineBundleRequest.md)
  - [City](doc//City.md)
+ - [EmailLogin](doc//EmailLogin.md)
  - [EntitlementGrantRead](doc//EntitlementGrantRead.md)
  - [GetDeletionStatus200Response](doc//GetDeletionStatus200Response.md)
  - [GetOpsCommit200Response](doc//GetOpsCommit200Response.md)

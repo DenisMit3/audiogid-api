@@ -192,6 +192,8 @@ class ApiClient {
           return BuildOfflineBundleRequest.fromJson(value);
         case 'City':
           return City.fromJson(value);
+        case 'EmailLogin':
+          return EmailLogin.fromJson(value);
         case 'EntitlementGrantRead':
           return EntitlementGrantRead.fromJson(value);
         case 'GetDeletionStatus200Response':

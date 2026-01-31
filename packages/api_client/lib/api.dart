@@ -43,6 +43,7 @@ part 'model/batch_purchase_response.dart';
 part 'model/build_offline_bundle202_response.dart';
 part 'model/build_offline_bundle_request.dart';
 part 'model/city.dart';
+part 'model/email_login.dart';
 part 'model/entitlement_grant_read.dart';
 part 'model/get_deletion_status200_response.dart';
 part 'model/get_ops_commit200_response.dart';

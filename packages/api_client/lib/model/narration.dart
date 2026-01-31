@@ -15,6 +15,7 @@ class Narration {
   Narration({
     this.id,
     this.url,
+    this.kidsUrl,
     this.locale,
     this.durationSeconds,
     this.transcript,
@@ -35,6 +36,14 @@ class Narration {
   /// Consider adding a "default:" property in the specification file to hide this note.
   ///
   String? url;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  String? kidsUrl;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -64,6 +73,7 @@ class Narration {
   bool operator ==(Object other) => identical(this, other) || other is Narration &&
     other.id == id &&
     other.url == url &&
+    other.kidsUrl == kidsUrl &&
     other.locale == locale &&
     other.durationSeconds == durationSeconds &&
     other.transcript == transcript;
@@ -73,12 +83,13 @@ class Narration {
     // ignore: unnecessary_parenthesis
     (id == null ? 0 : id!.hashCode) +
     (url == null ? 0 : url!.hashCode) +
+    (kidsUrl == null ? 0 : kidsUrl!.hashCode) +
     (locale == null ? 0 : locale!.hashCode) +
     (durationSeconds == null ? 0 : durationSeconds!.hashCode) +
     (transcript == null ? 0 : transcript!.hashCode);
 
   @override
-  String toString() => 'Narration[id=$id, url=$url, locale=$locale, durationSeconds=$durationSeconds, transcript=$transcript]';
+  String toString() => 'Narration[id=$id, url=$url, kidsUrl=$kidsUrl, locale=$locale, durationSeconds=$durationSeconds, transcript=$transcript]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -91,6 +102,11 @@ class Narration {
       json[r'url'] = this.url;
     } else {
       json[r'url'] = null;
+    }
+    if (this.kidsUrl != null) {
+      json[r'kids_url'] = this.kidsUrl;
+    } else {
+      json[r'kids_url'] = null;
     }
     if (this.locale != null) {
       json[r'locale'] = this.locale;
@@ -131,6 +147,7 @@ class Narration {
       return Narration(
         id: mapValueOfType<String>(json, r'id'),
         url: mapValueOfType<String>(json, r'url'),
+        kidsUrl: mapValueOfType<String>(json, r'kids_url'),
         locale: mapValueOfType<String>(json, r'locale'),
         durationSeconds: num.parse('${json[r'duration_seconds']}'),
         transcript: mapValueOfType<String>(json, r'transcript'),

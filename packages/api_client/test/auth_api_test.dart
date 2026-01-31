@@ -17,6 +17,13 @@ void main() {
   // final instance = AuthApi();
 
   group('tests for AuthApi', () {
+    // Email Login
+    //
+    //Future<TokenResponse> loginEmail(EmailLogin emailLogin) async
+    test('test loginEmail', () async {
+      // TODO
+    });
+
     // Init SMS Login
     //
     //Future<LoginSmsInit200Response> loginSmsInit(PhoneInit phoneInit) async

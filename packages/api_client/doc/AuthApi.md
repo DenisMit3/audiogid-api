@@ -9,6 +9,7 @@ All URIs are relative to *https://audiogid-api.vercel.app/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**loginEmail**](AuthApi.md#loginemail) | **POST** /auth/login/email | Email Login
 [**loginSmsInit**](AuthApi.md#loginsmsinit) | **POST** /auth/login/sms/init | Init SMS Login
 [**loginSmsVerify**](AuthApi.md#loginsmsverify) | **POST** /auth/login/sms/verify | Verify SMS Login
 [**loginTelegram**](AuthApi.md#logintelegram) | **POST** /auth/login/telegram | Telegram Login
@@ -16,6 +17,47 @@ Method | HTTP request | Description
 [**me**](AuthApi.md#me) | **GET** /auth/me | Get Current User
 [**refreshToken**](AuthApi.md#refreshtoken) | **POST** /auth/refresh | Refresh Access Token
 
+
+# **loginEmail**
+> TokenResponse loginEmail(emailLogin)
+
+Email Login
+
+### Example
+```dart
+import 'package:api_client/api.dart';
+
+final api_instance = AuthApi();
+final emailLogin = EmailLogin(); // EmailLogin | 
+
+try {
+    final result = api_instance.loginEmail(emailLogin);
+    print(result);
+} catch (e) {
+    print('Exception when calling AuthApi->loginEmail: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **emailLogin** | [**EmailLogin**](EmailLogin.md)|  | 
+
+### Return type
+
+[**TokenResponse**](TokenResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **loginSmsInit**
 > LoginSmsInit200Response loginSmsInit(phoneInit)

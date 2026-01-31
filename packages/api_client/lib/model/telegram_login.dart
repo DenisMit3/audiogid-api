@@ -15,10 +15,6 @@ class TelegramLogin {
   TelegramLogin({
     required this.id,
     this.firstName,
-    this.username,
-    this.photoUrl,
-    required this.authDate,
-    required this.hash,
   });
 
   String id;
@@ -31,47 +27,19 @@ class TelegramLogin {
   ///
   String? firstName;
 
-  ///
-  /// Please note: This property should have been non-nullable! Since the specification file
-  /// does not include a default value (using the "default:" property), however, the generated
-  /// source code must fall back to having a nullable type.
-  /// Consider adding a "default:" property in the specification file to hide this note.
-  ///
-  String? username;
-
-  ///
-  /// Please note: This property should have been non-nullable! Since the specification file
-  /// does not include a default value (using the "default:" property), however, the generated
-  /// source code must fall back to having a nullable type.
-  /// Consider adding a "default:" property in the specification file to hide this note.
-  ///
-  String? photoUrl;
-
-  String authDate;
-
-  String hash;
-
   @override
   bool operator ==(Object other) => identical(this, other) || other is TelegramLogin &&
     other.id == id &&
-    other.firstName == firstName &&
-    other.username == username &&
-    other.photoUrl == photoUrl &&
-    other.authDate == authDate &&
-    other.hash == hash;
+    other.firstName == firstName;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (id.hashCode) +
-    (firstName == null ? 0 : firstName!.hashCode) +
-    (username == null ? 0 : username!.hashCode) +
-    (photoUrl == null ? 0 : photoUrl!.hashCode) +
-    (authDate.hashCode) +
-    (hash.hashCode);
+    (firstName == null ? 0 : firstName!.hashCode);
 
   @override
-  String toString() => 'TelegramLogin[id=$id, firstName=$firstName, username=$username, photoUrl=$photoUrl, authDate=$authDate, hash=$hash]';
+  String toString() => 'TelegramLogin[id=$id, firstName=$firstName]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -81,18 +49,6 @@ class TelegramLogin {
     } else {
       json[r'first_name'] = null;
     }
-    if (this.username != null) {
-      json[r'username'] = this.username;
-    } else {
-      json[r'username'] = null;
-    }
-    if (this.photoUrl != null) {
-      json[r'photo_url'] = this.photoUrl;
-    } else {
-      json[r'photo_url'] = null;
-    }
-      json[r'auth_date'] = this.authDate;
-      json[r'hash'] = this.hash;
     return json;
   }
 
@@ -117,10 +73,6 @@ class TelegramLogin {
       return TelegramLogin(
         id: mapValueOfType<String>(json, r'id')!,
         firstName: mapValueOfType<String>(json, r'first_name'),
-        username: mapValueOfType<String>(json, r'username'),
-        photoUrl: mapValueOfType<String>(json, r'photo_url'),
-        authDate: mapValueOfType<String>(json, r'auth_date')!,
-        hash: mapValueOfType<String>(json, r'hash')!,
       );
     }
     return null;
@@ -169,8 +121,6 @@ class TelegramLogin {
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
     'id',
-    'auth_date',
-    'hash',
   };
 }
 

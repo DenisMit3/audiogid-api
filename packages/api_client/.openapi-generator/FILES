@@ -11,6 +11,7 @@ doc/BillingApi.md
 doc/BuildOfflineBundle202Response.md
 doc/BuildOfflineBundleRequest.md
 doc/City.md
+doc/EmailLogin.md
 doc/EntitlementGrantRead.md
 doc/GetDeletionStatus200Response.md
 doc/GetOpsCommit200Response.md
@@ -75,6 +76,7 @@ lib/model/batch_purchase_response.dart
 lib/model/build_offline_bundle202_response.dart
 lib/model/build_offline_bundle_request.dart
 lib/model/city.dart
+lib/model/email_login.dart
 lib/model/entitlement_grant_read.dart
 lib/model/get_deletion_status200_response.dart
 lib/model/get_ops_commit200_response.dart
@@ -120,6 +122,7 @@ test/billing_api_test.dart
 test/build_offline_bundle202_response_test.dart
 test/build_offline_bundle_request_test.dart
 test/city_test.dart
+test/email_login_test.dart
 test/entitlement_grant_read_test.dart
 test/get_deletion_status200_response_test.dart
 test/get_ops_commit200_response_test.dart

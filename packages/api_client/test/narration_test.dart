@@ -26,6 +26,11 @@ void main() {
       // TODO
     });
 
+    // String kidsUrl
+    test('to test the property `kidsUrl`', () async {
+      // TODO
+    });
+
     // String locale
     test('to test the property `locale`', () async {
       // TODO

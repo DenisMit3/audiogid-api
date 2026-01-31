@@ -1,4 +1,4 @@
-# Audio Guide 2026 API - Main Entry Point for Vercel
+# Audio Guide 2026 API - Main Entry Point for Vercel (Redeploy Trigger)
 # This file exports 'app' as required by Vercel FastAPI deployment
 
 from fastapi import FastAPI, Request, HTTPException, APIRouter

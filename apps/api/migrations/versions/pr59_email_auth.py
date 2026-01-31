@@ -11,7 +11,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 revision: str = 'pr59_email_auth'
-down_revision: Union[str, None] = ('15f922634d0b', 'a983726194c6')
+down_revision: Union[str, None] = '15f922634d0b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

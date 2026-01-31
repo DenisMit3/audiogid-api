@@ -185,6 +185,12 @@ class OfflinePoiRepository implements PoiRepository {
     return list.map(_mapTablePoiToDomain).toList();
   }
 
+  @override
+  Future<List<domain.Poi>> getPoisByIds(List<String> ids) async {
+    final list = await _db.poiDao.getPoisByIds(ids);
+    return list.map(_mapTablePoiToDomain).toList();
+  }
+
   domain.Poi _mapTablePoiToDomain(Poi p) {
     return domain.Poi(
       id: p.id,

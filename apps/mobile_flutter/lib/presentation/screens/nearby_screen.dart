@@ -255,6 +255,21 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      // SOS Button
+                      Semantics(
+                        button: true,
+                        label: 'SOS - Экстренный вызов',
+                        child: FloatingActionButton.small(
+                          heroTag: 'sos_btn',
+                          backgroundColor: colorScheme.error,
+                          foregroundColor: colorScheme.onError,
+                          onPressed: () => context.push('/sos'),
+                          child: const Icon(Icons.sos),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: AppSpacing.sm),
+
                       // Share Location
                       Semantics(
                         button: true,

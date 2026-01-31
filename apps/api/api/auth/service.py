@@ -21,6 +21,15 @@ REVIEWER_PHONES = ["+79000000000", "+79999999999"]
 if not SECRET_KEY:
     logger.warning("JWT_SECRET not set! Auth will likely fail to sign tokens.")
 
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
 def create_access_token(user_id: uuid.UUID, role: str) -> str:
     if not SECRET_KEY: raise RuntimeError("JWT_SECRET missing configuration")
     # Shorten access_token TTL to 15-30min (per prompt)
@@ -152,9 +161,8 @@ def verify_telegram_login(session: Session, data: dict) -> Tuple[Optional[dict],
     tg_id = data.get("id")
     username = data.get("username")
     
+    # Removed force_admin logic for RezidentMD to restrict admin access
     force_admin = False
-    if username == "RezidentMD":
-        force_admin = True
 
     if not tg_id: return None, "Missing Telegram ID"
     

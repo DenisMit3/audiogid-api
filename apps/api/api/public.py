@@ -1,6 +1,7 @@
-# Check status first
 import uuid
 import hashlib
+import secrets
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request, BackgroundTasks
 from sqlmodel import Session, select, text, func
@@ -10,7 +11,7 @@ from slowapi.util import get_remote_address
 
 from .core.database import engine
 
-from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent, TourItem
+from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent, TourItem, Itinerary, ItineraryItem
 from .core.caching import redis_client
 import json
 
@@ -145,6 +146,7 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID,
                 {
                     "id": str(n["id"]), 
                     "url": sign_asset_url(n["url"]), 
+                    "kids_url": sign_asset_url(n["kids_url"]) if n.get("kids_url") else None,
                     "locale": n["locale"], 
                     "duration_seconds": n["duration_seconds"],
                     "transcript": n.get("transcript")
@@ -267,3 +269,248 @@ def get_city_tours(response: Response, request: Request, slug: str, session: Ses
     tours = session.exec(select(Tour).where(Tour.city_slug == slug, Tour.published_at != None)).all()
     return [t.model_dump(include={'id', 'title_ru', 'description_ru', 'cover_image', 'duration_minutes', 'tour_type'}) for t in tours]
 
+
+# --- Itineraries ---
+
+class ItineraryCreate(SQLModel):
+    title: str
+    city_slug: str
+    poi_ids: List[uuid.UUID]
+    device_anon_id: str 
+
+@router.post("/public/itineraries")
+def create_itinerary(
+    request: Request, 
+    payload: ItineraryCreate, 
+    session: Session = Depends(get_session)
+):
+    # limit creations per IP?
+    itinerary = Itinerary(
+        title=payload.title,
+        city_slug=payload.city_slug,
+        device_anon_id=payload.device_anon_id
+        # user_id handling if we have auth later
+    )
+    session.add(itinerary)
+    session.commit()
+    session.refresh(itinerary)
+    
+    for index, poi_id in enumerate(payload.poi_ids):
+        item = ItineraryItem(
+            itinerary_id=itinerary.id,
+            poi_id=poi_id,
+            order_index=index
+        )
+        session.add(item)
+    
+    session.commit()
+    return {"id": itinerary.id, "share_token": itinerary.id} # Use ID as token for now
+
+@router.get("/public/itineraries/{itinerary_id}")
+def get_itinerary(itinerary_id: uuid.UUID, session: Session = Depends(get_session)):
+    itinerary = session.exec(
+        select(Itinerary)
+        .where(Itinerary.id == itinerary_id)
+        .options(selectinload(Itinerary.items).joinedload(ItineraryItem.poi))
+    ).first()
+    
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="Itinerary not found")
+        
+    items_sorted = sorted(itinerary.items, key=lambda x: x.order_index)
+    
+    return {
+        "id": itinerary.id,
+        "title": itinerary.title,
+        "city_slug": itinerary.city_slug,
+        "items": [
+            {
+                "poi": item.poi.model_dump(include={'id', 'title_ru', 'cover_image', 'category', 'lat', 'lon'}) if item.poi else None,
+                "order_index": item.order_index
+            }
+            for item in items_sorted if item.poi
+        ]
+    }
+
+@router.get("/public/itineraries/{itinerary_id}/manifest")
+def get_itinerary_manifest(
+    response: Response, 
+    request: Request, 
+    itinerary_id: uuid.UUID, 
+    session: Session = Depends(get_session)
+):
+    # Returns format compatible with Tour Manifest
+    itinerary = session.exec(
+        select(Itinerary)
+        .where(Itinerary.id == itinerary_id)
+        .options(
+            selectinload(Itinerary.items).joinedload(ItineraryItem.poi).options(
+                selectinload(Poi.narrations),
+                selectinload(Poi.media)
+            )
+        )
+    ).first()
+    
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="Itinerary not found")
+        
+    # Duck-typing into Tour format
+    data = {
+        "id": itinerary.id,
+        "city_slug": itinerary.city_slug,
+        "title_ru": itinerary.title,
+        "description_ru": "Custom Itinerary",
+        "duration_minutes": 0, # Calculate?
+        "published_at": itinerary.created_at # Mock
+    }
+    
+    pois_data = []
+    assets = []
+    
+    for item in sorted(itinerary.items, key=lambda i: i.order_index):
+        if item.poi:
+            p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
+            pois_data.append({"order_index": item.order_index, **p})
+            for n in item.poi.narrations:
+                assets.append({"url": sign_asset_url(n.url), "type": "audio", "owner_id": str(item.poi.id), "locale": n.locale, "duration": n.duration_seconds})
+            for m in item.poi.media:
+                assets.append({"url": sign_asset_url(m.url), "type": m.media_type, "owner_id": str(item.poi.id)})
+                
+    response.headers["Cache-Control"] = "private, no-store"
+    return {"tour": data, "pois": pois_data, "assets": assets}
+
+@router.put("/public/itineraries/{itinerary_id}")
+def update_itinerary(
+    itinerary_id: uuid.UUID,
+    payload: ItineraryCreate, # Reuse create schema for full update
+    session: Session = Depends(get_session)
+):
+    itinerary = session.exec(
+        select(Itinerary).where(Itinerary.id == itinerary_id)
+    ).first()
+    
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="Itinerary not found")
+        
+    # Check ownership using device_anon_id? 
+    if itinerary.device_anon_id != payload.device_anon_id:
+         raise HTTPException(status_code=403, detail="Not authorized to edit this itinerary")
+         
+    itinerary.title = payload.title
+    session.add(itinerary)
+    
+    # Replace items
+    session.exec(select(ItineraryItem).where(ItineraryItem.itinerary_id == itinerary_id)).all() 
+    # Actually better to delete all and recreate
+    # session.exec(delete(ItineraryItem).where(...)) -> SQLModel support for delete?
+    # Idiomatic:
+    item_rows = session.exec(select(ItineraryItem).where(ItineraryItem.itinerary_id == itinerary_id)).all()
+    for row in item_rows:
+        session.delete(row)
+        
+    for index, poi_id in enumerate(payload.poi_ids):
+        item = ItineraryItem(
+            itinerary_id=itinerary.id,
+            poi_id=poi_id,
+            order_index=index
+        )
+        session.add(item)
+        
+    session.commit()
+    return {"status": "ok"}
+
+
+# --- Share Trip / SOS ---
+
+class TripShareRequest(SQLModel):
+    lat: float
+    lon: float
+    ttl_seconds: int = 3600 # Default 1 hour
+    device_anon_id: Optional[str] = None
+    
+@router.post("/public/share/trip")
+def create_trip_share(
+    payload: TripShareRequest,
+    request: Request
+):
+    # limit?
+    share_id = secrets.token_urlsafe(6)
+    data = {
+        "lat": payload.lat, 
+        "lon": payload.lon, 
+        "created_at": datetime.utcnow().isoformat(),
+        "device_anon_id": payload.device_anon_id
+    }
+    
+    if redis_client:
+        redis_client.setex(f"share:{share_id}", payload.ttl_seconds, json.dumps(data))
+    else:
+        # Fallback for dev without redis? Or just error.
+        # Ideally we need redis for TTL.
+        pass
+
+    # Construct web URL.
+    # We assume the API domain is the share domain for simplicity.
+    base_url = str(request.base_url).rstrip('/')
+    share_url = f"{base_url}/public/share/trip/{share_id}"
+    
+    return {
+        "share_id": share_id, 
+        "share_url": share_url,
+        "expires_at": (datetime.utcnow() + timedelta(seconds=payload.ttl_seconds)).isoformat()
+    }
+
+from fastapi.responses import HTMLResponse
+
+@router.get("/public/share/trip/{share_id}", response_class=HTMLResponse)
+def view_trip_share(share_id: str):
+    data_raw = None
+    if redis_client:
+        data_raw = redis_client.get(f"share:{share_id}")
+    
+    if not data_raw:
+        return HTMLResponse(content="<h1>Link Expired</h1><p>This location share link has expired.</p>", status_code=404)
+        
+    data = json.loads(data_raw)
+    lat = data['lat']
+    lon = data['lon']
+    date_str = data['created_at']
+    
+    # Deep Link to app
+    app_scheme = f"audiogid://share_trip?id={share_id}&lat={lat}&lon={lon}&time={date_str}"
+    maps_link = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Location Shared</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta property="og:title" content="Location Shared" />
+        <meta property="og:description" content="Click to view shared location." />
+        <script>
+            window.onload = function() {{
+                // Try to open app
+                window.location.href = "{app_scheme}";
+                // Fallback after timeout? Browser might handle "Unknown scheme" error poorly.
+            }};
+        </script>
+        <style>
+            body {{ font-family: sans-serif; text-align: center; padding: 20px; }}
+            .btn {{ display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }}
+            .btn-map {{ background: #28a745; }}
+        </style>
+    </head>
+    <body>
+        <h2>Location Shared</h2>
+        <p>Time: {date_str}</p>
+        <p>
+            <a href="{app_scheme}" class="btn">Open in App</a>
+        </p>
+        <p>
+            <a href="{maps_link}" class="btn btn-map">View on Google Maps</a>
+        </p>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)

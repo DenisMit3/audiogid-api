@@ -24,6 +24,7 @@ class BuildBundleRequest(BaseModel):
     city_slug: str
     idempotency_key: str
     type: str = "full_city"
+    itinerary_id: Optional[uuid.UUID] = None
 
 class OfflineJobRead(BaseModel):
     id: uuid.UUID
@@ -56,6 +57,7 @@ async def build_offline_bundle(
     payload = json.dumps({
         "city_slug": req.city_slug,
         "bundle_type": req.type,
+        "itinerary_id": str(req.itinerary_id) if req.itinerary_id else None,
         "tenant": "default", # Placeholder for future multitenancy
         "trace_id": str(uuid.uuid4()) # Initiate trace
     })

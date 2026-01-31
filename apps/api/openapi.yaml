@@ -244,6 +244,25 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TokenResponse' }
 
+  /auth/login/email:
+    post:
+      summary: Email Login
+      operationId: loginEmail
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailLogin' }
+      responses:
+        '200':
+          description: Tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Invalid credentials
+
   /auth/refresh:
     post:
       summary: Refresh Access Token
@@ -601,6 +620,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         url: { type: string }
+        kids_url: { type: string, nullable: true }
         locale: { type: string }
         duration_seconds: { type: number }
         transcript: { type: string, nullable: true }
@@ -797,6 +817,13 @@ components:
       properties:
         id: { type: string }
         first_name: { type: string, nullable: true }
+
+    EmailLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
         username: { type: string, nullable: true }
         photo_url: { type: string, nullable: true }
         auth_date: { type: string }

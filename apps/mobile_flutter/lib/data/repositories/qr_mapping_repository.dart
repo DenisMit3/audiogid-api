@@ -29,34 +29,36 @@ class QrMappingRepository {
 
   QrMappingRepository(this._api, this._db);
 
+
   /// Resolve a QR code to a target type and ID
-  /// First tries API, then falls back to offline cache
+  /// First tries API, then falls back to offline cache or local POI lookup
   Future<QrMappingResult?> resolveCode(String code) async {
-    // First, try online API
+    // 1. Try online API if connected
     try {
       final result = await _resolveFromApi(code);
       if (result != null) {
-        // Cache the result for offline use
         await _cacheMapping(code, result);
         return result;
       }
     } catch (e) {
       debugPrint('QR API resolve failed: $e');
-      // Fall through to offline cache
     }
 
-    // Try offline cache
-    return _resolveFromCache(code);
+    // 2. Try offline cache (previously resolved codes)
+    final cached = await _resolveFromCache(code);
+    if (cached != null) return cached;
+
+    // 3. Try local POI lookup (if code is directly a POI ID)
+    return _resolveFromPoiTable(code);
   }
 
-  /// Resolve code from API
+  /// Resolve code from API: GET /public/qr/resolve?code=...
   Future<QrMappingResult?> _resolveFromApi(String code) async {
     try {
-      // Call /public/qr/{code} endpoint
       final response = await _api.apiClient.invokeAPI(
-        '/public/qr/$code',
+        '/public/qr/resolve',
         'GET',
-        [],
+        [api.QueryParam('code', code)],
         null,
         {},
         {},
@@ -75,13 +77,9 @@ class QrMappingRepository {
           targetId: data['target_id'] as String,
           redirectUrl: data['redirect_url'] as String?,
         );
-      } else if (response.statusCode == 404) {
-        return null;
       }
     } catch (e) {
-      final appError = ApiErrorMapper.map(e);
-      debugPrint('QR resolve API error: ${appError.message}');
-      rethrow;
+      // Ignored, will fall back
     }
     return null;
   }
@@ -102,6 +100,23 @@ class QrMappingRepository {
       }
     } catch (e) {
       debugPrint('QR cache lookup error: $e');
+    }
+    return null;
+  }
+
+  /// Try to find a POI with this ID locally
+  Future<QrMappingResult?> _resolveFromPoiTable(String code) async {
+    try {
+      // Check if code is a valid ID in Pois table
+      final poi = await (_db.select(_db.pois)..where((t) => t.id.equals(code))).getSingleOrNull();
+      if (poi != null) {
+        return QrMappingResult(targetType: 'poi', targetId: poi.id);
+      }
+      
+      // Also check if code might be 'osmId' or 'wikidataId' if you want robust lookup
+      // For now, ID is primary.
+    } catch (e) {
+      debugPrint('QR local POI lookup error: $e');
     }
     return null;
   }

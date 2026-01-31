@@ -37,3 +37,7 @@ node_modules/
 *.keystore
 google-services.json
 GoogleService-Info.plist
+
+# Android Secrets
+key.properties
+**/android/key.properties

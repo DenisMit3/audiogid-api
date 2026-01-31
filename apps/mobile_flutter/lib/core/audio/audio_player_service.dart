@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
+import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 
@@ -27,6 +28,9 @@ class AudioPlayerService {
          (pois.isNotEmpty && g.scope == 'city' && g.ref == pois.first.citySlug) ||
          g.scope == 'all_access'));
 
+    // Check Kids Mode
+    final kidsMode = _ref.read(settingsRepositoryProvider).getKidsModeEnabled();
+
     final queue = <MediaItem>[];
     
     // 2. Build Queue
@@ -38,7 +42,10 @@ class AudioPlayerService {
       if (hasAccess) {
         // Full access: prioritize local file
         if (narration != null) {
-          if (narration.localPath != null && File(narration.localPath!).existsSync()) {
+          if (kidsMode && narration.kidsUrl != null) {
+             // Kids mode enabled and available
+             audioUrl = narration.kidsUrl;
+          } else if (narration.localPath != null && File(narration.localPath!).existsSync()) {
             audioUrl = Uri.file(narration.localPath!).toString();
           } else {
             audioUrl = narration.url;
@@ -55,7 +62,7 @@ class AudioPlayerService {
         queue.add(MediaItem(
           id: audioUrl,
           album: 'Tour',
-          title: poi.titleRu,
+          title: kidsMode ? '${poi.titleRu} (Для детей)' : poi.titleRu,
           artist: 'Audiogid',
           artUri: poi.media.isNotEmpty ? Uri.tryParse(poi.media.first.url) : null,
           extras: {

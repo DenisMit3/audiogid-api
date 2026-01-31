@@ -6,13 +6,28 @@ platform :android do
     gradle(
       task: "bundle",
       flavor: "prod",
-      build_type: "Release",
-      project_dir: "android/"
+      build_type: "Release"
     )
     upload_to_play_store(
       track: 'internal',
       aab: 'build/app/outputs/bundle/prodRelease/app-prod-release.aab',
-      json_key_data: ENV['PLAY_STORE_JSON_KEY']
+      json_key_data: ENV['PLAY_STORE_JSON_KEY'],
+      metadata_path: 'fastlane/metadata'
+    )
+  end
+
+  desc "Deploy to Google Play Production"
+  lane :production do
+    gradle(
+      task: "bundle",
+      flavor: "prod",
+      build_type: "Release"
+    )
+    upload_to_play_store(
+      track: 'production',
+      aab: 'build/app/outputs/bundle/prodRelease/app-prod-release.aab',
+      json_key_data: ENV['PLAY_STORE_JSON_KEY'],
+      metadata_path: 'fastlane/metadata'
     )
   end
   

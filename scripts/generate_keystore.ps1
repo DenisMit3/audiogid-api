@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$keystorePath = Join-Path (Get-Location) "apps\mobile_flutter\android\app\audiogid-release.jks"
+$keystorePath = Join-Path (Get-Location) "apps\mobile_flutter\android\audiogid-release.jks"
 $alias = "audiogid"
 $validity = 10000
 

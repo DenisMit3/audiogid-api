@@ -84,6 +84,7 @@ class Narrations extends Table {
   RealColumn get durationSeconds => real().nullable()();
   TextColumn get transcript => text().nullable()();
   TextColumn get localPath => text().nullable()();
+  TextColumn get kidsUrl => text().nullable()();
   TextColumn get voiceId => text().nullable()();
   IntColumn get filesizeBytes => integer().nullable()();
 
@@ -183,7 +184,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -239,6 +240,9 @@ class AppDatabase extends _$AppDatabase {
           }
            if (from < 12) {
              await m.createIndex(Index('idx_tour_items_tour_order', 'CREATE INDEX idx_tour_items_tour_order ON tour_items(tour_id, order_index)'));
+           }
+           if (from < 13) {
+             await m.addColumn(narrations, narrations.kidsUrl);
            }
         },
       );

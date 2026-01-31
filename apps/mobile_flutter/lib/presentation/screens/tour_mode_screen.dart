@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mobile_flutter/core/location/location_service.dart';
@@ -8,7 +9,7 @@ import 'package:mobile_flutter/data/services/tour_mode_service.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_flutter/data/services/download_service.dart';
+import 'package:audio_service/audio_service.dart';
 
 class TourModeScreen extends ConsumerStatefulWidget {
   const TourModeScreen({super.key});
@@ -32,9 +33,8 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
   Widget build(BuildContext context) {
     final tourState = ref.watch(tourModeServiceProvider);
     
-    // Redirect if no tour is active
+    // Redirect if no tour is active (safety check)
     if (!tourState.isActive || tourState.activeTour == null) {
-      // Use addPostFrameCallback to avoid build issues
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.canPop()) {
            context.pop();
@@ -62,6 +62,13 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
         );
     }
 
+    // Path to next point
+    final List<LatLng> nextPointPath = [];
+    if (userPosition != null && tourState.currentPoi != null) {
+      nextPointPath.add(LatLng(userPosition.latitude, userPosition.longitude));
+      nextPointPath.add(LatLng(tourState.currentPoi!.lat, tourState.currentPoi!.lon));
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -69,7 +76,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
             mapController: _mapController,
             options: MapOptions(
               initialCenter: points.isNotEmpty ? points.first : const LatLng(59.93, 30.33),
-              initialZoom: 15.0,
+              initialZoom: 16.0,
               onPositionChanged: (pos, hasGesture) {
                 if (hasGesture) {
                   setState(() => _shouldFollowUser = false);
@@ -81,13 +88,22 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.audiogid.app',
               ),
+              // Full Tour Path
               PolylineLayer(
                 polylines: [
                   Polyline(
                     points: points,
-                    color: Colors.blueAccent,
+                    color: Colors.blueAccent.withOpacity(0.5),
                     strokeWidth: 4.0,
                   ),
+                  // Path to next point (High visibility)
+                  if (nextPointPath.isNotEmpty)
+                    Polyline(
+                      points: nextPointPath,
+                      color: Colors.orange,
+                      strokeWidth: 3.0,
+                      isDotted: true, 
+                    ),
                 ],
               ),
               MarkerLayer(
@@ -96,9 +112,9 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                   if (userPosition != null)
                     Marker(
                       point: LatLng(userPosition.latitude, userPosition.longitude),
-                      width: 40,
-                      height: 40,
-                      child: const _UserMarker(),
+                      width: 50,
+                      height: 50,
+                      child: _UserMarker(heading: userPosition.heading),
                     ),
                   
                   // POI Markers
@@ -110,14 +126,31 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                     
                     return Marker(
                       point: LatLng(poi.lat, poi.lon),
-                      width: 50,
-                      height: 50,
-                      child: Icon(
-                        Icons.location_on,
-                        color: isCurrent 
-                            ? Colors.red 
-                            : (isPassed ? Colors.grey : Colors.blue),
-                        size: isCurrent ? 50 : 35,
+                      width: 60,
+                      height: 60,
+                      alignment: Alignment.topCenter,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                               color: Colors.white,
+                               borderRadius: BorderRadius.circular(4),
+                               boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)]
+                            ),
+                            child: Text(
+                              (index + 1).toString(), 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                            ),
+                          ),
+                          Icon(
+                            Icons.location_on,
+                            color: isCurrent 
+                                ? Colors.redAccent 
+                                : (isPassed ? Colors.grey : Colors.blue),
+                            size: isCurrent ? 40 : 30,
+                          ),
+                        ],
                       ),
                     );
                   }),
@@ -130,9 +163,10 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
           if (!_shouldFollowUser)
             Positioned(
               right: 16,
-              bottom: 250, // Above bottom card
+              bottom: 260,
               child: FloatingActionButton.small(
                 onPressed: () => setState(() => _shouldFollowUser = true),
+                heroTag: 'recenter',
                 child: const Icon(Icons.my_location),
               ),
             ),
@@ -143,12 +177,21 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
             left: 16,
             right: 16,
             child: Card(
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+              elevation: 8,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              color: Theme.of(context).colorScheme.surface,
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
                   children: [
-                    const Icon(Icons.assistant_navigation),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.directions_walk),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -156,14 +199,24 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                         children: [
                           Text(
                             tourState.currentPoi?.titleRu ?? 'Конец маршрута',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 4),
                           if (tourState.distanceToNextPoi != null)
-                             Text(
-                               '${tourState.distanceToNextPoi!.toInt()} м${tourState.etaSeconds != null ? ' • ${_formatDuration(tourState.etaSeconds!)}' : ''}',
-                               style: const TextStyle(color: Colors.grey),
+                             Row(
+                               children: [
+                                 Text(
+                                   '${tourState.distanceToNextPoi!.toInt()} м',
+                                   style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
+                                 ),
+                                 if (tourState.etaSeconds != null)
+                                    Text(
+                                     ' • ${_formatDuration(tourState.etaSeconds!)}',
+                                     style: const TextStyle(color: Colors.grey),
+                                    ),
+                               ],
                              ),
                         ],
                       ),
@@ -176,6 +229,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                         color: tourState.isAutoPlayEnabled ? Colors.green : Colors.grey,
                       ),
                       onPressed: () => ref.read(tourModeServiceProvider.notifier).toggleAutoPlay(),
+                      tooltip: 'Автовоспроизведение',
                     ),
                   ],
                 ),
@@ -186,11 +240,11 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
           // Off-Route Banner
           if (tourState.isOffRoute)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 80,
+              top: MediaQuery.of(context).padding.top + 90,
               left: 16,
               right: 16,
               child: Card(
-                color: Colors.orangeAccent.shade700,
+                color: Colors.redAccent.shade700,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
@@ -199,14 +253,14 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
-                          "Вы отклонились от маршрута",
+                          "Вы ушли с маршрута",
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                       TextButton(
                         onPressed: () => setState(() => _shouldFollowUser = true),
                         style: TextButton.styleFrom(foregroundColor: Colors.white),
-                        child: const Text("К МАРШРУТУ"),
+                        child: const Text("ПОКАЗАТЬ"),
                       ),
                     ],
                   ),
@@ -226,6 +280,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
       ),
     );
   }
+  
   String _formatDuration(int seconds) {
     if (seconds < 60) return '< 1 мин';
     final minutes = (seconds / 60).round();
@@ -237,27 +292,43 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
 }
 
 class _UserMarker extends StatelessWidget {
+  final double heading;
 
-  const _UserMarker();
+  const _UserMarker({this.heading = 0});
+  
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.5),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Center(
-        child: Container(
-          width: 10,
-          height: 10,
-          decoration: const BoxDecoration(
-            color: Colors.blue,
-            shape: BoxShape.circle,
+    return Transform.rotate(
+      angle: _degreesToRadians(heading),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.2),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+               Container(
+                width: 16,
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              // Direction Arrow
+              const Icon(Icons.arrow_upward, size: 14, color: Colors.white),
+            ],
           ),
         ),
       ),
     );
+  }
+  
+  double _degreesToRadians(double degrees) {
+    return degrees * (3.14159 / 180.0);
   }
 }
 
@@ -292,13 +363,13 @@ class _TourControls extends ConsumerWidget {
             children: [
               // Progress Bar
               LinearProgressIndicator(
-                value: totalSteps > 0 ? (state.currentStepIndex / totalSteps) : 0,
+                value: totalSteps > 0 ? ((state.currentStepIndex + 1) / totalSteps) : 0,
                 borderRadius: BorderRadius.circular(4),
               ),
               const SizedBox(height: 8),
               Text(
-                'Остановка ${state.currentStepIndex + 1} из $totalSteps',
-                style: Theme.of(context).textTheme.bodySmall,
+                'Локация ${state.currentStepIndex + 1} из $totalSteps',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
               ),
               
               const SizedBox(height: 16),
@@ -306,8 +377,10 @@ class _TourControls extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   IconButton(
-                    onPressed: () => ref.read(tourModeServiceProvider.notifier).prevStep(),
-                    icon: const Icon(Icons.skip_previous),
+                    onPressed: state.currentStepIndex > 0 
+                        ? () => ref.read(tourModeServiceProvider.notifier).prevStep() 
+                        : null,
+                    icon: const Icon(Icons.skip_previous_rounded, size: 32),
                   ),
                   FloatingActionButton(
                     onPressed: () {
@@ -317,23 +390,25 @@ class _TourControls extends ConsumerWidget {
                          audioHandler.play();
                        }
                     },
+                    elevation: 2,
                     child: isBuffering 
                       ? const CircularProgressIndicator(color: Colors.white) 
-                      : Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                      : Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 36),
                   ),
                   IconButton(
-                    onPressed: () => ref.read(tourModeServiceProvider.notifier).nextStep(),
-                    icon: const Icon(Icons.skip_next),
+                    onPressed: state.currentStepIndex < totalSteps - 1
+                        ? () => ref.read(tourModeServiceProvider.notifier).nextStep()
+                        : null,
+                    icon: const Icon(Icons.skip_next_rounded, size: 32),
                   ),
                 ],
               ),
               TextButton(
                  onPressed: () {
                    ref.read(tourModeServiceProvider.notifier).stopTour();
-                   // Main shell is still under, popping context will probably go back to list or detail.
                    if (context.canPop()) context.pop();
                  },
-                 child: const Text('Завершить тур', style: TextStyle(color: Colors.red)),
+                 child: const Text('Завершить прогулку', style: TextStyle(color: Colors.redAccent)),
               ),
             ],
           ),

@@ -13,12 +13,20 @@ class FreeWalkingState {
   final bool isAutoPlayEnabled;
   final Set<String> playedPoiIds; // Session history
   final Poi? currentTarget;
+  final double activationRadius;
+  final int cooldownMinutes;
+  final List<Poi> recentActivity;
+  final String? statusMessage;
 
   FreeWalkingState({
     this.isActive = false,
     this.isAutoPlayEnabled = true,
     this.playedPoiIds = const {},
     this.currentTarget,
+    this.activationRadius = 50.0,
+    this.cooldownMinutes = 15,
+    this.recentActivity = const [],
+    this.statusMessage,
   });
 
   FreeWalkingState copyWith({
@@ -26,12 +34,20 @@ class FreeWalkingState {
     bool? isAutoPlayEnabled,
     Set<String>? playedPoiIds,
     Poi? currentTarget,
+    double? activationRadius,
+    int? cooldownMinutes,
+    List<Poi>? recentActivity,
+    String? statusMessage,
   }) {
     return FreeWalkingState(
       isActive: isActive ?? this.isActive,
       isAutoPlayEnabled: isAutoPlayEnabled ?? this.isAutoPlayEnabled,
       playedPoiIds: playedPoiIds ?? this.playedPoiIds,
       currentTarget: currentTarget ?? this.currentTarget,
+      activationRadius: activationRadius ?? this.activationRadius,
+      cooldownMinutes: cooldownMinutes ?? this.cooldownMinutes,
+      recentActivity: recentActivity ?? this.recentActivity,
+      statusMessage: statusMessage ?? this.statusMessage,
     );
   }
 }
@@ -40,26 +56,40 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
   final Ref _ref;
   StreamSubscription<Position>? _positionSubscription;
   
+  
   // Configuration
-  static const double TRIGGER_RADIUS_METERS = 50.0;
+  // static const double TRIGGER_RADIUS_METERS = 50.0; // Now in state
   static const double CHECK_INTERVAL_METERS = 10.0;
+  
+  final Map<String, DateTime> _lastPlayedMap = {};
   
   Position? _lastCheckPosition;
 
   FreeWalkingService(this._ref) : super(FreeWalkingState());
 
   void start() {
-    state = state.copyWith(isActive: true);
+    _ref.read(locationServiceProvider).updateBackgroundTracking(true);
+    state = state.copyWith(isActive: true, statusMessage: 'Scanning...');
     _listenToLocation();
   }
 
   void stop() {
-    state = state.copyWith(isActive: false);
+    // We might not want to disable background tracking if user enabled it elsewhere, 
+    // but for now assume this mode manages it.
+    _ref.read(locationServiceProvider).updateBackgroundTracking(false);
+    state = state.copyWith(isActive: false, statusMessage: 'Paused');
     _positionSubscription?.cancel();
   }
   
   void toggleAutoPlay() {
     state = state.copyWith(isAutoPlayEnabled: !state.isAutoPlayEnabled);
+  }
+
+  void updateSettings({double? radius, int? cooldown}) {
+    state = state.copyWith(
+      activationRadius: radius,
+      cooldownMinutes: cooldown,
+    );
   }
 
   void _listenToLocation() {
@@ -88,19 +118,30 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
     final locationService = _ref.read(locationServiceProvider);
     
     // Get candidates from local DB (efficient bounding box)
-    final candidates = await poiRepo.getNearbyCandidates(pos.latitude, pos.longitude, TRIGGER_RADIUS_METERS);
+    // Use slightly larger radius for fetch to ensure we catch edge cases
+    final fetchRadius = state.activationRadius * 1.5;
+    final candidates = await poiRepo.getNearbyCandidates(pos.latitude, pos.longitude, fetchRadius);
     
     // Filter precisely and check history
     Poi? nearest;
     double minDistance = double.infinity;
+    final now = DateTime.now();
 
     for (final poi in candidates) {
       if (state.playedPoiIds.contains(poi.id)) continue;
       
+      // Cooldown check
+      if (_lastPlayedMap.containsKey(poi.id)) {
+        final lastPlayed = _lastPlayedMap[poi.id]!;
+        if (now.difference(lastPlayed).inMinutes < state.cooldownMinutes) {
+          continue;
+        }
+      }
+      
       final dist = locationService.calculateDistance(
           pos.latitude, pos.longitude, poi.lat, poi.lon);
           
-      if (dist <= TRIGGER_RADIUS_METERS && dist < minDistance) {
+      if (dist <= state.activationRadius && dist < minDistance) {
         minDistance = dist;
         nearest = poi;
       }
@@ -108,9 +149,16 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
 
     if (nearest != null) {
       // Trigger!
+      _lastPlayedMap[nearest.id] = now;
+      
+      final newHistory = [nearest, ...state.recentActivity];
+      if (newHistory.length > 10) newHistory.removeLast();
+
       state = state.copyWith(
         playedPoiIds: {...state.playedPoiIds, nearest.id},
-        currentTarget: nearest
+        currentTarget: nearest,
+        recentActivity: newHistory,
+        statusMessage: 'Found: ${nearest.titleRu}',
       );
 
       if (state.isAutoPlayEnabled) {

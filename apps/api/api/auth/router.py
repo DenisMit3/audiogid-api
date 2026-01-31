@@ -69,6 +69,10 @@ class TelegramLogin(BaseModel):
     auth_date: str
     hash: str
 
+class EmailLogin(BaseModel):
+    email: str
+    password: str
+
 @router.post("/auth/login/sms/init")
 async def login_sms_init(req: PhoneInit, session: Session = Depends(get_session)):
     success, msg = await service.initiate_sms_login(session, req.phone)
@@ -155,6 +159,66 @@ def dev_admin_login(
         session.commit()
     
     access_token = create_access_token(user.id, "admin")
+    refresh_token = service.create_refresh_token(user.id)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+@router.post("/auth/login/email")
+def login_email(req: EmailLogin, session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.email == req.email)).first()
+    if not user:
+        # Check against hardcoded default user if DB user doesn't exist
+        # This acts as a fallback or initial seed if the user hasn't been created yet
+        if req.email == "mit333@list.ru" and req.password == "Solnyshko3":
+             # Create user on the fly if not exists?
+             pass # Will handle creation below
+        else:
+             raise HTTPException(status_code=401, detail="Incorrect email or password")
+    
+    verified = False
+    if user and user.hashed_password:
+        verified = service.verify_password(req.password, user.hashed_password)
+    elif req.email == "mit333@list.ru" and req.password == "Solnyshko3":
+        # Create or update user for default credentials
+        if not user:
+            user = User(email=req.email, role="admin", is_active=True)
+            user.hashed_password = service.get_password_hash(req.password)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            
+            # Identity
+            identity = UserIdentity(
+                user_id=user.id, 
+                provider="email", 
+                provider_id=req.email, 
+                last_login=datetime.utcnow()
+            )
+            session.add(identity)
+            session.commit()
+            verified = True
+        else:
+            # User exists but no password set? Update it
+            user.hashed_password = service.get_password_hash(req.password)
+            user.role = "admin" # Ensure admin role
+            session.add(user)
+            session.commit()
+            verified = True
+
+    if not verified:
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+
+    # Update last login
+    if user:
+        identity = session.exec(select(UserIdentity).where(
+            UserIdentity.user_id == user.id,
+            UserIdentity.provider == "email"
+        )).first()
+        if identity:
+            identity.last_login = datetime.utcnow()
+            session.add(identity)
+            session.commit()
+
+    access_token = create_access_token(user.id, user.role)
     refresh_token = service.create_refresh_token(user.id)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 

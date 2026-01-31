@@ -1,3 +1,6 @@
+import 'package:mobile_flutter/presentation/screens/sos_screen.dart';
+import 'package:mobile_flutter/presentation/screens/trusted_contacts_screen.dart';
+import 'package:mobile_flutter/presentation/screens/shared_location_screen.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/screens/city_select_screen.dart';
 import 'package:mobile_flutter/presentation/screens/nearby_screen.dart';
@@ -13,10 +16,13 @@ import 'package:mobile_flutter/presentation/screens/tour_mode_screen.dart';
 import 'package:mobile_flutter/presentation/screens/qr_scanner_screen.dart';
 import 'package:mobile_flutter/presentation/screens/login_screen.dart';
 import 'package:mobile_flutter/presentation/screens/itinerary_screen.dart';
+import 'package:mobile_flutter/presentation/screens/itinerary_create_screen.dart';
+import 'package:mobile_flutter/presentation/screens/itinerary_viewer_screen.dart';
+import 'package:mobile_flutter/presentation/screens/free_walking_mode/free_walking_mode_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/analytics/analytics_observer.dart';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/material.dart';
 
 part 'app_router.g.dart';
 
@@ -104,6 +110,39 @@ GoRouter router(RouterRef ref) {
         path: '/itinerary',
         builder: (context, state) => const ItineraryScreen(),
       ),
+      GoRoute(
+        path: '/itinerary/create',
+        builder: (context, state) => const ItineraryCreateScreen(),
+      ),
+      GoRoute(
+        path: '/itinerary/view/:id',
+        builder: (context, state) => ItineraryViewerScreen(itineraryId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/free_walking',
+        builder: (context, state) => const FreeWalkingModeScreen(),
+      ),
+      GoRoute(
+        path: '/sos',
+        builder: (context, state) => const SosScreen(),
+      ),
+      GoRoute(
+        path: '/trusted_contacts',
+        builder: (context, state) => const TrustedContactsScreen(),
+      ),
+      GoRoute(
+        path: '/share_trip',
+        name: 'share_trip',
+        builder: (context, state) {
+             final lat = double.tryParse(state.uri.queryParameters['lat'] ?? '');
+             final lon = double.tryParse(state.uri.queryParameters['lon'] ?? '');
+             final time = state.uri.queryParameters['time'];
+             if (lat != null && lon != null) {
+                 return SharedLocationScreen(lat: lat, lon: lon, time: time);
+             }
+             return const Scaffold(body: Center(child: Text("Invalid Link")));
+        },
+      ),
 
       // Deep Link Redirects
       GoRoute(
@@ -117,6 +156,10 @@ GoRouter router(RouterRef ref) {
       GoRoute(
         path: '/dl/city/:slug',
         redirect: (context, state) => '/catalog?city=${state.pathParameters['slug']}',
+      ),
+      GoRoute(
+        path: '/dl/itinerary/:id',
+        redirect: (context, state) => '/itinerary/view/${state.pathParameters['id']}',
       ),
     ],
   );

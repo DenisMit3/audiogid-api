@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +8,7 @@ import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/core/audio/audio_player_service.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
+import 'package:mobile_flutter/data/services/notification_service.dart';
 
 class TourModeState {
   final Tour? activeTour;
@@ -70,11 +70,15 @@ class TourModeService extends StateNotifier<TourModeState> {
   StreamSubscription<MediaItem?>? _mediaItemSubscription;
   
   static const double GEOFENCE_RADIUS_METERS = 30.0;
-  static const double OFF_ROUTE_THRESHOLD_METERS = 200.0;
+  static const double OFF_ROUTE_THRESHOLD_METERS = 100.0; 
   static const double PREF_WALKING_SPEED_M_S = 1.4; // approx 5km/h
 
   final Map<int, int> _itemToQueueIndex = {};
   int _queueLength = 0;
+  
+  // Internal state tracking
+  String? _lastAutoPlayPoiId;
+  DateTime? _lastOffRouteNotificationTime;
 
   TourModeService(this._ref) : super(TourModeState());
 
@@ -95,6 +99,8 @@ class TourModeService extends StateNotifier<TourModeState> {
       }
     }
     _queueLength = validPois.length;
+    _lastAutoPlayPoiId = null; 
+    _lastOffRouteNotificationTime = null;
 
     state = TourModeState(
       activeTour: tour,
@@ -124,7 +130,7 @@ class TourModeService extends StateNotifier<TourModeState> {
     state = TourModeState(isActive: false);
     _cancelSubscriptions();
     _ref.read(audioPlayerServiceProvider).stop();
-    _saveProgress(); // Update timestamp/state
+    _ref.read(settingsRepositoryProvider).then((s) => s.clearTourProgress());
   }
   
   void _cancelSubscriptions() {
@@ -134,8 +140,16 @@ class TourModeService extends StateNotifier<TourModeState> {
   }
 
   void toggleAutoPlay() {
-    state = state.copyWith(isAutoPlayEnabled: !state.isAutoPlayEnabled);
+    bool enabled = !state.isAutoPlayEnabled;
+    state = state.copyWith(isAutoPlayEnabled: enabled);
     _saveProgress();
+    
+    // If enabling while inside geo-fence, try playing immediately
+    if (enabled && state.activeTour != null) {
+      if (state.distanceToNextPoi != null && state.distanceToNextPoi! <= GEOFENCE_RADIUS_METERS) {
+         _triggerAutoPlayIfNeeded();
+      }
+    }
   }
 
   void nextStep() {
@@ -147,9 +161,9 @@ class TourModeService extends StateNotifier<TourModeState> {
       final newIndex = state.currentStepIndex + 1;
       state = state.copyWith(currentStepIndex: newIndex);
       _saveProgress();
-      
       _skipToCorrectQueueItem(newIndex);
     } else {
+      // Tour completed
       stopTour();
     }
   }
@@ -160,7 +174,6 @@ class TourModeService extends StateNotifier<TourModeState> {
       final newIndex = state.currentStepIndex - 1;
       state = state.copyWith(currentStepIndex: newIndex);
       _saveProgress();
-      
       _skipToCorrectQueueItem(newIndex);
     }
   }
@@ -195,12 +208,15 @@ class TourModeService extends StateNotifier<TourModeState> {
           : PREF_WALKING_SPEED_M_S;
       
       // Apply Urban Tortuosity Factor (approx 1.3)
-      // Straight line distance (Euclidean) is rarely possible in cities.
       final adjustedDistance = distance * 1.3;
       final eta = adjustedDistance / speed;
 
       // Off-route logic
       final isOffRoute = distance > OFF_ROUTE_THRESHOLD_METERS;
+      if (isOffRoute && !state.isOffRoute) {
+        // Just transitioned to off-route
+        _handleOffRoute();
+      }
       
       state = state.copyWith(
         distanceToNextPoi: distance,
@@ -214,15 +230,38 @@ class TourModeService extends StateNotifier<TourModeState> {
     });
   }
 
+  void _handleOffRoute() {
+    final now = DateTime.now();
+    if (_lastOffRouteNotificationTime == null || 
+        now.difference(_lastOffRouteNotificationTime!) > const Duration(minutes: 5)) {
+        
+        _lastOffRouteNotificationTime = now;
+        _ref.read(notificationServiceProvider).showNotification(
+          id: 12345, // Fixed ID to avoid spamming multiple notifications
+          title: 'Вы отклонились от маршрута',
+          body: 'Вернитесь к точке ${state.currentPoi?.titleRu ?? "маршрута"}',
+          channelId: NotificationChannels.tourReminders,
+          payload: 'tour:${state.activeTour?.id}',
+        );
+    }
+  }
+
   void _triggerAutoPlayIfNeeded() {
+    if (state.currentPoi == null) return;
+    
+    // Prevent re-triggering for the same POI
+    if (_lastAutoPlayPoiId == state.currentPoi!.id) return;
+
     final audioHandler = _ref.read(audioHandlerProvider);
     final playbackState = audioHandler.playbackState.value;
     
+    // Only play if not already playing or processing
     final notPlaying = !playbackState.playing && 
       playbackState.processingState != AudioProcessingState.buffering;
 
     if (notPlaying) {
         audioHandler.play();
+        _lastAutoPlayPoiId = state.currentPoi!.id;
     }
   }
 
@@ -239,12 +278,10 @@ class TourModeService extends StateNotifier<TourModeState> {
         if (items != null) {
           final index = items.indexWhere((item) => item.poi?.id == poiId);
           if (index != -1 && index != state.currentStepIndex) {
+            // Update state to match currently playing audio (user manual skip)
             state = state.copyWith(currentStepIndex: index);
+            _lastAutoPlayPoiId = poiId; // Sync tracking
             _saveProgress();
-            
-            if (state.isAutoPlayEnabled) {
-               audioHandler.pause();
-            }
           }
         }
       }
@@ -254,9 +291,9 @@ class TourModeService extends StateNotifier<TourModeState> {
     _playbackSubscription = audioHandler.playbackState.listen((playbackState) {
       if (playbackState.processingState == AudioProcessingState.completed) {
         if (state.isAutoPlayEnabled) {
-          // Auto-advance to next step after a short delay
+          // Auto-advance
           Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) nextStep();
+            if (mounted && state.isActive) nextStep();
           });
         }
       }

@@ -52,6 +52,10 @@ class PoiRepositoryImpl implements PoiRepository {
         locale: Value(n.locale),
         durationSeconds: Value(n.durationSeconds),
         transcript: Value(n.transcript),
+        // kidsUrl might not be present in generated client yet if not regenerated
+        // Using dynamic cast for safety during transition if needed, 
+        // but ideally client is updated. Assuming updated client:
+        kidsUrl: Value((n as dynamic).kidsUrl), 
       )).toList();
 
       final meds = p.media.map((m) => MediaCompanion(
@@ -140,6 +144,7 @@ class PoiRepositoryImpl implements PoiRepository {
         durationSeconds: n.durationSeconds,
         transcript: n.transcript,
         localPath: n.localPath,
+        kidsUrl: n.kidsUrl,
       )).toList(),
       media: details.media.map((m) => domain.Media(
         id: m.id,
@@ -174,5 +179,16 @@ class PoiRepositoryImpl implements PoiRepository {
       media: [],
       sources: [],
     );
+  }
+  @override
+  Future<List<domain.Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
+    final rows = await db.poiDao.getNearbyCandidates(lat, lon, radiusMeters);
+    return rows.map((p) => _mapRowToDomain(p)).toList();
+  }
+
+  @override
+  Future<List<domain.Poi>> getPoisByIds(List<String> ids) async {
+    final rows = await db.poiDao.getPoisByIds(ids);
+    return rows.map((p) => _mapRowToDomain(p)).toList();
   }
 }

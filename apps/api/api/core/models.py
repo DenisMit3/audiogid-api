@@ -93,6 +93,7 @@ class Narration(SQLModel, table=True):
     poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True)
     locale: str = Field(default="ru")
     url: str
+    kids_url: Optional[str] = None # Kids-friendly version
     duration_seconds: float = Field(default=0.0)
     transcript: Optional[str] = None
     voice_id: Optional[str] = None
@@ -301,6 +302,10 @@ class User(SQLModel, table=True):
     assigned_role: Optional["Role"] = Relationship(back_populates="users")
     identities: List["UserIdentity"] = Relationship(back_populates="user")
     
+    # Email Auth
+    email: Optional[str] = Field(default=None, index=True, sa_column_kwargs={"unique": True})
+    hashed_password: Optional[str] = None
+    
 class UserIdentity(SQLModel, table=True):
     __tablename__ = "user_identities"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -499,3 +504,30 @@ class UserPushToken(SQLModel, table=True):
     platform: str = Field(default="unknown") # android, ios
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
+# --- Itineraries (User Created) ---
+
+class Itinerary(SQLModel, table=True):
+    __tablename__ = "itineraries"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True) 
+    device_anon_id: Optional[str] = Field(default=None, index=True)
+    
+    title: str = "My Trip"
+    city_slug: str = Field(index=True)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    items: List["ItineraryItem"] = Relationship(back_populates="itinerary", sa_relationship_kwargs={"cascade": "all, delete"})
+
+class ItineraryItem(SQLModel, table=True):
+    __tablename__ = "itinerary_items"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    itinerary_id: uuid.UUID = Field(foreign_key="itineraries.id", index=True)
+    poi_id: uuid.UUID = Field(foreign_key="poi.id", index=True)
+    
+    order_index: int
+    
+    itinerary: Optional[Itinerary] = Relationship(back_populates="items")
+    poi: Optional[Poi] = Relationship()

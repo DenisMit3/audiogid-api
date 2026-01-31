@@ -213,6 +213,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const Divider(),
 
+            // Security Section
+            _buildSectionHeader(context, 'Безопасность'),
+            ListTile(
+              title: const Text('Доверенные контакты (SOS)'),
+              subtitle: const Text('Контакты для экстренных уведомлений'),
+              leading: const Icon(Icons.security),
+              onTap: () => context.push('/trusted_contacts'),
+            ),
+            const Divider(),
+
             // General Section
 
             _buildSectionHeader(context, 'О приложении'),

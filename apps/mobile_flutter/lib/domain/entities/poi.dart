@@ -37,6 +37,7 @@ class Narration {
   final double? durationSeconds;
   final String? transcript;
   final String? localPath;
+  final String? kidsUrl;
 
   Narration({
     required this.id,
@@ -45,6 +46,7 @@ class Narration {
     this.durationSeconds,
     this.transcript,
     this.localPath,
+    this.kidsUrl,
   });
 }
 

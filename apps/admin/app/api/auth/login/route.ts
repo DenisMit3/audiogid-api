@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     let endpoint = '/v1/auth/login/dev-admin';
     if ('phone' in body && 'code' in body) endpoint = '/v1/auth/login/sms/verify';
     else if ('hash' in body) endpoint = '/v1/auth/login/telegram';
+    else if ('email' in body && 'password' in body) endpoint = '/v1/auth/login/email';
     else if ('secret' in body) endpoint = '/v1/auth/login/dev-admin';
 
     try {

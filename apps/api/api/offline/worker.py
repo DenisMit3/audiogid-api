@@ -11,7 +11,8 @@ import httpx
 import zipfile
 import asyncio
 
-from ..core.models import Job, City, Poi, Tour
+from ..core.models import Job, City, Poi, Tour, Itinerary, ItineraryItem
+from sqlalchemy.orm import selectinload
 from ..core.config import config
 
 async def process_offline_bundle(session: Session, job: Job):
@@ -32,15 +33,52 @@ async def process_offline_bundle(session: Session, job: Job):
         return
 
     try:
-        # 2. Fetch Data (City, Pois, Tours)
+        # 3. Fetch Data
         city = session.exec(select(City).where(City.slug == city_slug)).first()
         if not city:
             raise ValueError(f"City not found: {city_slug}")
-            
-        pois = session.exec(select(Poi).where(Poi.city_slug == city_slug)).all()
-        tours = session.exec(select(Tour).where(Tour.city_slug == city_slug)).all()
+
+        itinerary_id = payload.get("itinerary_id")
+        tours = []
+        pois = []
         
-        # 3. Construct Manifest Structure
+        if itinerary_id:
+             itinerary = session.exec(
+                select(Itinerary)
+                .where(Itinerary.id == itinerary_id)
+                .options(selectinload(Itinerary.items).joinedload(ItineraryItem.poi).options(selectinload(Poi.media), selectinload(Poi.narrations)))
+             ).first()
+             
+             if not itinerary:
+                 raise ValueError("Itinerary not found")
+                 
+             pois = [item.poi for item in itinerary.items if item.poi]
+             
+             # Mock a Tour object for the manifest
+             # We create a simple object/dict, as serialization below handles object attributes
+             # Using a dynamic class or just creating a Tour instance (not added to session)
+             
+             # We need to construct TourItems manually for the Mock Tour
+             mock_items = []
+             for item in itinerary.items:
+                 mock_items.append(type('MockTourItem', (), {'poi_id': item.poi_id, 'order_index': item.order_index, 'id': item.id}))
+                 
+             tours = [
+                 type('MockTour', (), {
+                    'id': itinerary.id,
+                    'title_ru': itinerary.title,
+                    'description_ru': 'Offline Itinerary',
+                    'duration_minutes': 0,
+                    'items': mock_items
+                 })
+             ]
+             
+        else:
+            # Full City
+            pois = session.exec(select(Poi).where(Poi.city_slug == city_slug).options(selectinload(Poi.media), selectinload(Poi.narrations))).all()
+            tours = session.exec(select(Tour).where(Tour.city_slug == city_slug).options(selectinload(Tour.items))).all()
+        
+        # 4. Construct Manifest Structure
         # MVP: Embed all metadata directly into the manifest. 
         # Future: generate separate files and zip them.
         

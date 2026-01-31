@@ -144,6 +144,27 @@ app.add_middleware(TimeoutMiddleware)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+@app.on_event("startup")
+def run_migrations():
+    # Only run migrations in production usually to avoid accidental dev DB wipes if misconfigured,
+    # but here we specifically want to fix the deployment.
+    # We will log errors but NOT crash the app if migration fails, to allow diagnostics.
+    logger.info("Attempting auto-migration on startup...")
+    try:
+        from alembic.config import Config
+        from alembic import command
+        
+        # Assuming alembic.ini is in the current working directory of the process (apps/api)
+        alembic_cfg = Config("alembic.ini")
+        # Ensure the DB URL is set correctly from the app config
+        alembic_cfg.set_main_option("sqlalchemy.url", config.DATABASE_URL)
+        
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Auto-migration completed successfully.")
+    except Exception as e:
+        logger.error(f"Auto-migration failed: {e}")
+        # We do not raise here, so the app still starts and we can see the error in logs/health check.
+
 # Health check at root
 @app.get("/")
 def root():

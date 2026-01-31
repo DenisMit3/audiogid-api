@@ -231,6 +231,31 @@ def diagnose_routers():
         "public_router": str(public_router) if public_router else "NOT LOADED",
     }
 
+@app.get("/v1/force-migrate")
+def force_migrate():
+    try:
+        from alembic.config import Config
+        from alembic import command
+        
+        # Determine the absolute path to alembic.ini based on where index.py is
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        ini_path = os.path.join(base_dir, "alembic.ini")
+        
+        logger.info(f"Using alembic.ini at: {ini_path}")
+        
+        alembic_cfg = Config(ini_path)
+        alembic_cfg.set_main_option("sqlalchemy.url", config.DATABASE_URL)
+        # We need to set the script location relative to the config file or absolute
+        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "migrations"))
+
+        command.upgrade(alembic_cfg, "head")
+        return {"status": "success", "message": "Migration completed"}
+    except Exception as e:
+        import traceback
+        logger.error(f"Manual migration failed: {e}")
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/api/diagnose-routes")
 def diagnose_routes():
     routes = []

@@ -389,7 +389,7 @@ def duplicate_tour(tour_id: uuid.UUID, session: Session = Depends(get_session), 
         
     # 3. Clone Media
     for m in tour.media:
-        session.add(TourMedia(tour_id=new_tour.id, tour_id=new_tour.id, url=m.url, media_type=m.media_type, license_type=m.license_type, author=m.author, source_page_url=m.source_page_url))
+        session.add(TourMedia(tour_id=new_tour.id, url=m.url, media_type=m.media_type, license_type=m.license_type, author=m.author, source_page_url=m.source_page_url))
         
     # 4. Clone Items
     for i in tour.items:

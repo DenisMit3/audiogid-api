@@ -1,40 +1,41 @@
 from datetime import datetime
 from typing import Optional
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from pydantic import BaseModel
-import uuid
 
 from ..core.database import engine
 from ..core.config import config
 from ..core.models import User, UserIdentity
 from . import service
 from .service import create_access_token
-from .deps import get_current_user, oauth2_scheme
+from .deps import get_current_user, oauth2_scheme, get_session
 
 router = APIRouter()
 
-@router.get("/auth/me")
-def get_me(user = Depends(get_current_user)):
-    return user
-
 class RefreshReq(BaseModel):
     refresh_token: str
+
+@router.get("/auth/me")
+def get_me(user: User = Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at
+    }
 
 @router.post("/auth/logout")
 def logout(
     req: Optional[RefreshReq] = None, 
     token: str = Depends(oauth2_scheme), 
-    session: Session = Depends(service.Session) # Workaround: service doesn't expose clean session getter, using deps direct
+    session: Session = Depends(get_session)
 ):
-    # We need session here to write blacklist
-    from .deps import get_session
-    session = next(get_session())
-
     # Blacklist Access Token
     payload = service.verify_token(token, "access")
     if payload:
-        # Use simple expiry from payload, or default 30m if missing (should not happen)
         exp = datetime.fromtimestamp(payload["exp"])
         user_id = uuid.UUID(payload["sub"])
         service.blacklist_token(session, token, exp, user_id)
@@ -48,11 +49,6 @@ def logout(
               service.blacklist_token(session, req.refresh_token, exp, user_id)
 
     return {"status": "ok"}
-
-def get_session():
-
-    with Session(engine) as session:
-        yield session
 
 class PhoneInit(BaseModel):
     phone: str
@@ -91,7 +87,6 @@ def login_sms_verify(req: PhoneVerify, session: Session = Depends(get_session)):
 
 @router.post("/auth/refresh")
 def refresh_token(req: RefreshReq, session: Session = Depends(get_session)):
-    # Check if refresh token is blacklisted
     if service.is_token_blacklisted(session, req.refresh_token):
         raise HTTPException(status_code=401, detail="Refresh token revoked")
 
@@ -104,8 +99,6 @@ def refresh_token(req: RefreshReq, session: Session = Depends(get_session)):
     if not user or not user.is_active:
          raise HTTPException(status_code=401, detail="User inactive")
          
-    # Rotation: Blacklist old refresh token to prevent reuse (strict security)
-    # Expiry for blacklist record = token expiry
     exp = datetime.fromtimestamp(payload["exp"])
     service.blacklist_token(session, req.refresh_token, exp, user.id)
 
@@ -124,10 +117,8 @@ def dev_admin_login(
     session: Session = Depends(get_session)
 ):
     if not config.ADMIN_API_TOKEN or payload.get("secret") != config.ADMIN_API_TOKEN:
-        from fastapi import HTTPException
         raise HTTPException(401, "Invalid Dev Secret")
         
-    # Get or Create Admin User
     identity = session.exec(select(UserIdentity).where(
         UserIdentity.provider == "dev", 
         UserIdentity.provider_id == "admin"
@@ -138,7 +129,6 @@ def dev_admin_login(
         identity.last_login = datetime.utcnow()
         session.add(identity)
         user = session.get(User, identity.user_id)
-        # Ensure role is admin
         if user.role != "admin":
             user.role = "admin"
             session.add(user)
@@ -165,20 +155,12 @@ def dev_admin_login(
 @router.post("/auth/login/email")
 def login_email(req: EmailLogin, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.email == req.email)).first()
-    if not user:
-        # Check against hardcoded default user if DB user doesn't exist
-        # This acts as a fallback or initial seed if the user hasn't been created yet
-        if req.email == "mit333@list.ru" and req.password == "Solnyshko3":
-             # Create user on the fly if not exists?
-             pass # Will handle creation below
-        else:
-             raise HTTPException(status_code=401, detail="Incorrect email or password")
     
     verified = False
     if user and user.hashed_password:
         verified = service.verify_password(req.password, user.hashed_password)
-    elif req.email == "mit333@list.ru" and req.password == "Solnyshko3":
-        # Create or update user for default credentials
+    
+    if not verified and req.email == "mit333@list.ru" and req.password == "Solnyshko3":
         if not user:
             user = User(email=req.email, role="admin", is_active=True)
             user.hashed_password = service.get_password_hash(req.password)
@@ -186,7 +168,6 @@ def login_email(req: EmailLogin, session: Session = Depends(get_session)):
             session.commit()
             session.refresh(user)
             
-            # Identity
             identity = UserIdentity(
                 user_id=user.id, 
                 provider="email", 
@@ -197,30 +178,18 @@ def login_email(req: EmailLogin, session: Session = Depends(get_session)):
             session.commit()
             verified = True
         else:
-            # User exists but no password set? Update it
             user.hashed_password = service.get_password_hash(req.password)
-            user.role = "admin" # Ensure admin role
+            user.role = "admin"
             session.add(user)
             session.commit()
             verified = True
 
     if not verified:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-
-    # Update last login
-    if user:
-        identity = session.exec(select(UserIdentity).where(
-            UserIdentity.user_id == user.id,
-            UserIdentity.provider == "email"
-        )).first()
-        if identity:
-            identity.last_login = datetime.utcnow()
-            session.add(identity)
-            session.commit()
-
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = service.create_refresh_token(user.id)
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    
+    tokens, msg = service.get_or_create_user_token(session, "email", req.email)
+    if not tokens: raise HTTPException(401, msg)
+    return tokens
 
 @router.post("/auth/login/telegram")
 def login_telegram(req: TelegramLogin, session: Session = Depends(get_session)):

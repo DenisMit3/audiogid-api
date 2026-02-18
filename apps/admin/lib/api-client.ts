@@ -1,7 +1,10 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// Use proxy in browser to support HttpOnly cookies and avoid CORS/CSP issues
+const API_BASE_URL = (typeof window !== 'undefined')
+  ? '/api/proxy'
+  : (process.env.NEXT_PUBLIC_API_URL || '');
 
 if (!API_BASE_URL && typeof window !== 'undefined') {
-  console.warn("NEXT_PUBLIC_API_URL is not set");
+  console.warn("API base URL is not set");
 }
 
 export type FetchOptions = RequestInit & {
@@ -12,12 +15,13 @@ export async function apiClient<T>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T | null> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  // Ensure endpoint starts with / for joining
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${cleanEndpoint}`;
 
+  // If in browser, the proxy handles the token from HttpOnly cookie automatically.
+  // We only pull token from options if manually provided (e.g. for specific overrides).
   let token = options.token;
-  if (!token && typeof window !== 'undefined') {
-    token = localStorage.getItem('admin_token') || undefined;
-  }
 
   const headers = new Headers(options.headers);
   if (token) {

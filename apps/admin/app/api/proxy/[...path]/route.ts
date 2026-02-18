@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+const BACKEND_URL = ENV_API_URL.endsWith('/v1') ? ENV_API_URL : `${ENV_API_URL}/v1`;
 
 
 export async function GET(request: Request, { params }: { params: { path: string[] } }) {
@@ -41,7 +42,25 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
         const url = new URL(request.url);
         const query = url.search;
 
-        const res = await fetch(`${BACKEND_URL}/${path}${query}`, {
+        const path = pathSegments.join('/');
+
+        // Robust URL joining
+        let base = BACKEND_URL;
+        if (base.endsWith('/')) base = base.slice(0, -1);
+
+        let targetPath = path;
+        if (targetPath.startsWith('/')) targetPath = targetPath.slice(1);
+
+        // Handle potential double /v1 if path already includes it and base also has it
+        if (base.endsWith('/v1') && targetPath.startsWith('v1/')) {
+            targetPath = targetPath.slice(3);
+        } else if (base.endsWith('/v1') && targetPath === 'v1') {
+            targetPath = '';
+        }
+
+        const finalUrl = `${base}/${targetPath}${query}`;
+
+        const res = await fetch(finalUrl, {
             method,
             headers,
             body
@@ -49,8 +68,10 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
 
         const data = await res.json().catch(() => ({}));
 
-        return NextResponse.json(data, { status: res.status });
+        const response = NextResponse.json(data, { status: res.status });
+        response.headers.set('X-Debug-Upstream-Url', finalUrl);
+        return response;
     } catch (e) {
-        return NextResponse.json({ error: 'Proxy Error' }, { status: 502 });
+        return NextResponse.json({ error: 'Proxy Error', details: String(e) }, { status: 502 });
     }
 }

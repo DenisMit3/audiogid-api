@@ -145,7 +145,7 @@ type Props = {
     onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number }) => void;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 // throw removed for build
 
 export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {

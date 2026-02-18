@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 
 // Schema for Push Settings
 const notificationsSchema = z.object({

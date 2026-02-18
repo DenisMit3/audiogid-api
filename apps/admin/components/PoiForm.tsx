@@ -44,7 +44,7 @@ const LocationPicker = dynamic(() => import('./location-picker').then(mod => mod
 });
 import { PublishCheckModal } from './publish-check-modal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 // throw removed for build
 
 const poiSchema = z.object({

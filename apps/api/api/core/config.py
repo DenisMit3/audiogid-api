@@ -43,12 +43,12 @@ class AppConfig:
         # Auth (PR-58)
         self.SMS_RU_API_KEY = os.getenv("SMS_RU_API_KEY")
         self.TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-        self.JWT_SECRET = os.getenv("JWT_SECRET")
+        self.JWT_SECRET = (os.getenv("JWT_SECRET") or "").strip()
         if self.JWT_SECRET and len(self.JWT_SECRET) < 32:
             raise RuntimeError("CRITICAL: JWT_SECRET must be at least 32 characters long.")
         if not self.JWT_SECRET and os.getenv("VERCEL_ENV") == "production":
             raise RuntimeError("CRITICAL: JWT_SECRET is required in production.") 
-        self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+        self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256").strip()
         self.OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))
         
         # Monitoring

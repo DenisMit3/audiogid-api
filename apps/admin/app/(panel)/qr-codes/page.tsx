@@ -32,7 +32,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from '@/components/ui/label';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 
 type QRMapping = {
     id: string;

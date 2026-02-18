@@ -43,7 +43,7 @@ type Props = {
     media: MediaItem[];
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 // throw removed for build
 
 export function MediaUploader({ entityId, entityType, media: initialMedia }: Props) {

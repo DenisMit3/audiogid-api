@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, Query, HTTPException, Request, BackgroundTasks
-from sqlmodel import Session, select, text, func
+from sqlmodel import Session, select, text, func, SQLModel
 from sqlalchemy.orm import selectinload, joinedload
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -13,7 +13,49 @@ from .core.database import engine
 
 from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent, TourItem, Itinerary, ItineraryItem
 from .core.caching import redis_client
-import json
+from .core.security import sign_asset_url
+from .core.caching import SCHEMA_VERSION, generate_version_marker, check_etag_versioned
+
+router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+def check_access(session: Session, city: str, device_anon_id: Optional[str], tour_id: Optional[uuid.UUID] = None) -> bool:
+    """
+    Checks if a device has an active entitlement for a city or a specific tour.
+    Admin bypass is handled at middleware or auth level if needed, 
+    but for public manifest endpoints we check device_anon_id.
+    """
+    if not device_anon_id:
+        return False
+        
+    # 1. Check City-wide access
+    query = select(EntitlementGrant).where(
+        EntitlementGrant.device_anon_id == device_anon_id,
+        EntitlementGrant.revoked_at == None
+    ).join(Entitlement).where(
+        Entitlement.scope == "city",
+        Entitlement.ref == city
+    )
+    if session.exec(query).first():
+        return True
+        
+    # 2. Check Specific Tour access if tour_id is provided
+    if tour_id:
+        query = select(EntitlementGrant).where(
+            EntitlementGrant.device_anon_id == device_anon_id,
+            EntitlementGrant.revoked_at == None
+        ).join(Entitlement).where(
+            Entitlement.scope == "tour",
+            Entitlement.ref == str(tour_id)
+        )
+        if session.exec(query).first():
+            return True
+            
+    return False
 
 def log_analytics_bg(event_data: dict):
     with Session(engine) as session:
@@ -23,8 +65,6 @@ def log_analytics_bg(event_data: dict):
              session.commit()
         except Exception as e:
             print(f"Failed to log event: {e}")
-
-# ...
 
 @router.get("/public/tours/{tour_id}/manifest")
 @limiter.limit("20/minute") # Heavy bundle data
@@ -158,7 +198,7 @@ def get_poi_detail(response: Response, request: Request, poi_id: uuid.UUID,
 
 @router.get("/public/nearby")
 @limiter.limit("50/minute") # Geo-postgis is somewhat expensive
-def get_nearby(response: Response, city: str = Query(...), lat: float = Query(...), lon: float = Query(...), radius_m: int = Query(1000, le=5000), session: Session = Depends(get_session)):
+def get_nearby(response: Response, request: Request, city: str = Query(...), lat: float = Query(...), lon: float = Query(...), radius_m: int = Query(1000, le=5000), session: Session = Depends(get_session)):
     # KNN Optimization: Use <-> operator for nearest neighbor search, then filter by radius.
     # This is much faster than checking ST_DWithin on entire table first if index exists.
     # Logic: Get nearest 50 points, then verify they are within radius.

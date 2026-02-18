@@ -7,11 +7,12 @@ from pydantic import BaseModel
 
 from ..core.database import engine
 
-from ..core.models import AnalyticsDailyStats, ContentEvent
-from ..analytics.aggregation import run_daily_aggregation, calculate_cohorts, calculate_retention, calculate_funnel_stats, Poi, Tour, AppEvent, User, UserCohort, RetentionMatrix, Funnel, FunnelStep, FunnelConversion
-# ... (rest of imports)
+from ..core.models import AnalyticsDailyStats, ContentEvent, Poi, Tour, AppEvent, User, UserCohort, RetentionMatrix, Funnel, FunnelStep, FunnelConversion
+from ..analytics.aggregation import run_daily_aggregation, calculate_cohorts, calculate_retention, calculate_funnel_stats
+from ..auth.deps import get_session, require_permission
+import uuid
 
-# ... (Previous endpoints)
+router = APIRouter()
 
 class FunnelStepCreate(BaseModel):
     order_index: int
@@ -147,7 +148,7 @@ def get_cohorts(session: Session = Depends(get_session)):
     return session.exec(select(UserCohort.cohort_date, func.count()).where(UserCohort.cohort_date >= cutoff).group_by(UserCohort.cohort_date)).all()
 
 
-router = APIRouter()
+# Additional router setup or comments if needed
 
 class OverviewKPIs(BaseModel):
     dau: int

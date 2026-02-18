@@ -24,7 +24,7 @@ def upgrade() -> None:
         'blacklisted_tokens',
         sa.Column('token_hash', sa.String(), nullable=False),
         sa.Column('expires_at', sa.DateTime(), nullable=False),
-        sa.Column('user_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column('user_id', sa.UUID(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('token_hash')
     )

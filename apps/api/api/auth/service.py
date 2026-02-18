@@ -22,7 +22,8 @@ if not SECRET_KEY:
     logger.warning("JWT_SECRET not set! Auth will likely fail to sign tokens.")
 
 from passlib.context import CryptContext
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+# Using pbkdf2_sha256 instead of bcrypt to avoid "ValueError: password cannot be longer than 72 bytes" issues on some serverless environments
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)

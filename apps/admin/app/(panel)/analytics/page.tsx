@@ -27,7 +27,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 
 type KPI = {
     dau: number;

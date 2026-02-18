@@ -36,7 +36,7 @@ import { SourcesManager } from './sources-manager';
 import { RouteBuilder } from './route-builder';
 import { PublishCheckModal } from './publish-check-modal';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 // throw removed for build
 
 const tourSchema = z.object({

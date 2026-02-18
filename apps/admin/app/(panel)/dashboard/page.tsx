@@ -28,23 +28,16 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-// throw removed for build
+const API_URL = '/api/proxy';
 
 const fetchOverview = async () => {
-    const token = localStorage.getItem('admin_token');
-    const res = await fetch(`${API_URL}/admin/analytics/overview`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch(`${API_URL}/admin/analytics/overview`);
     if (!res.ok) throw new Error("Failed to fetch analytics");
     return res.json();
 };
 
 const fetchActivity = async () => {
-    const token = localStorage.getItem('admin_token');
-    const res = await fetch(`${API_URL}/admin/audit/logs?limit=5`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch(`${API_URL}/admin/audit/logs?limit=5`);
     if (!res.ok) return [];
     return res.json();
 };

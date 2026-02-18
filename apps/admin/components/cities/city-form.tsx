@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = '/api/proxy';
 
 const citySchema = z.object({
     slug: z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-_]+$/, "Slug must use only lowercase letters, numbers, hyphens or underscores"),

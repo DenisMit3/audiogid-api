@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from qstash import Receiver
 import logging
 import os
@@ -132,6 +132,7 @@ if os.getenv("VERCEL_ENV") == "preview":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -203,14 +204,9 @@ def diagnose_admin():
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
-@app.get("/api/diagnose-routers")
-def diagnose_routers():
-    return {
-        "admin_pois_router": str(admin_pois_router) if admin_pois_router else "NOT LOADED",
-        "admin_tours_router": str(admin_tours_router) if admin_tours_router else "NOT LOADED",
-        "auth_router": str(auth_router) if auth_router else "NOT LOADED",
-        "public_router": str(public_router) if public_router else "NOT LOADED",
-    }
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "version": "1.15.6"}
 
 @app.get("/v1/force-migrate")
 def force_migrate():
@@ -236,6 +232,27 @@ def force_migrate():
         import traceback
         logger.error(f"Manual migration failed: {e}")
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+@app.get("/api/diagnose-routers")
+def diagnose_routers():
+    import importlib
+    results = {}
+    for name, path in [
+        ("admin_analytics_router", "api.admin.analytics"),
+        ("admin_audit_router", "api.admin.audit"),
+        ("auth_router", "api.auth.router"),
+        ("public_router", "api.public")
+    ]:
+        try:
+            mod = importlib.import_module(path)
+            results[name] = f"LOADED: {getattr(mod, 'router', 'NO ROUTER ATTR')}"
+        except Exception as e:
+            import traceback
+            results[name] = f"ERROR: {str(e)}\n{traceback.format_exc()}"
+            
+    # Also check app.routes
+    routes = [r.path for r in app.routes if hasattr(r, "path")]
+    return {"modules": results, "mounted_routes_sample": routes[:50]}
 
 @app.get("/api/diagnose-routes")
 def diagnose_routes():

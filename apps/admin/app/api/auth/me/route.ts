@@ -9,28 +9,27 @@ export async function GET(request: Request) {
 
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    // Proxy to backend /admin/me or decode locally if we had secret.
-    // Ideally we call Backend.
-    // Note: We need to pass the Cookie header to the backend.
+    const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+    const BACKEND_URL = ENV_API_URL.endsWith('/v1') ? ENV_API_URL : `${ENV_API_URL}/v1`;
 
-    // Fallback: If backend doesn't have /me yet (Step 1 didn't explicitly add it but we have get_current_user),
-    // we can add it OR decode if we share secret.
-    // Safe bet: Fetch from backend /admin/me (we need to add this endpoint or use /auth/me).
+    if (!BACKEND_URL) return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
 
-    // Let's assume we proxy to /api/users/me or similar.
-    // Or simpler: We added `get_current_user` in deps.
-    // Let's try GET /admin/profile ?
+    try {
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token.value}`
+            }
+        });
 
-    // For this Turn, I'll mock the response based on the token presence 
-    // OR try to hit an existing endpoint.
-    // But honestly, the cleanest is to add a proper /me endpoint in Backend next turn or now.
-    // For now, I'll return a dummy user with role='admin' to unblock UI dev.
-    // TODO: Connect to real backend /me
+        if (!res.ok) {
+            return NextResponse.json({ error: 'Failed to fetch user' }, { status: res.status });
+        }
 
-    return NextResponse.json({
-        id: '123',
-        role: 'admin',
-        first_name: 'Admin',
-        username: 'admin'
-    });
+        const data = await res.json();
+        const response = NextResponse.json(data);
+        response.headers.set('X-Debug-Url', `${BACKEND_URL}/auth/me`);
+        return response;
+    } catch (e) {
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
 }

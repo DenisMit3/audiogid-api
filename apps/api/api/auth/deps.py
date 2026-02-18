@@ -8,7 +8,7 @@ from ..core.models import User, Permission, RolePermission
 from ..core.config import config
 from . import service  # Import service for blacklist check
 import uuid
-import jwt # pip install pyjwt
+from jose import jwt
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
 

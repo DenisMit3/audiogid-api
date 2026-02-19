@@ -30,7 +30,8 @@ export function DebugPanel() {
     useEffect(() => {
         setLogs(logger.getLogs());
         setEnabled(logger.isEnabled());
-        return logger.subscribe(setLogs);
+        const unsub = logger.subscribe(setLogs);
+        return () => { unsub(); };
     }, []);
 
     const filteredLogs = filter === 'all' ? logs : logs.filter(l => l.level === filter);

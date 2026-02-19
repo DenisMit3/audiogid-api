@@ -35,12 +35,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const API_URL = '/api/proxy';
 
 const citySchema = z.object({
-    slug: z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-_]+$/, "Slug must use only lowercase letters, numbers, hyphens or underscores"),
-    name_ru: z.string().min(2, "Name (RU) must be at least 2 characters"),
+    slug: z.string().min(2, "Slug должен содержать минимум 2 символа").regex(/^[a-z0-9-_]+$/, "Slug должен содержать только строчные буквы, цифры, дефисы или подчёркивания"),
+    name_ru: z.string().min(2, "Название (RU) должно содержать минимум 2 символа"),
     name_en: z.string().optional(),
     description_ru: z.string().optional(),
     description_en: z.string().optional(),
-    cover_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    cover_image: z.string().url("Должен быть корректный URL").optional().or(z.literal("")),
     timezone: z.string().optional(),
     is_active: z.boolean().default(true),
 
@@ -103,21 +103,21 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
 
             if (!res.ok) {
                 const error = await res.json();
-                throw new Error(error.detail || 'Failed to save city');
+                throw new Error(error.detail || 'Не удалось сохранить город');
             }
             return res.json();
         },
         onSuccess: (data) => {
             toast({
-                title: isEdit ? "City updated" : "City created",
-                description: `Successfully saved ${data.name_ru}`,
+                title: isEdit ? "Город обновлён" : "Город создан",
+                description: `Успешно сохранено: ${data.name_ru}`,
             });
             queryClient.invalidateQueries({ queryKey: ['cities'] });
             router.push('/cities');
         },
         onError: (error) => {
             toast({
-                title: "Error",
+                title: "Ошибка",
                 description: error.message,
                 variant: "destructive",
             });
@@ -133,17 +133,17 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <Tabs defaultValue="general" className="w-full">
                     <TabsList>
-                        <TabsTrigger value="general">General</TabsTrigger>
-                        <TabsTrigger value="details">Details & Media</TabsTrigger>
-                        <TabsTrigger value="map">Map Configuration</TabsTrigger>
+                        <TabsTrigger value="general">Основное</TabsTrigger>
+                        <TabsTrigger value="details">Детали и медиа</TabsTrigger>
+                        <TabsTrigger value="map">Настройки карты</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="general" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Basic Information</CardTitle>
+                                <CardTitle>Основная информация</CardTitle>
                                 <CardDescription>
-                                    Core settings for the city or region.
+                                    Основные настройки города или региона.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-6">
@@ -152,12 +152,12 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                     name="slug"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Slug</FormLabel>
+                                            <FormLabel>Слаг</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="moscow" {...field} disabled={isEdit} />
                                             </FormControl>
                                             <FormDescription>
-                                                Unique identifier used in URLs. Cannot be changed after creation.
+                                                Уникальный идентификатор для URL. Нельзя изменить после создания.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -169,7 +169,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="name_ru"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Name (Russian)</FormLabel>
+                                                <FormLabel>Название (русский)</FormLabel>
                                                 <FormControl>
                                                     <Input placeholder="Москва" {...field} />
                                                 </FormControl>
@@ -182,7 +182,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="name_en"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Name (English)</FormLabel>
+                                                <FormLabel>Название (английский)</FormLabel>
                                                 <FormControl>
                                                     <Input placeholder="Moscow" {...field} />
                                                 </FormControl>
@@ -197,7 +197,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="timezone"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Timezone</FormLabel>
+                                                <FormLabel>Часовой пояс</FormLabel>
                                                 <FormControl>
                                                     <Input placeholder="Europe/Moscow" {...field} />
                                                 </FormControl>
@@ -211,9 +211,9 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         render={({ field }) => (
                                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm h-[88px] mt-2">
                                                 <div className="space-y-0.5">
-                                                    <FormLabel className="text-base">Active Status</FormLabel>
+                                                    <FormLabel className="text-base">Статус активности</FormLabel>
                                                     <FormDescription>
-                                                        Visible to users in the app.
+                                                        Видимость для пользователей в приложении.
                                                     </FormDescription>
                                                 </div>
                                                 <FormControl>
@@ -233,7 +233,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                     <TabsContent value="details" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Details & Content</CardTitle>
+                                <CardTitle>Детали и контент</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-6">
                                 <FormField
@@ -241,10 +241,10 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                     name="description_ru"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Description (Russian)</FormLabel>
+                                            <FormLabel>Описание (русский)</FormLabel>
                                             <FormControl>
                                                 <Textarea
-                                                    placeholder="Describe the city..."
+                                                    placeholder="Опишите город..."
                                                     className="resize-none h-32"
                                                     {...field}
                                                 />
@@ -258,10 +258,10 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                     name="description_en"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Description (English)</FormLabel>
+                                            <FormLabel>Описание (английский)</FormLabel>
                                             <FormControl>
                                                 <Textarea
-                                                    placeholder="Describe the city in English..."
+                                                    placeholder="Опишите город на английском..."
                                                     className="resize-none h-32"
                                                     {...field}
                                                 />
@@ -275,12 +275,12 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                     name="cover_image"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Cover Image URL</FormLabel>
+                                            <FormLabel>URL обложки</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="https://..." {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                URL to the main cover image for the city card.
+                                                URL главного изображения для карточки города.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -293,9 +293,9 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                     <TabsContent value="map" className="space-y-4">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Map Configuration</CardTitle>
+                                <CardTitle>Настройки карты</CardTitle>
                                 <CardDescription>
-                                    Define the default view and boundaries for this city.
+                                    Задайте вид по умолчанию и границы для города.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-6">
@@ -305,7 +305,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="bounds_lat_min"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Min Latitude</FormLabel>
+                                                <FormLabel>Мин. широта</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" step="0.000001" {...field} />
                                                 </FormControl>
@@ -318,7 +318,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="bounds_lat_max"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Max Latitude</FormLabel>
+                                                <FormLabel>Макс. широта</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" step="0.000001" {...field} />
                                                 </FormControl>
@@ -331,7 +331,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="bounds_lon_min"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Min Longitude</FormLabel>
+                                                <FormLabel>Мин. долгота</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" step="0.000001" {...field} />
                                                 </FormControl>
@@ -344,7 +344,7 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                         name="bounds_lon_max"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Max Longitude</FormLabel>
+                                                <FormLabel>Макс. долгота</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" step="0.000001" {...field} />
                                                 </FormControl>
@@ -358,12 +358,12 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
                                     name="default_zoom"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Default Zoom Level</FormLabel>
+                                            <FormLabel>Масштаб по умолчанию</FormLabel>
                                             <FormControl>
                                                 <Input type="number" step="0.1" {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                Between 1 (World) and 20 (Building). Typical city is 11-13.
+                                                От 1 (мир) до 20 (здание). Типичный город: 11-13.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -376,11 +376,11 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
 
                 <div className="flex justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.back()}>
-                        Cancel
+                        Отмена
                     </Button>
                     <Button type="submit" disabled={mutation.isPending}>
                         {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isEdit ? "Update City" : "Create City"}
+                        {isEdit ? "Обновить город" : "Создать город"}
                     </Button>
                 </div>
             </form>

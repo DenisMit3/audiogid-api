@@ -15,7 +15,7 @@ export default function PoiCreatePage() {
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                 </Link>
-                <h1 className="text-2xl font-bold tracking-tight">Create New POI</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Создать новую точку</h1>
             </div>
 
             <PoiForm />

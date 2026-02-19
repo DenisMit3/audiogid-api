@@ -61,7 +61,7 @@ const fetchUsers = async (search: string = "") => {
     const res = await fetch(`${API_URL}/admin/users${query}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error("Failed to fetch users");
+    if (!res.ok) throw new Error("Не удалось загрузить пользователей");
     return res.json();
 };
 
@@ -100,16 +100,16 @@ export default function UsersPage() {
                 },
                 body: JSON.stringify(data)
             });
-            if (!res.ok) throw new Error("Failed to update user");
+            if (!res.ok) throw new Error("Не удалось обновить пользователя");
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            toast({ title: "User updated" });
+            toast({ title: "Пользователь обновлён" });
             setRoleDialogOpen(false);
         },
         onError: (err) => {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка", description: err.message, variant: "destructive" });
         }
     });
 
@@ -119,7 +119,7 @@ export default function UsersPage() {
     };
 
     const handleToggleActive = (user: User) => {
-        if (!confirm(`Are you sure you want to ${user.is_active ? 'deactivate' : 'activate'} this user?`)) return;
+        if (!confirm(`Вы уверены, что хотите ${user.is_active ? 'деактивировать' : 'активировать'} этого пользователя?`)) return;
         updateMutation.mutate({ id: user.id, data: { is_active: !user.is_active } });
     };
 
@@ -132,10 +132,10 @@ export default function UsersPage() {
     return (
         <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Пользователи</h1>
                 <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
-                        placeholder="Search users..."
+                        placeholder="Поиск пользователей..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -143,7 +143,7 @@ export default function UsersPage() {
             </div>
 
             <Card>
-                <CardHeader><CardTitle>All Users</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Все пользователи</CardTitle></CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="space-y-2">
@@ -155,18 +155,18 @@ export default function UsersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>ID / Phone</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Last Login</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>ID / Телефон</TableHead>
+                                    <TableHead>Роль</TableHead>
+                                    <TableHead>Статус</TableHead>
+                                    <TableHead>Последний вход</TableHead>
+                                    <TableHead className="text-right">Действия</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {users?.map((user: User) => (
                                     <TableRow key={user.id}>
                                         <TableCell>
-                                            <div className="font-medium">{user.phone || 'No phone'}</div>
+                                            <div className="font-medium">{user.phone || 'Нет телефона'}</div>
                                             <div className="text-xs text-muted-foreground font-mono">{user.id.slice(0, 8)}...</div>
                                         </TableCell>
                                         <TableCell>
@@ -174,27 +174,27 @@ export default function UsersPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge className={user.is_active ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-red-100 text-red-800 hover:bg-red-100"}>
-                                                {user.is_active ? 'Active' : 'Banned'}
+                                                {user.is_active ? 'Активен' : 'Заблокирован'}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</TableCell>
+                                        <TableCell>{user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Никогда'}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
+                                                        <span className="sr-only">Открыть меню</span>
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuLabel>Действия</DropdownMenuLabel>
                                                     <DropdownMenuItem onClick={() => openRoleDialog(user)}>
-                                                        <Shield className="mr-2 h-4 w-4" /> Change Role
+                                                        <Shield className="mr-2 h-4 w-4" /> Изменить роль
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-red-600">
                                                         <UserX className="mr-2 h-4 w-4" />
-                                                        {user.is_active ? 'Deactivate' : 'Activate'}
+                                                        {user.is_active ? 'Деактивировать' : 'Активировать'}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -210,29 +210,29 @@ export default function UsersPage() {
             <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Change Role</DialogTitle>
+                        <DialogTitle>Изменить роль</DialogTitle>
                         <DialogDescription>
-                            Assign a new role to this user. This affects permissions immediately.
+                            Назначьте новую роль пользователю. Права изменятся немедленно.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <Select value={newRole} onValueChange={setNewRole}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select role" />
+                                <SelectValue placeholder="Выберите роль" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="editor">Editor</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="superadmin">Super Admin</SelectItem>
+                                <SelectItem value="user">Пользователь</SelectItem>
+                                <SelectItem value="editor">Редактор</SelectItem>
+                                <SelectItem value="admin">Администратор</SelectItem>
+                                <SelectItem value="superadmin">Суперадмин</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>Отмена</Button>
                         <Button onClick={handleRoleChange} disabled={updateMutation.isPending}>
                             {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save changes
+                            Сохранить
                         </Button>
                     </DialogFooter>
                 </DialogContent>

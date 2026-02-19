@@ -51,7 +51,7 @@ const fetchQRs = async ({ page, search }: { page: number, search: string }) => {
     const res = await fetch(`${API_URL}/admin/qr?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error("Failed to fetch QRs");
+    if (!res.ok) throw new Error("Не удалось загрузить QR-коды");
     return res.json();
 };
 
@@ -86,7 +86,7 @@ export default function QRManagementPage() {
                     label
                 })
             });
-            if (!res.ok) throw new Error("Create failed");
+            if (!res.ok) throw new Error("Не удалось создать");
             return res.json();
         },
         onSuccess: () => {
@@ -103,11 +103,11 @@ export default function QRManagementPage() {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
             });
-            if (!res.ok) throw new Error("Bulk generate failed");
+            if (!res.ok) throw new Error("Не удалось сгенерировать массово");
             return res.json();
         },
         onSuccess: (data) => {
-            alert(`Generated ${data.created_count} missing QR codes!`);
+            alert(`Сгенерировано ${data.created_count} недостающих QR-кодов!`);
             queryClient.invalidateQueries({ queryKey: ['qrs'] });
         }
     });
@@ -116,17 +116,17 @@ export default function QRManagementPage() {
         <div className="space-y-6 p-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">QR Code Manager</h1>
-                    <p className="text-sm text-muted-foreground">Manage physical QR codes and short links.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">Менеджер QR-кодов</h1>
+                    <p className="text-sm text-muted-foreground">Управление физическими QR-кодами и короткими ссылками.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => bulkGenerateMutation.mutate()} disabled={bulkGenerateMutation.isPending}>
                         <RefreshCcw className="w-4 h-4 mr-2" />
-                        Auto-Generate Missing
+                        Автогенерация недостающих
                     </Button>
                     <Button onClick={() => setIsCreateOpen(true)}>
                         <QrCode className="w-4 h-4 mr-2" />
-                        Create Manual QR
+                        Создать QR вручную
                     </Button>
                 </div>
             </div>
@@ -134,11 +134,11 @@ export default function QRManagementPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Active Mappings</CardTitle>
+                        <CardTitle className="text-lg">Активные привязки</CardTitle>
                         <div className="relative w-64">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by code or label..."
+                                placeholder="Поиск по коду или метке..."
                                 className="pl-8"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
@@ -150,15 +150,15 @@ export default function QRManagementPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Label</TableHead>
-                                <TableHead>Target</TableHead>
-                                <TableHead>Scans</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>Код</TableHead>
+                                <TableHead>Метка</TableHead>
+                                <TableHead>Цель</TableHead>
+                                <TableHead>Сканирования</TableHead>
+                                <TableHead className="text-right">Действия</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading && <TableRow><TableCell colSpan={5} className="text-center h-24">Loading...</TableCell></TableRow>}
+                            {isLoading && <TableRow><TableCell colSpan={5} className="text-center h-24">Загрузка...</TableCell></TableRow>}
 
                             {!isLoading && data?.items.map((qr: QRMapping) => (
                                 <TableRow key={qr.id}>
@@ -195,9 +195,9 @@ export default function QRManagementPage() {
 
                     {/* Pagination - Simplified */}
                     <div className="flex items-center justify-end gap-2 mt-4">
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
-                        <span className="text-sm">Page {page}</span>
-                        <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={!data || data.items.length < 20}>Next</Button>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Назад</Button>
+                        <span className="text-sm">Страница {page}</span>
+                        <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={!data || data.items.length < 20}>Вперёд</Button>
                     </div>
                 </CardContent>
             </Card>
@@ -206,33 +206,33 @@ export default function QRManagementPage() {
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create New QR Code</DialogTitle>
+                        <DialogTitle>Создать новый QR-код</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="grid gap-2">
-                            <Label>Target Type</Label>
+                            <Label>Тип цели</Label>
                             <Select value={targetType} onValueChange={setTargetType}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="poi">Point of Interest (POI)</SelectItem>
-                                    <SelectItem value="tour">Tour</SelectItem>
-                                    <SelectItem value="city">City</SelectItem>
+                                    <SelectItem value="poi">Точка интереса (POI)</SelectItem>
+                                    <SelectItem value="tour">Тур</SelectItem>
+                                    <SelectItem value="city">Город</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Target Entity ID (UUID)</Label>
-                            <Input value={targetId} onChange={e => setTargetId(e.target.value)} placeholder="e.g. 550e8400-e29b..." />
+                            <Label>ID целевой сущности (UUID)</Label>
+                            <Input value={targetId} onChange={e => setTargetId(e.target.value)} placeholder="напр. 550e8400-e29b..." />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Internal Label</Label>
-                            <Input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Sticker at Main Entrance" />
+                            <Label>Внутренняя метка</Label>
+                            <Input value={label} onChange={e => setLabel(e.target.value)} placeholder="напр. Наклейка у главного входа" />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Отмена</Button>
                         <Button onClick={() => createMutation.mutate()} disabled={!targetId || createMutation.isPending}>
-                            {createMutation.isPending ? 'Creating...' : 'Create Code'}
+                            {createMutation.isPending ? 'Создание...' : 'Создать код'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

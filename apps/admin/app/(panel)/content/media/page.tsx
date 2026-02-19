@@ -55,7 +55,7 @@ const fetchMedia = async ({ page, search, type }: { page: number, search: string
     const res = await fetch(`${API_URL}/admin/media?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch media');
+    if (!res.ok) throw new Error('Не удалось загрузить медиа');
     return res.json();
 };
 
@@ -65,7 +65,7 @@ const deleteMedia = async ({ id, entity_type }: { id: string, entity_type: strin
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to delete media');
+    if (!res.ok) throw new Error('Не удалось удалить медиа');
     return res.json();
 };
 
@@ -86,10 +86,10 @@ export default function MediaLibraryPage() {
         mutationFn: deleteMedia,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['media'] });
-            toast({ title: "Media deleted successfully" });
+            toast({ title: "Медиа успешно удалено" });
         },
         onError: () => {
-            toast({ title: "Failed to delete media", variant: "destructive" });
+            toast({ title: "Не удалось удалить медиа", variant: "destructive" });
         }
     });
 
@@ -97,8 +97,8 @@ export default function MediaLibraryPage() {
         <div className="space-y-6 p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Media Library</h1>
-                    <p className="text-muted-foreground">Manage images and audio files across all content.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Медиатека</h1>
+                    <p className="text-muted-foreground">Управление изображениями и аудиофайлами.</p>
                 </div>
             </div>
 
@@ -106,7 +106,7 @@ export default function MediaLibraryPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by author or URL..."
+                        placeholder="Поиск по автору или URL..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-8"
@@ -114,12 +114,12 @@ export default function MediaLibraryPage() {
                 </div>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by type" />
+                        <SelectValue placeholder="Фильтр по типу" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="image">Images</SelectItem>
-                        <SelectItem value="audio">Audio</SelectItem>
+                        <SelectItem value="all">Все типы</SelectItem>
+                        <SelectItem value="image">Изображения</SelectItem>
+                        <SelectItem value="audio">Аудио</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -142,7 +142,7 @@ export default function MediaLibraryPage() {
                                     {item.media_type.startsWith('image') ? (
                                         <img
                                             src={item.url}
-                                            alt="Media Preview"
+                                            alt="Превью медиа"
                                             className="object-cover w-full h-full"
                                             loading="lazy"
                                         />
@@ -159,15 +159,15 @@ export default function MediaLibraryPage() {
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Delete Media?</AlertDialogTitle>
+                                                <AlertDialogTitle>Удалить медиа?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    This will remove the file from the database. It might break the {item.entity_type} displaying it.
+                                                    Файл будет удалён из базы данных. Это может нарушить отображение {item.entity_type === 'poi' ? 'точки' : 'тура'}.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogCancel>Отмена</AlertDialogCancel>
                                                 <AlertDialogAction onClick={() => deleteMutation.mutate({ id: item.id, entity_type: item.entity_type })}>
-                                                    Delete
+                                                    Удалить
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
@@ -179,17 +179,17 @@ export default function MediaLibraryPage() {
                             </div>
                             <CardContent className="p-3">
                                 <div className="text-xs text-muted-foreground truncate" title={item.author}>
-                                    Author: {item.author || "Unknown"}
+                                    Автор: {item.author || "Неизвестно"}
                                 </div>
                                 <div className="text-xs text-muted-foreground truncate" title={item.license_type}>
-                                    License: {item.license_type || "Unknown"}
+                                    Лицензия: {item.license_type || "Неизвестно"}
                                 </div>
                                 <div className="flex items-center justify-between mt-2">
                                     <Link href={item.source_page_url || '#'} target="_blank" className="text-xs flex items-center hover:underline text-blue-500">
-                                        <ExternalLink className="w-3 h-3 mr-1" /> Source
+                                        <ExternalLink className="w-3 h-3 mr-1" /> Источник
                                     </Link>
                                     <Link href={`/content/${item.entity_type}s/${item.entity_id}`} className="text-xs flex items-center hover:underline">
-                                        <LinkIcon className="w-3 h-3 mr-1" /> View Context
+                                        <LinkIcon className="w-3 h-3 mr-1" /> Контекст
                                     </Link>
                                 </div>
                             </CardContent>
@@ -198,7 +198,7 @@ export default function MediaLibraryPage() {
                 </div>
             ) : (
                 <div className="text-center py-20 text-muted-foreground">
-                    No media found.
+                    Медиа не найдено.
                 </div>
             )}
 
@@ -209,16 +209,16 @@ export default function MediaLibraryPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                 >
-                    Previous
+                    Назад
                 </Button>
-                <div className="text-sm">Page {page} of {data?.pages || 1}</div>
+                <div className="text-sm">Страница {page} из {data?.pages || 1}</div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!data || page >= data.pages}
                 >
-                    Next
+                    Вперёд
                 </Button>
             </div>
         </div>

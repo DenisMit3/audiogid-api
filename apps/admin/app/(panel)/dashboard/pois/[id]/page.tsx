@@ -18,7 +18,7 @@ export default function EditPoiPage({ params }: { params: { id: string } }) {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => {
-                if (!res.ok) throw new Error('Failed');
+                if (!res.ok) throw new Error('Не удалось загрузить');
                 return res.json();
             })
             .then(data => {
@@ -31,12 +31,12 @@ export default function EditPoiPage({ params }: { params: { id: string } }) {
             });
     }, [params.id]);
 
-    if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
-    if (!poi) return <div style={{ padding: 20 }}>POI not found or Error loading</div>;
+    if (loading) return <div style={{ padding: 20 }}>Загрузка...</div>;
+    if (!poi) return <div style={{ padding: 20 }}>Точка не найдена или ошибка загрузки</div>;
 
     return (
         <div style={{ padding: 20 }}>
-            <h1>Edit POI: {(poi as any).title_ru}</h1>
+            <h1>Редактировать точку: {(poi as any).title_ru}</h1>
             <PoiForm poi={poi} onSuccess={() => router.push('/dashboard')} />
         </div>
     );

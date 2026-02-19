@@ -51,7 +51,7 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
                 },
                 body: JSON.stringify({ name: newName, url: newUrl })
             });
-            if (!res.ok) throw new Error('Failed to add source');
+            if (!res.ok) throw new Error('Не удалось добавить источник');
             return res.json();
         },
         onSuccess: (data: any) => {
@@ -60,7 +60,7 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
             setNewUrl('');
             queryClient.invalidateQueries({ queryKey: [entityType + 's', poiId] });
         },
-        onError: () => alert("Failed to add source")
+        onError: () => alert("Не удалось добавить источник")
     });
 
     const deleteMutation = useMutation({
@@ -75,7 +75,7 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
                     'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
                 },
             });
-            if (!res.ok) throw new Error('Failed to delete source');
+            if (!res.ok) throw new Error('Не удалось удалить источник');
             return sourceId;
         },
         onSuccess: (id: string) => {
@@ -87,7 +87,7 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-lg">Content Sources</CardTitle>
+                <CardTitle className="text-lg">Источники контента</CardTitle>
                 {entityType === 'poi' && <ImportWikipediaButton poiId={poiId} />}
             </CardHeader>
             <CardContent className="space-y-4">
@@ -106,15 +106,15 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
                             </Button>
                         </div>
                     ))}
-                    {sources.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">No sources linked</div>}
+                    {sources.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">Источники не привязаны</div>}
                 </div>
 
                 <div className="flex gap-2 items-end pt-2 border-t">
                     <div className="grid w-full gap-1.5 flex-1">
-                        <Label htmlFor="source-name" className="text-xs">Source Name</Label>
+                        <Label htmlFor="source-name" className="text-xs">Название источника</Label>
                         <Input
                             id="source-name"
-                            placeholder="e.g. Wikipedia"
+                            placeholder="напр. Википедия"
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
                             className="h-8"
@@ -161,18 +161,18 @@ function ImportWikipediaButton({ poiId }: { poiId: string }) {
             });
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.detail || "Failed to import");
+                throw new Error(err.detail || "Не удалось импортировать");
             }
             return res.json();
         },
         onSuccess: (data: any) => {
             setOpen(false);
-            alert(`Import Successful!\nUpdated: ${data.changes.join(', ')}`);
+            alert(`Импорт успешен!\nОбновлено: ${data.changes.join(', ')}`);
             queryClient.invalidateQueries({ queryKey: ['poi', poiId] });
             // FORCE REFETCH of the page logic if needed, but invalidating 'poi' should trigger page refetch
         },
         onError: (err) => {
-            alert(`Error: ${err.message}`);
+            alert(`Ошибка: ${err.message}`);
         }
     });
 
@@ -180,30 +180,30 @@ function ImportWikipediaButton({ poiId }: { poiId: string }) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
-                    <Globe className="w-4 h-4" /> Import from Wiki
+                    <Globe className="w-4 h-4" /> Импорт из Wiki
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Import from Wikipedia</DialogTitle>
+                    <DialogTitle>Импорт из Википедии</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="grid gap-2">
-                        <Label>Search Term or URL</Label>
+                        <Label>Поисковый запрос или URL</Label>
                         <Input
-                            placeholder="e.g. 'Kaliningrad Cathedral'"
+                            placeholder="напр. 'Кафедральный собор Калининграда'"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Fetches summary, image, coordinates, and link. Overwrites existing.
+                            Загружает описание, изображение, координаты и ссылку. Перезаписывает существующие данные.
                         </p>
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Отмена</Button>
                     <Button onClick={() => mutation.mutate()} disabled={!query || mutation.isPending}>
-                        {mutation.isPending ? 'Importing...' : 'Search & Import'}
+                        {mutation.isPending ? 'Импорт...' : 'Найти и импортировать'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

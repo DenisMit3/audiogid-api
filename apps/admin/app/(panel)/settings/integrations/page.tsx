@@ -10,34 +10,34 @@ export default function IntegrationsPage() {
     return (
         <div className="space-y-6 max-w-4xl">
             <div>
-                <h2 className="text-2xl font-bold tracking-tight">Integrations</h2>
-                <p className="text-muted-foreground">Manage external services and connections.</p>
+                <h2 className="text-2xl font-bold tracking-tight">Интеграции</h2>
+                <p className="text-muted-foreground">Управление внешними сервисами и подключениями.</p>
             </div>
 
             <div className="grid gap-4">
                 <IntegrationCard
                     name="QStash"
-                    description="Background job queue and scheduling."
+                    description="Очередь фоновых задач и планирование."
                     status="connected"
                 />
                 <IntegrationCard
                     name="OpenAI"
-                    description="AI generation for TTS and content."
+                    description="ИИ-генерация для озвучки и контента."
                     status="connected"
                 />
                 <IntegrationCard
                     name="AWS S3 / Vercel Blob"
-                    description="Media storage and CDN."
+                    description="Хранилище медиа и CDN."
                     status="connected"
                 />
                 <IntegrationCard
                     name="Apple App Store"
-                    description="In-App Purchases verification."
+                    description="Верификация покупок в приложении."
                     status="connected"
                 />
                 <IntegrationCard
                     name="Google Play Console"
-                    description="In-App Purchases verification."
+                    description="Верификация покупок в приложении."
                     status="connected"
                 />
             </div>
@@ -55,12 +55,12 @@ function IntegrationCard({ name, description, status }: { name: string, descript
                 </div>
                 <Badge variant={status === 'connected' ? 'default' : 'destructive'} className={status === 'connected' ? "bg-green-600" : ""}>
                     {status === 'connected' ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
-                    {status === 'connected' ? 'Active' : 'Disconnected'}
+                    {status === 'connected' ? 'Активно' : 'Отключено'}
                 </Badge>
             </CardHeader>
             <CardContent>
                 <div className="flex justify-end">
-                    <Button variant="ghost" size="sm">Configure</Button>
+                    <Button variant="ghost" size="sm">Настроить</Button>
                 </div>
             </CardContent>
         </Card>

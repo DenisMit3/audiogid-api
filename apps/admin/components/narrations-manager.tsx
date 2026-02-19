@@ -75,7 +75,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                 })
             });
 
-            if (!preRes.ok) throw new Error("Presign failed");
+            if (!preRes.ok) throw new Error("Не удалось получить presign URL");
             const { upload_url, final_url, method, headers } = await preRes.json();
 
             const uploadRes = await fetch(upload_url, {
@@ -84,7 +84,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                 headers: headers || {}
             });
 
-            if (!uploadRes.ok) throw new Error("Upload to storage failed");
+            if (!uploadRes.ok) throw new Error("Не удалось загрузить в хранилище");
 
             // Extract duration if possible
             const audio = new Audio(URL.createObjectURL(file));
@@ -115,7 +115,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                     transcript: transcript
                 })
             });
-            if (!res.ok) throw new Error("Failed to save narration");
+            if (!res.ok) throw new Error("Не удалось сохранить озвучку");
             return res.json();
         },
         onSuccess: (data) => {
@@ -177,8 +177,8 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Audio Narrations</CardTitle>
-                <CardDescription>Upload professional voiceovers for this POI.</CardDescription>
+                <CardTitle className="text-lg">Аудио-озвучка</CardTitle>
+                <CardDescription>Загрузите профессиональную озвучку для этой точки.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -194,7 +194,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                                         <span>{formatDuration(n.duration_seconds)}</span>
                                     </div>
                                     <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                        {n.transcript || "No transcript"}
+                                        {n.transcript || "Нет транскрипта"}
                                     </div>
                                 </div>
                             </div>
@@ -215,9 +215,9 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                     <input {...getInputProps()} />
                     <Mic className="w-8 h-8 text-slate-400 mb-2" />
                     <span className="text-sm text-slate-500 font-medium">
-                        {isDragActive ? 'Drop audio file...' : 'Drop audio file or click to upload'}
+                        {isDragActive ? 'Перетащите аудиофайл...' : 'Перетащите аудиофайл или нажмите для загрузки'}
                     </span>
-                    <span className="text-xs text-slate-400 mt-1">MP3, WAV, M4A supported</span>
+                    <span className="text-xs text-slate-400 mt-1">Поддерживаются MP3, WAV, M4A</span>
                 </div>
 
                 <div className="flex justify-center border-t pt-4">
@@ -227,43 +227,43 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                 <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add Narration</DialogTitle>
+                            <DialogTitle>Добавить озвучку</DialogTitle>
                         </DialogHeader>
 
-                        {uploadMutation.isPending && <div className="text-blue-600 text-sm">Uploading...</div>}
+                        {uploadMutation.isPending && <div className="text-blue-600 text-sm">Загрузка...</div>}
 
                         <div className="space-y-4 py-4">
                             <div className="grid gap-2">
-                                <Label>Language</Label>
+                                <Label>Язык</Label>
                                 <Select value={locale} onValueChange={setLocale}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ru">Russian</SelectItem>
-                                        <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="de">German</SelectItem>
-                                        <SelectItem value="zh">Chinese</SelectItem>
+                                        <SelectItem value="ru">Русский</SelectItem>
+                                        <SelectItem value="en">Английский</SelectItem>
+                                        <SelectItem value="de">Немецкий</SelectItem>
+                                        <SelectItem value="zh">Китайский</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label>Transcript</Label>
+                                <Label>Транскрипт</Label>
                                 <Textarea
                                     value={transcript}
                                     onChange={e => setTranscript(e.target.value)}
-                                    placeholder="Text of the narration..."
+                                    placeholder="Текст озвучки..."
                                     rows={5}
                                 />
                             </div>
-                            {audioDuration > 0 && <div className="text-xs text-slate-500">Detected Duration: {audioDuration.toFixed(1)}s</div>}
+                            {audioDuration > 0 && <div className="text-xs text-slate-500">Определённая длительность: {audioDuration.toFixed(1)}с</div>}
                         </div>
 
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>Отмена</Button>
                             <Button
                                 onClick={() => saveMetaMutation.mutate()}
                                 disabled={!uploadedUrl || saveMetaMutation.isPending}
                             >
-                                {saveMetaMutation.isPending ? 'Saving...' : 'Save Narration'}
+                                {saveMetaMutation.isPending ? 'Сохранение...' : 'Сохранить озвучку'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -287,18 +287,18 @@ function GenerateAIButton({ poiId }: { poiId: string }) {
             });
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.detail || "Failed to start generation");
+                throw new Error(err.detail || "Не удалось начать генерацию");
             }
             return res.json();
         },
         onSuccess: (data) => {
             toast({
-                title: "Generation Started",
-                description: `Job ID: ${data.job_id}. Check Jobs dashboard.`
+                title: "Генерация запущена",
+                description: `ID задачи: ${data.job_id}. Проверьте панель задач.`
             });
         },
         onError: (err) => {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка", description: err.message, variant: "destructive" });
         }
     });
 
@@ -310,7 +310,7 @@ function GenerateAIButton({ poiId }: { poiId: string }) {
             disabled={mutation.isPending}
         >
             <Mic className="w-4 h-4 mr-2" />
-            {mutation.isPending ? 'Queuing Job...' : 'Generate with AI (TTS)'}
+            {mutation.isPending ? 'Постановка в очередь...' : 'Сгенерировать с ИИ (TTS)'}
         </Button>
     )
 }

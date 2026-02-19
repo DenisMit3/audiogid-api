@@ -46,12 +46,12 @@ export function PublishCheckModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        {isPublished ? "Manage Publication" : "Publish Content"}
+                        {isPublished ? "Управление публикацией" : "Публикация контента"}
                     </DialogTitle>
                     <DialogDescription>
                         {isPublished
-                            ? "This content is currently live. You can unpublish it to hide it from users."
-                            : "Review the quality checks before making this content live."}
+                            ? "Этот контент сейчас опубликован. Вы можете снять его с публикации, чтобы скрыть от пользователей."
+                            : "Проверьте качество перед публикацией контента."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -69,11 +69,11 @@ export function PublishCheckModal({
                         <div>
                             <h4 className={`text-sm font-semibold ${checkResult?.can_publish ? 'text-green-800' : 'text-amber-800'
                                 }`}>
-                                {checkResult?.can_publish ? "Ready to Publish" : "Issues Found"}
+                                {checkResult?.can_publish ? "Готово к публикации" : "Найдены проблемы"}
                             </h4>
                             {!checkResult?.can_publish && (
                                 <p className="text-xs text-amber-700 mt-1">
-                                    You must fix the critical issues below before publishing.
+                                    Необходимо исправить критические проблемы перед публикацией.
                                 </p>
                             )}
                         </div>
@@ -82,7 +82,7 @@ export function PublishCheckModal({
                     {/* Issues List */}
                     {checkResult?.issues && checkResult.issues.length > 0 && (
                         <div className="space-y-2">
-                            <span className="text-sm font-medium">Validation Report:</span>
+                            <span className="text-sm font-medium">Отчёт валидации:</span>
                             <ul className="text-sm space-y-2 pl-1">
                                 {checkResult.issues.map((issue, idx) => (
                                     <li key={idx} className="flex items-start gap-2 text-slate-700 bg-slate-50 p-2 rounded">
@@ -96,11 +96,11 @@ export function PublishCheckModal({
                 </div>
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={onClose}>Close</Button>
+                    <Button variant="outline" onClick={onClose}>Закрыть</Button>
 
                     {isPublished && onUnpublish && (
                         <Button variant="destructive" onClick={onUnpublish} disabled={isPublishing}>
-                            {isPublishing ? "Processing..." : "Unpublish Now"}
+                            {isPublishing ? "Обработка..." : "Снять с публикации"}
                         </Button>
                     )}
 
@@ -110,7 +110,7 @@ export function PublishCheckModal({
                             disabled={!checkResult?.can_publish || isPublishing}
                             className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                            {isPublishing ? "Publishing..." : "Publish Now"}
+                            {isPublishing ? "Публикация..." : "Опубликовать"}
                         </Button>
                     )}
                 </DialogFooter>

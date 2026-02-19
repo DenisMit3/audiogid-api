@@ -73,13 +73,13 @@ export default function AISettingsPage() {
                 },
                 body: JSON.stringify(values)
             });
-            if (!res.ok) throw new Error("Failed to save AI settings");
+            if (!res.ok) throw new Error("Не удалось сохранить настройки ИИ");
             return res.json();
         },
         onSuccess: () => {
-            toast({ title: "AI Settings Saved", description: "TTS and Translation configuration updated." });
+            toast({ title: "Настройки ИИ сохранены", description: "Конфигурация озвучки и перевода обновлена." });
         },
-        onError: () => toast({ title: "Error", description: "Could not save settings", variant: "destructive" })
+        onError: () => toast({ title: "Ошибка", description: "Не удалось сохранить настройки", variant: "destructive" })
     });
 
     if (isLoading) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
@@ -87,8 +87,8 @@ export default function AISettingsPage() {
     return (
         <div className="space-y-6 p-6 max-w-4xl">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">AI & Automation</h1>
-                <p className="text-muted-foreground">Configure Text-to-Speech (TTS) and automated translations.</p>
+                <h1 className="text-3xl font-bold tracking-tight">ИИ и автоматизация</h1>
+                <p className="text-muted-foreground">Настройка синтеза речи (TTS) и автоматических переводов.</p>
             </div>
 
             <Form {...form}>
@@ -98,9 +98,9 @@ export default function AISettingsPage() {
                         <CardHeader>
                             <div className="flex items-center gap-2">
                                 <Mic2 className="w-5 h-5 text-primary" />
-                                <CardTitle>Text-to-Speech (TTS)</CardTitle>
+                                <CardTitle>Синтез речи (TTS)</CardTitle>
                             </div>
-                            <CardDescription>Engine used to generate audio narrations from tour descriptions.</CardDescription>
+                            <CardDescription>Движок для генерации аудио-озвучки из описаний туров.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <FormField
@@ -108,21 +108,21 @@ export default function AISettingsPage() {
                                 name="tts_provider"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Provider</FormLabel>
+                                        <FormLabel>Провайдер</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select a provider" />
+                                                    <SelectValue placeholder="Выберите провайдера" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="openai">OpenAI (Recommended)</SelectItem>
+                                                <SelectItem value="openai">OpenAI (Рекомендуется)</SelectItem>
                                                 <SelectItem value="google">Google Cloud TTS</SelectItem>
                                                 <SelectItem value="azure">Azure Cognitive Services</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormDescription>
-                                            OpenAI provides the most natural "Alloy" and "Nova" voices.
+                                            OpenAI предоставляет наиболее естественные голоса "Alloy" и "Nova".
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -134,12 +134,12 @@ export default function AISettingsPage() {
                                 name="default_voice"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Default Voice ID</FormLabel>
+                                        <FormLabel>ID голоса по умолчанию</FormLabel>
                                         <FormControl>
                                             <Input placeholder="alloy" {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            For OpenAI: alloy, echo, fable, onyx, nova, shimmer.
+                                            Для OpenAI: alloy, echo, fable, onyx, nova, shimmer.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -151,12 +151,12 @@ export default function AISettingsPage() {
                                 name="openai_api_key"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>API Key</FormLabel>
+                                        <FormLabel>API-ключ</FormLabel>
                                         <FormControl>
                                             <Input type="password" placeholder="sk-..." {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Leave blank to use system environment variable.
+                                            Оставьте пустым для использования системной переменной окружения.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -167,7 +167,7 @@ export default function AISettingsPage() {
 
                     <Button type="submit" disabled={saveMutation.isPending}>
                         {saveMutation.isPending ? <Loader2 className="mr-2 animate-spin" /> : <Save className="mr-2 w-4 h-4" />}
-                        Save Settings
+                        Сохранить настройки
                     </Button>
                 </form>
             </Form>

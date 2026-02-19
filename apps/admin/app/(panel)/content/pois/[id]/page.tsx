@@ -16,7 +16,7 @@ const fetchPoi = async (id: string) => {
     const res = await fetch(`${API_URL}/admin/pois/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error("Failed to fetch POI");
+    if (!res.ok) throw new Error("Не удалось загрузить точку");
     return res.json(); // Returns { poi: {..}, sources: [], media: [] } -> PoiForm expects { ...poi, sources, media }
 };
 
@@ -26,11 +26,11 @@ export default function PoiEditPage({ params }: { params: { id: string } }) {
         queryFn: () => fetchPoi(params.id),
     });
 
-    if (isLoading) return <div className="p-8 text-center">Loading POI details...</div>;
+    if (isLoading) return <div className="p-8 text-center">Загрузка данных точки...</div>;
     if (isError) return (
         <div className="p-8 text-center text-red-500">
-            Failed to load POI
-            <Button variant="outline" onClick={() => refetch()} className="ml-4"><RefreshCcw className="w-4 h-4 mr-2" /> Retry</Button>
+            Не удалось загрузить точку
+            <Button variant="outline" onClick={() => refetch()} className="ml-4"><RefreshCcw className="w-4 h-4 mr-2" /> Повторить</Button>
         </div>
     );
 
@@ -51,7 +51,7 @@ export default function PoiEditPage({ params }: { params: { id: string } }) {
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                 </Link>
-                <h1 className="text-2xl font-bold tracking-tight">Edit Point of Interest</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Редактировать точку интереса</h1>
             </div>
 
             <PoiForm poi={poiData} />

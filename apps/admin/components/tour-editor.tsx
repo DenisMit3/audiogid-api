@@ -40,9 +40,9 @@ const API_URL = '/api/proxy';
 // throw removed for build
 
 const tourSchema = z.object({
-    title_ru: z.string().min(3, "Title must be at least 3 characters"),
+    title_ru: z.string().min(3, "Название должно содержать минимум 3 символа"),
     title_en: z.string().optional(),
-    city_slug: z.string().min(1, "City is required"),
+    city_slug: z.string().min(1, "Город обязателен"),
     description_ru: z.string().optional(),
     description_en: z.string().optional(),
     duration_minutes: z.coerce.number().min(0).optional(),
@@ -101,7 +101,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                 body: JSON.stringify(values)
             });
 
-            if (!res.ok) throw new Error('Failed to save tour info');
+            if (!res.ok) throw new Error('Не удалось сохранить информацию о туре');
             return res.json();
         },
         onSuccess: (data) => {
@@ -125,7 +125,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                 },
                 body: JSON.stringify({ poi_id: poiId, order_index: order })
             });
-            if (!res.ok) throw new Error("Failed to add item");
+            if (!res.ok) throw new Error("Не удалось добавить элемент");
             return res.json();
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
@@ -167,7 +167,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                 },
                 body: JSON.stringify(data)
             });
-            if (!res.ok) throw new Error("Failed to update item");
+            if (!res.ok) throw new Error("Не удалось обновить элемент");
             return res.json();
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
@@ -180,7 +180,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
             });
-            if (!res.ok) throw new Error(`${action} failed`);
+            if (!res.ok) throw new Error(`${action} не удалось`);
             return res.json();
         },
         onSuccess: () => {
@@ -210,19 +210,19 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                 value="overview"
                                 className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2"
                             >
-                                <SettingsIcon className="w-4 h-4" /> Overview
+                                <SettingsIcon className="w-4 h-4" /> Обзор
                             </TabsTrigger>
                             <TabsTrigger
                                 value="route" disabled={!tour}
                                 className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2"
                             >
-                                <MapIcon className="w-4 h-4" /> Route Builder
+                                <MapIcon className="w-4 h-4" /> Построитель маршрута
                             </TabsTrigger>
                             <TabsTrigger
                                 value="media" disabled={!tour}
                                 className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2"
                             >
-                                <ImageIcon className="w-4 h-4" /> Media
+                                <ImageIcon className="w-4 h-4" /> Медиа
                             </TabsTrigger>
                         </TabsList>
 
@@ -235,15 +235,15 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                         onClick={() => setIsPublishModalOpen(true)}
                                         className={tour.published_at ? "border-green-500 text-green-700 bg-green-50" : ""}
                                     >
-                                        {tour.published_at ? 'Published' : 'Publish'}
+                                        {tour.published_at ? 'Опубликовано' : 'Опубликовать'}
                                     </Button>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>Duplicate Tour</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-500">Delete Tour</DropdownMenuItem>
+                                            <DropdownMenuItem>Дублировать тур</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-500">Удалить тур</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </>
@@ -263,7 +263,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="title_ru"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Title (RU) *</FormLabel>
+                                                            <FormLabel>Название (RU) *</FormLabel>
                                                             <FormControl><Input {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -274,7 +274,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="title_en"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Title (EN)</FormLabel>
+                                                            <FormLabel>Название (EN)</FormLabel>
                                                             <FormControl><Input {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -288,13 +288,13 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="city_slug"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>City</FormLabel>
+                                                            <FormLabel>Город</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="kaliningrad_city">Kaliningrad City</SelectItem>
-                                                                    <SelectItem value="zelenogradsk">Zelenogradsk</SelectItem>
-                                                                    <SelectItem value="svetlogorsk">Svetlogorsk</SelectItem>
+                                                                    <SelectItem value="kaliningrad_city">Калининград</SelectItem>
+                                                                    <SelectItem value="zelenogradsk">Зеленоградск</SelectItem>
+                                                                    <SelectItem value="svetlogorsk">Светлогорск</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -306,14 +306,14 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="tour_type"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Type</FormLabel>
+                                                            <FormLabel>Тип</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="walking">Walking</SelectItem>
-                                                                    <SelectItem value="driving">Driving</SelectItem>
-                                                                    <SelectItem value="cycling">Cycling</SelectItem>
-                                                                    <SelectItem value="boat">Boat</SelectItem>
+                                                                    <SelectItem value="walking">Пешком</SelectItem>
+                                                                    <SelectItem value="driving">На машине</SelectItem>
+                                                                    <SelectItem value="cycling">На велосипеде</SelectItem>
+                                                                    <SelectItem value="boat">На лодке</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -325,13 +325,13 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="difficulty"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Difficulty</FormLabel>
+                                                            <FormLabel>Сложность</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="easy">Easy</SelectItem>
-                                                                    <SelectItem value="moderate">Moderate</SelectItem>
-                                                                    <SelectItem value="hard">Hard</SelectItem>
+                                                                    <SelectItem value="easy">Лёгкий</SelectItem>
+                                                                    <SelectItem value="moderate">Средний</SelectItem>
+                                                                    <SelectItem value="hard">Сложный</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -346,7 +346,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="description_ru"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Description (RU)</FormLabel>
+                                                            <FormLabel>Описание (RU)</FormLabel>
                                                             <FormControl><Textarea {...field} className="h-32" /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -357,7 +357,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="description_en"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Description (EN)</FormLabel>
+                                                            <FormLabel>Описание (EN)</FormLabel>
                                                             <FormControl><Textarea {...field} className="h-32" /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -371,7 +371,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="duration_minutes"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Total Duration (min)</FormLabel>
+                                                            <FormLabel>Общая длительность (мин)</FormLabel>
                                                             <FormControl><Input type="number" {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -382,7 +382,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="cover_image"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Cover Image URL</FormLabel>
+                                                            <FormLabel>URL обложки</FormLabel>
                                                             <FormControl><Input {...field} placeholder="https://..." /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -393,7 +393,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                             <div className="flex justify-end">
                                                 <Button type="submit" disabled={saveMutation.isPending}>
                                                     {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                    <Save className="mr-2 h-4 w-4" /> Save Overview
+                                                    <Save className="mr-2 h-4 w-4" /> Сохранить обзор
                                                 </Button>
                                             </div>
                                         </form>

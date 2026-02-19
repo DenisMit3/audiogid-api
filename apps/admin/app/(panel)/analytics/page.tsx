@@ -61,7 +61,7 @@ const fetchAnalytics = async (): Promise<AnalyticsData> => {
     const res = await fetch(`${API_URL}/admin/analytics/overview`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error("Failed to load analytics");
+    if (!res.ok) throw new Error("Не удалось загрузить аналитику");
     return res.json();
 }
 
@@ -79,8 +79,8 @@ export default function AnalyticsPage() {
 
     if (isError) return (
         <div className="p-8 text-center text-red-500">
-            Failed to load analytics.
-            <Button variant="outline" onClick={() => refetch()} className="ml-4">Retry</Button>
+            Не удалось загрузить аналитику.
+            <Button variant="outline" onClick={() => refetch()} className="ml-4">Повторить</Button>
         </div>
     );
 
@@ -89,9 +89,9 @@ export default function AnalyticsPage() {
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold tracking-tight">Analytics Dashboard</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Панель аналитики</h1>
                 <Button variant="outline" onClick={() => refetch()}>
-                    <RefreshCcw className="w-4 h-4 mr-2" /> Refresh
+                    <RefreshCcw className="w-4 h-4 mr-2" /> Обновить
                 </Button>
             </div>
 
@@ -99,17 +99,17 @@ export default function AnalyticsPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue (30d)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Общий доход (30д)</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{(kpis.revenue_30d).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                        <p className="text-xs text-muted-foreground">+20.1% к прошлому месяцу</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Users (DAU)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Активные пользователи (DAU)</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -119,22 +119,22 @@ export default function AnalyticsPage() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                        <CardTitle className="text-sm font-medium">Конверсия</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{(kpis.conversion_rate * 100).toFixed(1)}%</div>
-                        <p className="text-xs text-muted-foreground">Free to Paid</p>
+                        <p className="text-xs text-muted-foreground">Бесплатно → Платно</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Sessions (7d)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Сессии (7д)</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{kpis.sessions_last_7d}</div>
-                        <p className="text-xs text-muted-foreground">Weekly Engagement</p>
+                        <p className="text-xs text-muted-foreground">Недельная вовлечённость</p>
                     </CardContent>
                 </Card>
             </div>
@@ -143,8 +143,8 @@ export default function AnalyticsPage() {
                 {/* Main Chart */}
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Activity Trend</CardTitle>
-                        <CardDescription>Daily Active Users over the last 30 days</CardDescription>
+                        <CardTitle>Тренд активности</CardTitle>
+                        <CardDescription>Ежедневные активные пользователи за 30 дней</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px]">
@@ -189,21 +189,21 @@ export default function AnalyticsPage() {
                 {/* Top Content */}
                 <Card className="col-span-3">
                     <CardHeader>
-                        <CardTitle>Popular Content</CardTitle>
-                        <CardDescription>Most viewed items (7d)</CardDescription>
+                        <CardTitle>Популярный контент</CardTitle>
+                        <CardDescription>Самое просматриваемое (7д)</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead className="text-right">Views</TableHead>
+                                    <TableHead>Название</TableHead>
+                                    <TableHead className="text-right">Просмотры</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {top_content.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={2} className="text-center text-muted-foreground">No data</TableCell>
+                                        <TableCell colSpan={2} className="text-center text-muted-foreground">Нет данных</TableCell>
                                     </TableRow>
                                 )}
                                 {top_content.map((item) => (

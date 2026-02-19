@@ -30,11 +30,11 @@ export default function LoginPage() {
                 router.refresh();
             } else {
                 const err = await res.json();
-                alert(`Login failed: ${err.detail || 'Unknown error'}`);
+                alert(`Ошибка входа: ${err.detail || 'Неизвестная ошибка'}`);
             }
         } catch (error) {
             console.error(error);
-            alert('Login error');
+            alert('Ошибка входа');
         } finally {
             setLoading(false);
         }
@@ -44,15 +44,15 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50/50 dark:bg-gray-950 px-4">
             <Card className="w-full max-w-md shadow-lg border-gray-200/50 dark:border-gray-800/50">
                 <CardHeader className="space-y-1 text-center">
-                    <CardTitle className="text-3xl font-bold tracking-tight">AudioGuide Admin</CardTitle>
+                    <CardTitle className="text-3xl font-bold tracking-tight">Аудиогид Админ</CardTitle>
                     <CardDescription>
-                        Enter your credentials to access the panel
+                        Введите данные для входа в панель
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center py-6">
                     <form onSubmit={handleLogin} className="w-full space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="sr-only">Email</Label>
+                            <Label htmlFor="email" className="sr-only">Эл. почта</Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -68,13 +68,13 @@ export default function LoginPage() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="sr-only">Password</Label>
+                            <Label htmlFor="password" className="sr-only">Пароль</Label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     id="password"
                                     type="password"
-                                    placeholder="Password"
+                                    placeholder="Пароль"
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     className="pl-9"
@@ -88,13 +88,13 @@ export default function LoginPage() {
                             className="w-full font-semibold"
                             disabled={loading || !email || !password}
                         >
-                            {loading ? 'Signing in...' : 'Sign In'}
+                            {loading ? 'Вход...' : 'Войти'}
                         </Button>
                     </form>
                 </CardContent>
                 <CardFooter className="flex justify-center border-t border-gray-100 dark:border-gray-900 mt-2 py-4">
                     <p className="text-xs text-muted-foreground">
-                        Secure administrative environment
+                        Защищённая административная среда
                     </p>
                 </CardFooter>
             </Card>

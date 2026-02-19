@@ -32,7 +32,7 @@ const API_URL = '/api/proxy';
 
 const fetchOverview = async () => {
     const res = await fetch(`${API_URL}/admin/analytics/overview`);
-    if (!res.ok) throw new Error("Failed to fetch analytics");
+    if (!res.ok) throw new Error("Не удалось загрузить аналитику");
     return res.json();
 };
 
@@ -60,10 +60,10 @@ export default function Dashboard() {
 
     // Mock Content Status Data (could be fetched)
     const contentStatus = [
-        { name: 'Published', value: 45 },
-        { name: 'Draft', value: 12 },
-        { name: 'Pending', value: 3 },
-        { name: 'Issues', value: 2 },
+        { name: 'Опубликовано', value: 45 },
+        { name: 'Черновик', value: 12 },
+        { name: 'Ожидает', value: 3 },
+        { name: 'Проблемы', value: 2 },
     ];
 
     if (analyticsLoading) return (
@@ -76,17 +76,17 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6 p-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Панель управления</h1>
                     <p className="text-muted-foreground">
-                        Platform overview and real-time activity.
+                        Обзор платформы и активность в реальном времени.
                     </p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => router.push('/content/tours/new')}>
-                        <Plus className="mr-2 h-4 w-4" /> New Tour
+                        <Plus className="mr-2 h-4 w-4" /> Новый тур
                     </Button>
                     <Button onClick={() => router.push('/content/pois/new')}>
-                        <Plus className="mr-2 h-4 w-4" /> New POI
+                        <Plus className="mr-2 h-4 w-4" /> Новая точка
                     </Button>
                 </div>
             </div>
@@ -95,42 +95,42 @@ export default function Dashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Daily Active Users</CardTitle>
+                        <CardTitle className="text-sm font-medium">Активные пользователи (день)</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{analytics?.kpis.dau || 0}</div>
-                        <p className="text-xs text-muted-foreground">Active last 24h</p>
+                        <p className="text-xs text-muted-foreground">Активны за 24ч</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+                        <CardTitle className="text-sm font-medium">Доход за месяц</CardTitle>
                         <CreditCard className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">${analytics?.kpis.revenue_30d || 0}</div>
-                        <p className="text-xs text-muted-foreground">Last 30 days</p>
+                        <p className="text-xs text-muted-foreground">За 30 дней</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Sessions (7d)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Сессии (7д)</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{analytics?.kpis.sessions_last_7d || 0}</div>
-                        <p className="text-xs text-muted-foreground">Total sessions</p>
+                        <p className="text-xs text-muted-foreground">Всего сессий</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                        <CardTitle className="text-sm font-medium">Конверсия</CardTitle>
                         <TrendingUp className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{(analytics?.kpis.conversion_rate * 100).toFixed(1)}%</div>
-                        <p className="text-xs text-muted-foreground">Install to Purchase</p>
+                        <p className="text-xs text-muted-foreground">Установка → Покупка</p>
                     </CardContent>
                 </Card>
             </div>
@@ -139,7 +139,7 @@ export default function Dashboard() {
                 {/* Traffic Trend Chart */}
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Visitor Traffic (30 Days)</CardTitle>
+                        <CardTitle>Трафик посетителей (30 дней)</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px] w-full">
@@ -153,7 +153,7 @@ export default function Dashboard() {
                                     />
                                     <YAxis />
                                     <Tooltip />
-                                    <Bar dataKey="dau" fill="#3b82f6" name="Active Users" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="dau" fill="#3b82f6" name="Активные пользователи" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -163,8 +163,8 @@ export default function Dashboard() {
                 {/* Content Status Pie Chart */}
                 <Card className="col-span-3">
                     <CardHeader>
-                        <CardTitle>Content Status</CardTitle>
-                        <CardDescription>Breakdown by verify state</CardDescription>
+                        <CardTitle>Статус контента</CardTitle>
+                        <CardDescription>По статусу проверки</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px] w-full flex justify-center">
@@ -197,8 +197,8 @@ export default function Dashboard() {
                 {/* recent Activity */}
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
-                        <CardDescription>Real-time audit log stream</CardDescription>
+                        <CardTitle>Последняя активность</CardTitle>
+                        <CardDescription>Журнал аудита в реальном времени</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
@@ -220,7 +220,7 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             ))}
-                            {!activity?.length && <div className="text-sm text-muted-foreground">No recent activity.</div>}
+                            {!activity?.length && <div className="text-sm text-muted-foreground">Нет активности.</div>}
                         </div>
                     </CardContent>
                 </Card>
@@ -228,15 +228,15 @@ export default function Dashboard() {
                 {/* Top Content */}
                 <Card className="col-span-3">
                     <CardHeader>
-                        <CardTitle>Top Content</CardTitle>
-                        <CardDescription>Most viewed this week</CardDescription>
+                        <CardTitle>Популярный контент</CardTitle>
+                        <CardDescription>Самое просматриваемое за неделю</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead className="text-right">Views</TableHead>
+                                    <TableHead>Название</TableHead>
+                                    <TableHead className="text-right">Просмотры</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

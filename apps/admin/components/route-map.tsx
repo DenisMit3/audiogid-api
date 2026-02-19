@@ -62,7 +62,7 @@ export function RouteMap({ items }: { items: RouteItem[] }) {
     const center: [number, number] = polylinePositions.length > 0 ? polylinePositions[0] : [54.71, 20.51];
 
     if (!mounted) {
-        return <div className="h-[400px] w-full rounded-md bg-slate-100 flex items-center justify-center border">Loading Map...</div>;
+        return <div className="h-[400px] w-full rounded-md bg-slate-100 flex items-center justify-center border">Загрузка карты...</div>;
     }
 
     return (

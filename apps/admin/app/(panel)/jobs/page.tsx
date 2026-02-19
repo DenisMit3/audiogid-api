@@ -71,7 +71,7 @@ export default function JobsDashboard() {
         const res = await fetch(`${API_URL}/admin/jobs?${params}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error("Failed to fetch jobs");
+        if (!res.ok) throw new Error("Не удалось загрузить задачи");
         return res.json();
     };
 
@@ -91,7 +91,7 @@ export default function JobsDashboard() {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
             });
-            if (!res.ok) throw new Error("Cancel failed");
+            if (!res.ok) throw new Error("Не удалось отменить");
         },
         onSuccess: () => refetch()
     });
@@ -102,7 +102,7 @@ export default function JobsDashboard() {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
             });
-            if (!res.ok) throw new Error("Retry failed");
+            if (!res.ok) throw new Error("Не удалось повторить");
         },
         onSuccess: () => refetch()
     });
@@ -124,11 +124,11 @@ export default function JobsDashboard() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'COMPLETED': return <Badge className="bg-green-600">Completed</Badge>;
-            case 'FAILED': return <Badge variant="destructive">Failed</Badge>;
-            case 'RUNNING': return <Badge className="bg-blue-600 animate-pulse">Running</Badge>;
-            case 'PENDING': return <Badge variant="secondary">Pending</Badge>;
-            case 'CANCELLED': return <Badge variant="outline">Cancelled</Badge>;
+            case 'COMPLETED': return <Badge className="bg-green-600">Завершено</Badge>;
+            case 'FAILED': return <Badge variant="destructive">Ошибка</Badge>;
+            case 'RUNNING': return <Badge className="bg-blue-600 animate-pulse">Выполняется</Badge>;
+            case 'PENDING': return <Badge variant="secondary">Ожидает</Badge>;
+            case 'CANCELLED': return <Badge variant="outline">Отменено</Badge>;
             default: return <Badge variant="outline">{status}</Badge>;
         }
     };
@@ -137,30 +137,30 @@ export default function JobsDashboard() {
         <div className="space-y-6 p-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">System Jobs</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Системные задачи</h1>
                     <div className="flex items-center gap-2 mt-1">
                         <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                        <span className="text-xs text-muted-foreground">{isConnected ? 'Live Connected' : 'Disconnected'}</span>
+                        <span className="text-xs text-muted-foreground">{isConnected ? 'Подключено' : 'Отключено'}</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder="Все статусы" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="RUNNING">Running</SelectItem>
-                            <SelectItem value="COMPLETED">Completed</SelectItem>
-                            <SelectItem value="FAILED">Failed</SelectItem>
-                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            <SelectItem value="all">Все статусы</SelectItem>
+                            <SelectItem value="PENDING">Ожидает</SelectItem>
+                            <SelectItem value="RUNNING">Выполняется</SelectItem>
+                            <SelectItem value="COMPLETED">Завершено</SelectItem>
+                            <SelectItem value="FAILED">Ошибка</SelectItem>
+                            <SelectItem value="CANCELLED">Отменено</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
                         <RefreshCcw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        Обновить
                     </Button>
                 </div>
             </div>
@@ -170,21 +170,21 @@ export default function JobsDashboard() {
             {/* Jobs Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg">Recent Jobs</CardTitle>
+                    <CardTitle className="text-lg">Последние задачи</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Progress</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>Тип</TableHead>
+                                <TableHead>Статус</TableHead>
+                                <TableHead>Прогресс</TableHead>
+                                <TableHead>Создано</TableHead>
+                                <TableHead className="text-right">Действия</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading && <TableRow><TableCell colSpan={5} className="text-center h-24">Loading...</TableCell></TableRow>}
+                            {isLoading && <TableRow><TableCell colSpan={5} className="text-center h-24">Загрузка...</TableCell></TableRow>}
 
                             {!isLoading && data?.items.map((job: Job) => (
                                 <TableRow key={job.id} className="cursor-pointer hover:bg-slate-50" onClick={() => setSelectedJob(job)}>
@@ -197,8 +197,8 @@ export default function JobsDashboard() {
                                     <TableCell>{getStatusBadge(job.status)}</TableCell>
                                     <TableCell className="w-[200px]">
                                         {job.status === 'RUNNING' && <Progress value={job.progress} className="h-2" />}
-                                        {job.status === 'COMPLETED' && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Done</span>}
-                                        {job.status === 'FAILED' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" /> Error</span>}
+                                        {job.status === 'COMPLETED' && <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Готово</span>}
+                                        {job.status === 'FAILED' && <span className="text-xs text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" /> Ошибка</span>}
                                     </TableCell>
                                     <TableCell className="text-xs text-muted-foreground">
                                         {formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
@@ -229,7 +229,7 @@ export default function JobsDashboard() {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            Job Details
+                            Детали задачи
                             {selectedJob && getStatusBadge(selectedJob.status)}
                         </DialogTitle>
                         <DialogDescription className="font-mono text-xs text-slate-500">
@@ -240,21 +240,21 @@ export default function JobsDashboard() {
                     {selectedJob && (
                         <div className="space-y-4 font-mono text-sm bg-slate-50 p-4 rounded-md overflow-auto max-h-[60vh]">
                             <div className="grid grid-cols-2 gap-2">
-                                <div><strong>Type:</strong> {selectedJob.type}</div>
-                                <div><strong>Created:</strong> {selectedJob.created_at}</div>
-                                <div><strong>Started:</strong> {selectedJob.started_at || '-'}</div>
-                                <div><strong>Completed:</strong> {selectedJob.completed_at || '-'}</div>
+                                <div><strong>Тип:</strong> {selectedJob.type}</div>
+                                <div><strong>Создано:</strong> {selectedJob.created_at}</div>
+                                <div><strong>Начато:</strong> {selectedJob.started_at || '-'}</div>
+                                <div><strong>Завершено:</strong> {selectedJob.completed_at || '-'}</div>
                             </div>
 
                             {selectedJob.error && (
                                 <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700">
-                                    <strong>Error:</strong>
+                                    <strong>Ошибка:</strong>
                                     <pre className="whitespace-pre-wrap mt-1 text-xs">{selectedJob.error}</pre>
                                 </div>
                             )}
 
                             <div>
-                                <strong>Payload:</strong>
+                                <strong>Данные:</strong>
                                 <pre className="bg-white p-2 border rounded mt-1 text-xs overflow-auto max-h-[100px]">
                                     {selectedJob.payload ? JSON.stringify(JSON.parse(selectedJob.payload), null, 2) : 'null'}
                                 </pre>
@@ -262,7 +262,7 @@ export default function JobsDashboard() {
 
                             {selectedJob.result && (
                                 <div>
-                                    <strong>Result:</strong>
+                                    <strong>Результат:</strong>
                                     <pre className="bg-white p-2 border rounded mt-1 text-xs overflow-auto max-h-[200px]">
                                         {JSON.stringify(JSON.parse(selectedJob.result), null, 2)}
                                     </pre>

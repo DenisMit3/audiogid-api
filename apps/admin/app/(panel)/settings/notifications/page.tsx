@@ -46,7 +46,7 @@ const fetchSettings = async () => {
             enable_email: false,
         };
     }
-    if (!res.ok) throw new Error("Failed to fetch settings");
+    if (!res.ok) throw new Error("Не удалось загрузить настройки");
     return res.json();
 };
 
@@ -84,15 +84,15 @@ export default function NotificationsSettingsPage() {
                 },
                 body: JSON.stringify(values)
             });
-            if (!res.ok) throw new Error("Failed to save settings");
+            if (!res.ok) throw new Error("Не удалось сохранить настройки");
             return res.json();
         },
         onSuccess: () => {
-            toast({ title: "Settings saved", description: "Notification configuration updated successfully." });
+            toast({ title: "Настройки сохранены", description: "Конфигурация уведомлений успешно обновлена." });
             queryClient.invalidateQueries({ queryKey: ['settings-notifications'] });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+            toast({ title: "Ошибка", description: "Не удалось сохранить настройки.", variant: "destructive" });
         }
     });
 
@@ -111,23 +111,23 @@ export default function NotificationsSettingsPage() {
                     body: data.body
                 })
             });
-            if (!res.ok) throw new Error("Failed to send push");
+            if (!res.ok) throw new Error("Не удалось отправить push");
             return res.json();
         },
         onSuccess: (data) => {
-            toast({ title: "Push Sent", description: `Message queued for ${data.recipient_count || 'all'} devices.` });
+            toast({ title: "Push отправлен", description: `Сообщение поставлено в очередь для ${data.recipient_count || 'всех'} устройств.` });
             setSendTestOpen(false);
         },
         onError: () => {
             // Mock success for demo if backend not ready
-            toast({ title: "Push Sent (Mock)", description: "Backend endpoint not ready, simulated success.", variant: "default" });
+            toast({ title: "Push отправлен (тест)", description: "Бэкенд не готов, симуляция успеха.", variant: "default" });
             setSendTestOpen(false);
         }
     });
 
     // Test form state
-    const [testTitle, setTestTitle] = useState("Test Notification");
-    const [testBody, setTestBody] = useState("Hello from Audiogid Admin Panel!");
+    const [testTitle, setTestTitle] = useState("Тестовое уведомление");
+    const [testBody, setTestBody] = useState("Привет от админ-панели Аудиогид!");
 
     if (isLoading) {
         return <div className="p-8 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
@@ -136,8 +136,8 @@ export default function NotificationsSettingsPage() {
     return (
         <div className="space-y-6 p-6 max-w-4xl">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Notification Settings</h1>
-                <p className="text-muted-foreground">Configure Push Notifications (FCM) and Email settings.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Настройки уведомлений</h1>
+                <p className="text-muted-foreground">Настройка Push-уведомлений (FCM) и Email.</p>
             </div>
 
             <Form {...form}>
@@ -149,7 +149,7 @@ export default function NotificationsSettingsPage() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Bell className="w-5 h-5 text-primary" />
-                                    <CardTitle>Push Notifications</CardTitle>
+                                    <CardTitle>Push-уведомления</CardTitle>
                                 </div>
                                 <FormField
                                     control={form.control}
@@ -165,7 +165,7 @@ export default function NotificationsSettingsPage() {
                                 />
                             </div>
                             <CardDescription>
-                                Uses Firebase Cloud Messaging (FCM) to deliver alerts to mobile apps.
+                                Использует Firebase Cloud Messaging (FCM) для доставки уведомлений в мобильные приложения.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -174,14 +174,14 @@ export default function NotificationsSettingsPage() {
                                 name="fcm_server_key"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>FCM Server Key (Legacy) or Service Account JSON</FormLabel>
+                                        <FormLabel>FCM Server Key (Legacy) или Service Account JSON</FormLabel>
                                         <FormControl>
                                             <div className="relative">
                                                 <Input type="password" placeholder="AAAA..." {...field} />
                                             </div>
                                         </FormControl>
                                         <FormDescription>
-                                            Found in Firebase Console {'>'} Project Settings {'>'} Cloud Messaging.
+                                            Находится в Firebase Console {'>'} Project Settings {'>'} Cloud Messaging.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -196,7 +196,7 @@ export default function NotificationsSettingsPage() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Send className="w-5 h-5 text-primary" />
-                                    <CardTitle>Email Settings</CardTitle>
+                                    <CardTitle>Настройки Email</CardTitle>
                                 </div>
                                 <FormField
                                     control={form.control}
@@ -211,7 +211,7 @@ export default function NotificationsSettingsPage() {
                                     )}
                                 />
                             </div>
-                            <CardDescription>Sender identity for transactional emails (welcome, receipts).</CardDescription>
+                            <CardDescription>Данные отправителя для транзакционных писем (приветствие, чеки).</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -220,9 +220,9 @@ export default function NotificationsSettingsPage() {
                                     name="email_sender_name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Sender Name</FormLabel>
+                                            <FormLabel>Имя отправителя</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Audiogid Team" {...field} />
+                                                <Input placeholder="Команда Аудиогид" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -233,7 +233,7 @@ export default function NotificationsSettingsPage() {
                                     name="email_sender_address"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Sender Email</FormLabel>
+                                            <FormLabel>Email отправителя</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="noreply@audiogid.app" {...field} />
                                             </FormControl>
@@ -248,7 +248,7 @@ export default function NotificationsSettingsPage() {
                     <div className="flex items-center gap-4">
                         <Button type="submit" disabled={saveMutation.isPending}>
                             {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            <Save className="mr-2 h-4 w-4" /> Save Changes
+                            <Save className="mr-2 h-4 w-4" /> Сохранить
                         </Button>
 
                         <Separator orientation="vertical" className="h-8" />
@@ -258,7 +258,7 @@ export default function NotificationsSettingsPage() {
                             variant="secondary"
                             onClick={() => setSendTestOpen(!sendTestOpen)}
                         >
-                            Test Push...
+                            Тест Push...
                         </Button>
                     </div>
                 </form>
@@ -268,16 +268,16 @@ export default function NotificationsSettingsPage() {
             {sendTestOpen && (
                 <Card className="border-blue-200 bg-blue-50/50">
                     <CardHeader>
-                        <CardTitle className="text-base text-blue-900">Send Test Broadcast</CardTitle>
-                        <CardDescription>Sends a push notification to ALL registered test devices.</CardDescription>
+                        <CardTitle className="text-base text-blue-900">Отправить тестовую рассылку</CardTitle>
+                        <CardDescription>Отправляет push-уведомление на ВСЕ зарегистрированные тестовые устройства.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <div className="grid gap-2">
-                            <FormLabel>Title</FormLabel>
+                            <FormLabel>Заголовок</FormLabel>
                             <Input value={testTitle} onChange={e => setTestTitle(e.target.value)} />
                         </div>
                         <div className="grid gap-2">
-                            <FormLabel>Body</FormLabel>
+                            <FormLabel>Текст</FormLabel>
                             <Textarea value={testBody} onChange={e => setTestBody(e.target.value)} rows={2} />
                         </div>
                     </CardContent>
@@ -287,7 +287,7 @@ export default function NotificationsSettingsPage() {
                             disabled={sendPushMutation.isPending}
                         >
                             {sendPushMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                            Send Broadcast
+                            Отправить рассылку
                         </Button>
                     </CardFooter>
                 </Card>

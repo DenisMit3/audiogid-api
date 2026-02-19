@@ -9,16 +9,16 @@ export default function BackupSettingsPage() {
     return (
         <div className="space-y-6 p-6 max-w-4xl">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Database Backups</h1>
-                <p className="text-muted-foreground">Manage data snapshots and retention policies.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Резервные копии базы данных</h1>
+                <p className="text-muted-foreground">Управление снимками данных и политиками хранения.</p>
             </div>
 
             <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Managed Infrastructure</AlertTitle>
+                <AlertTitle>Управляемая инфраструктура</AlertTitle>
                 <AlertDescription>
-                    Your database is hosted on <strong>Neon Serverless Postgres</strong>.
-                    Point-in-time recovery (PITR) is enabled automatically with 7-day retention.
+                    Ваша база данных размещена на <strong>Neon Serverless Postgres</strong>.
+                    Восстановление на момент времени (PITR) включено автоматически с хранением 7 дней.
                 </AlertDescription>
             </Alert>
 
@@ -27,9 +27,9 @@ export default function BackupSettingsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Upload className="w-5 h-5" />
-                            Direct Export
+                            Прямой экспорт
                         </CardTitle>
-                        <CardDescription>Download a complete SQL dump of the current database state.</CardDescription>
+                        <CardDescription>Скачать полный SQL-дамп текущего состояния базы данных.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="bg-slate-950 text-slate-50 p-4 rounded-md font-mono text-xs overflow-x-auto">
@@ -52,27 +52,27 @@ export default function BackupSettingsPage() {
                                 });
                         }}>
                             <Download className="mr-2 w-4 h-4" />
-                            Download CSV Archives
+                            Скачать CSV-архивы
                         </Button>
                     </CardFooter>
                 </Card>
 
                 <Card className="opacity-75 relative overflow-hidden">
                     <div className="absolute inset-0 bg-slate-50/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                        <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-medium">Coming Soon</span>
+                        <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-xs font-medium">Скоро</span>
                     </div>
                     <CardHeader>
-                        <CardTitle>Restore Point</CardTitle>
-                        <CardDescription>Rollback the database to a specific timeframe.</CardDescription>
+                        <CardTitle>Точка восстановления</CardTitle>
+                        <CardDescription>Откатить базу данных к определённому моменту времени.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground">
-                            Restoring will overwrite current data. This action cannot be undone without another backup.
+                            Восстановление перезапишет текущие данные. Это действие нельзя отменить без другой резервной копии.
                         </p>
                     </CardContent>
                     <CardFooter>
                         <Button variant="destructive" className="w-full" disabled>
-                            Restore Data...
+                            Восстановить данные...
                         </Button>
                     </CardFooter>
                 </Card>

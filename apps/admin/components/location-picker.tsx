@@ -67,19 +67,19 @@ export function LocationPicker({ lat, lon, onChange }: { lat?: number, lon?: num
         <div className="space-y-4">
             <div className="flex gap-2">
                 <Input
-                    placeholder="Search address (e.g. Red Square)"
+                    placeholder="Поиск адреса (напр. Красная площадь)"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 />
                 <Button type="button" variant="secondary" onClick={handleSearch}>
-                    <Search className="w-4 h-4 mr-2" /> Find
+                    <Search className="w-4 h-4 mr-2" /> Найти
                 </Button>
             </div>
 
             <div className="h-[400px] w-full rounded-md overflow-hidden border">
                 {!mounted ? (
-                    <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Loading Map Engine...</div>
+                    <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Загрузка карты...</div>
                 ) : (
                     <MapContainer
                         center={position || [54.71, 20.51]} // Kaliningrad default
@@ -98,8 +98,8 @@ export function LocationPicker({ lat, lon, onChange }: { lat?: number, lon?: num
                 )}
             </div>
             <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-                <div>Lat: {position?.[0].toFixed(6) || '-'}</div>
-                <div>Lon: {position?.[1].toFixed(6) || '-'}</div>
+                <div>Широта: {position?.[0].toFixed(6) || '-'}</div>
+                <div>Долгота: {position?.[1].toFixed(6) || '-'}</div>
             </div>
         </div>
     );

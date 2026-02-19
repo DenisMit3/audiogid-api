@@ -45,19 +45,19 @@ export default function CohortsPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Retention Cohorts</h1>
-                <Button onClick={triggerRecalc}>Recalculate</Button>
+                <h1 className="text-3xl font-bold">Когорты удержания</h1>
+                <Button onClick={triggerRecalc}>Пересчитать</Button>
             </div>
 
             <Card>
-                <CardHeader><CardTitle>Retention Matrix (Last 60 Days)</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Матрица удержания (последние 60 дней)</CardTitle></CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-2 font-medium">Cohort</th>
-                                    {cols.map(day => <th key={day} className="p-2 font-medium">Day {day}</th>)}
+                                    <th className="p-2 font-medium">Когорта</th>
+                                    {cols.map(day => <th key={day} className="p-2 font-medium">День {day}</th>)}
                                 </tr>
                             </thead>
                             <tbody>
@@ -91,7 +91,7 @@ export default function CohortsPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {rows.length === 0 && <div className="p-4 text-center text-muted-foreground">No data available. Try recalculating.</div>}
+                        {rows.length === 0 && <div className="p-4 text-center text-muted-foreground">Нет данных. Попробуйте пересчитать.</div>}
                     </div>
                 </CardContent>
             </Card>

@@ -40,7 +40,7 @@ import { NarrationsManager } from './narrations-manager';
 import dynamic from 'next/dynamic';
 const LocationPicker = dynamic(() => import('./location-picker').then(mod => mod.LocationPicker), {
     ssr: false,
-    loading: () => <div className="h-[400px] w-full flex items-center justify-center bg-slate-100 font-mono text-xs border rounded-md">Loading Map Engine...</div>
+    loading: () => <div className="h-[400px] w-full flex items-center justify-center bg-slate-100 font-mono text-xs border rounded-md">Загрузка карты...</div>
 });
 import { PublishCheckModal } from './publish-check-modal';
 
@@ -48,9 +48,9 @@ const API_URL = '/api/proxy';
 // throw removed for build
 
 const poiSchema = z.object({
-    title_ru: z.string().min(3, "Title (RU) must be at least 3 characters"),
+    title_ru: z.string().min(3, "Название (RU) должно содержать минимум 3 символа"),
     title_en: z.string().optional(),
-    city_slug: z.string().min(1, "City is required"),
+    city_slug: z.string().min(1, "Город обязателен"),
     description_ru: z.string().optional(),
     description_en: z.string().optional(),
     category: z.string().optional(),
@@ -114,7 +114,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.detail || 'Failed to save');
+                throw new Error(err.detail || 'Не удалось сохранить');
             }
             return res.json();
         },
@@ -138,7 +138,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
             });
-            if (!res.ok) throw new Error(`${action} failed`);
+            if (!res.ok) throw new Error(`${action} не удалось`);
             return res.json();
         },
         onSuccess: () => {
@@ -158,19 +158,19 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                     <div className="flex justify-between w-full border-b pb-px">
                         <TabsList className="bg-transparent p-0 h-auto">
                             <TabsTrigger value="general" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2">
-                                <BookOpen className="w-4 h-4" /> General
+                                <BookOpen className="w-4 h-4" /> Основное
                             </TabsTrigger>
                             <TabsTrigger value="location" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
-                                <MapPin className="w-4 h-4" /> Location
+                                <MapPin className="w-4 h-4" /> Местоположение
                             </TabsTrigger>
                             <TabsTrigger value="media" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
-                                <ImageIcon className="w-4 h-4" /> Media
+                                <ImageIcon className="w-4 h-4" /> Медиа
                             </TabsTrigger>
                             <TabsTrigger value="narrations" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
-                                <Mic className="w-4 h-4" /> Narrations
+                                <Mic className="w-4 h-4" /> Озвучка
                             </TabsTrigger>
                             <TabsTrigger value="sources" className="rounded-b-none data-[state=active]:bg-white data-[state=active]:border-x data-[state=active]:border-t data-[state=active]:border-b-white py-2 px-4 gap-2" disabled={!poi}>
-                                <Globe className="w-4 h-4" /> Sources
+                                <Globe className="w-4 h-4" /> Источники
                             </TabsTrigger>
                         </TabsList>
 
@@ -184,14 +184,14 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                         className={poi.published_at ? "border-green-500 text-green-700 bg-green-50" : ""}
                                     >
                                         <Send className="w-3 h-3 mr-2" />
-                                        {poi.published_at ? 'Published' : 'Publish'}
+                                        {poi.published_at ? 'Опубликовано' : 'Опубликовать'}
                                     </Button>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem className="text-red-500">Delete POI</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-500">Удалить точку</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </>
@@ -212,7 +212,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="title_ru"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Title (Russian) *</FormLabel>
+                                                            <FormLabel>Название (русский) *</FormLabel>
                                                             <FormControl><Input {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -223,7 +223,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="title_en"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Title (English)</FormLabel>
+                                                            <FormLabel>Название (английский)</FormLabel>
                                                             <FormControl><Input {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -237,13 +237,13 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="city_slug"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>City</FormLabel>
+                                                            <FormLabel>Город</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                <FormControl><SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger></FormControl>
+                                                                <FormControl><SelectTrigger><SelectValue placeholder="Выберите город" /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="kaliningrad_city">Kaliningrad City</SelectItem>
-                                                                    <SelectItem value="zelenogradsk">Zelenogradsk</SelectItem>
-                                                                    <SelectItem value="svetlogorsk">Svetlogorsk</SelectItem>
+                                                                    <SelectItem value="kaliningrad_city">Калининград</SelectItem>
+                                                                    <SelectItem value="zelenogradsk">Зеленоградск</SelectItem>
+                                                                    <SelectItem value="svetlogorsk">Светлогорск</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -255,15 +255,15 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="category"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Category</FormLabel>
+                                                            <FormLabel>Категория</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="landmark">Landmark</SelectItem>
-                                                                    <SelectItem value="museum">Museum</SelectItem>
-                                                                    <SelectItem value="park">Park</SelectItem>
-                                                                    <SelectItem value="monument">Monument</SelectItem>
-                                                                    <SelectItem value="church">Church</SelectItem>
+                                                                    <SelectItem value="landmark">Достопримечательность</SelectItem>
+                                                                    <SelectItem value="museum">Музей</SelectItem>
+                                                                    <SelectItem value="park">Парк</SelectItem>
+                                                                    <SelectItem value="monument">Памятник</SelectItem>
+                                                                    <SelectItem value="church">Церковь</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -278,7 +278,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="description_ru"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Description (RU)</FormLabel>
+                                                            <FormLabel>Описание (RU)</FormLabel>
                                                             <FormControl><Textarea className="h-32" {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -289,7 +289,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="description_en"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Description (EN)</FormLabel>
+                                                            <FormLabel>Описание (EN)</FormLabel>
                                                             <FormControl><Textarea className="h-32" {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -303,7 +303,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="address"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Address</FormLabel>
+                                                            <FormLabel>Адрес</FormLabel>
                                                             <FormControl><Input {...field} /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -314,7 +314,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                     name="cover_image"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Cover Image URL</FormLabel>
+                                                            <FormLabel>URL обложки</FormLabel>
                                                             <FormControl><Input {...field} placeholder="https://..." /></FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -332,8 +332,8 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                             </FormControl>
                                                             <div className="space-y-1 leading-none">
-                                                                <FormLabel>Active Status</FormLabel>
-                                                                <FormDescription>Visible in app</FormDescription>
+                                                                <FormLabel>Статус активности</FormLabel>
+                                                                <FormDescription>Видимость в приложении</FormDescription>
                                                             </div>
                                                         </FormItem>
                                                     )}
@@ -341,7 +341,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                 <Button type="submit" disabled={mutation.isPending}>
                                                     {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                     <Save className="mr-2 h-4 w-4" />
-                                                    {poi ? 'Update General Info' : 'Create POI'}
+                                                    {poi ? 'Обновить информацию' : 'Создать точку'}
                                                 </Button>
                                             </div>
                                         </form>
@@ -357,22 +357,22 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                     <div className="grid grid-cols-3 gap-6">
                                         <div className="col-span-1 space-y-4">
                                             <div>
-                                                <h3 className="font-semibold mb-2">Coordinates</h3>
+                                                <h3 className="font-semibold mb-2">Координаты</h3>
                                                 <p className="text-sm text-muted-foreground mb-4">
-                                                    Click on the map or search for an address to set the location.
+                                                    Кликните на карту или найдите адрес для установки местоположения.
                                                 </p>
                                             </div>
                                             <div className="space-y-4">
                                                 <div className="grid gap-2">
-                                                    <Label>Latitude</Label>
+                                                    <Label>Широта</Label>
                                                     <Input type="number" step="any" value={form.watch('lat') || ''} onChange={e => form.setValue('lat', parseFloat(e.target.value))} />
                                                 </div>
                                                 <div className="grid gap-2">
-                                                    <Label>Longitude</Label>
+                                                    <Label>Долгота</Label>
                                                     <Input type="number" step="any" value={form.watch('lon') || ''} onChange={e => form.setValue('lon', parseFloat(e.target.value))} />
                                                 </div>
                                                 <Button onClick={() => mutation.mutate(form.getValues())} className="w-full">
-                                                    Save Location
+                                                    Сохранить местоположение
                                                 </Button>
                                             </div>
                                         </div>

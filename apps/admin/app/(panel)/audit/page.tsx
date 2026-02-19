@@ -33,21 +33,21 @@ export default function AuditPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Audit Logs</h1>
+                <h1 className="text-3xl font-bold">Журнал аудита</h1>
             </div>
 
             <Card>
-                <CardHeader><CardTitle>Activity Stream</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Поток активности</CardTitle></CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Timestamp</TableHead>
-                                <TableHead>Action</TableHead>
-                                <TableHead>Actor</TableHead>
-                                <TableHead>Target</TableHead>
+                                <TableHead>Время</TableHead>
+                                <TableHead>Действие</TableHead>
+                                <TableHead>Актор</TableHead>
+                                <TableHead>Цель</TableHead>
                                 <TableHead>IP</TableHead>
-                                <TableHead className="text-right">Details</TableHead>
+                                <TableHead className="text-right">Детали</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -77,24 +77,24 @@ export default function AuditPage() {
             <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
                     <DialogHeader>
-                        <DialogTitle>Audit Log Details</DialogTitle>
+                        <DialogTitle>Детали записи аудита</DialogTitle>
                         <DialogDescription>
                             ID: {selectedLog?.id}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><strong>Action:</strong> {selectedLog?.action}</div>
-                            <div><strong>Actor:</strong> {selectedLog?.actor_fingerprint}</div>
+                            <div><strong>Действие:</strong> {selectedLog?.action}</div>
+                            <div><strong>Актор:</strong> {selectedLog?.actor_fingerprint}</div>
                             <div><strong>IP:</strong> {selectedLog?.ip_address}</div>
                             <div><strong>User Agent:</strong> {selectedLog?.user_agent}</div>
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2 flex items-center gap-2">
-                                <FileJson className="h-4 w-4" /> Changes (JSON)
+                                <FileJson className="h-4 w-4" /> Изменения (JSON)
                             </h3>
                             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
-                                {selectedLog?.diff_json ? JSON.stringify(JSON.parse(selectedLog.diff_json), null, 2) : 'No diff data'}
+                                {selectedLog?.diff_json ? JSON.stringify(JSON.parse(selectedLog.diff_json), null, 2) : 'Нет данных об изменениях'}
                             </pre>
                         </div>
                     </div>

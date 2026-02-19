@@ -61,7 +61,7 @@ const fetchCities = async ({ page, search }: { page: number, search: string }) =
     const res = await fetch(`${API_URL}/admin/cities?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch cities');
+    if (!res.ok) throw new Error('Не удалось загрузить города');
     return res.json();
 };
 
@@ -73,7 +73,7 @@ const deleteCity = async (id: string) => {
     });
     if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.detail || 'Failed to delete city');
+        throw new Error(error.detail || 'Не удалось удалить город');
     }
     return res.json();
 };
@@ -96,11 +96,11 @@ export default function CitiesListPage() {
         mutationFn: deleteCity,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cities'] });
-            toast({ title: "City deleted successfully" });
+            toast({ title: "Город успешно удалён" });
         },
         onError: (error) => {
             toast({
-                title: "Failed to delete city",
+                title: "Не удалось удалить город",
                 description: error.message,
                 variant: "destructive"
             });
@@ -110,38 +110,38 @@ export default function CitiesListPage() {
     const columns: ColumnDef<City>[] = [
         {
             accessorKey: "slug",
-            header: "Slug",
+            header: "Слаг",
             cell: ({ row }) => <code className="text-xs bg-muted p-1 rounded">{row.getValue("slug")}</code>,
         },
         {
             accessorKey: "name_ru",
-            header: "Name (RU)",
+            header: "Название (RU)",
             cell: ({ row }) => <div className="font-medium">{row.getValue("name_ru")}</div>,
         },
         {
-            header: "Content",
+            header: "Контент",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    <Badge variant="outline">{row.original.poi_count} POIs</Badge>
-                    <Badge variant="outline">{row.original.tour_count} Tours</Badge>
+                    <Badge variant="outline">{row.original.poi_count} Точек</Badge>
+                    <Badge variant="outline">{row.original.tour_count} Туров</Badge>
                 </div>
             )
         },
         {
             accessorKey: "is_active",
-            header: "Status",
+            header: "Статус",
             cell: ({ row }) => {
                 const isActive = row.getValue("is_active");
                 return (
                     <Badge variant={isActive ? "default" : "secondary"}>
-                        {isActive ? "Active" : "Inactive"}
+                        {isActive ? "Активен" : "Неактивен"}
                     </Badge>
                 );
             },
         },
         {
             accessorKey: "updated_at",
-            header: "Updated",
+            header: "Обновлено",
             cell: ({ row }) => <span className="text-xs text-muted-foreground">{format(new Date(row.original.updated_at), "dd MMM yyyy")}</span>,
         },
         {
@@ -152,32 +152,32 @@ export default function CitiesListPage() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">Открыть меню</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
                                 <Link href={`/cities/${city.id}`}>
-                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href={`/content/pois?city=${city.slug}`}>
-                                    <Map className="mr-2 h-4 w-4" /> View Content
+                                    <Map className="mr-2 h-4 w-4" /> Просмотр контента
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => {
-                                    if (confirm(`Are you sure you want to delete ${city.name_ru}?`)) {
+                                    if (confirm(`Вы уверены, что хотите удалить ${city.name_ru}?`)) {
                                         deleteMutation.mutate(city.id);
                                     }
                                 }}
                             >
-                                <Trash className="mr-2 h-4 w-4" /> Delete
+                                <Trash className="mr-2 h-4 w-4" /> Удалить
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -203,10 +203,10 @@ export default function CitiesListPage() {
     return (
         <div className="space-y-4 p-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Cities & Regions</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Города и регионы</h1>
                 <Link href="/cities/new">
                     <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add City
+                        <Plus className="mr-2 h-4 w-4" /> Добавить город
                     </Button>
                 </Link>
             </div>
@@ -215,7 +215,7 @@ export default function CitiesListPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search cities..."
+                        placeholder="Поиск городов..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-8"
@@ -247,7 +247,7 @@ export default function CitiesListPage() {
                         {isLoading ? (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Loading...
+                                    Загрузка...
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -269,7 +269,7 @@ export default function CitiesListPage() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No cities found.
+                                    Города не найдены.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -284,16 +284,16 @@ export default function CitiesListPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                 >
-                    Previous
+                    Назад
                 </Button>
-                <div className="text-sm">Page {page} of {data?.pages || 1}</div>
+                <div className="text-sm">Страница {page} из {data?.pages || 1}</div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!data || page >= data.pages}
                 >
-                    Next
+                    Вперёд
                 </Button>
             </div>
         </div>

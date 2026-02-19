@@ -19,30 +19,30 @@ const fetcher = (url: string) => fetch(url).then(r => r.json())
 export default function AnalyticsOverviewPage() {
     const { data, error } = useSWR('/api/proxy/admin/analytics/overview', fetcher);
 
-    if (error) return <div>Error loading analytics</div>;
-    if (!data) return <div>Loading dashboard...</div>;
+    if (error) return <div>Ошибка загрузки аналитики</div>;
+    if (!data) return <div>Загрузка панели...</div>;
 
     const { kpis, top_content, recent_trend } = data;
 
     return (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold">Analytics Overview</h1>
+            <h1 className="text-3xl font-bold">Обзор аналитики</h1>
 
             {/* KPI Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Daily Active Users</CardTitle>
+                        <CardTitle className="text-sm font-medium">Ежедневные активные пользователи</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{kpis.dau}</div>
-                        <p className="text-xs text-muted-foreground">+20% from last week</p>
+                        <p className="text-xs text-muted-foreground">+20% к прошлой неделе</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Monthly Active Users</CardTitle>
+                        <CardTitle className="text-sm font-medium">Ежемесячные активные пользователи</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -51,7 +51,7 @@ export default function AnalyticsOverviewPage() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Revenue (30d)</CardTitle>
+                        <CardTitle className="text-sm font-medium">Доход (30д)</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -60,7 +60,7 @@ export default function AnalyticsOverviewPage() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                        <CardTitle className="text-sm font-medium">Конверсия</CardTitle>
                         <MousePointerClick className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -73,7 +73,7 @@ export default function AnalyticsOverviewPage() {
                 {/* Chart */}
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Overview (30 Days)</CardTitle>
+                        <CardTitle>Обзор (30 дней)</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <div className="h-[300px] w-full">
@@ -99,15 +99,15 @@ export default function AnalyticsOverviewPage() {
                 {/* Top Content */}
                 <Card className="col-span-3">
                     <CardHeader>
-                        <CardTitle>Popular Content (7d)</CardTitle>
+                        <CardTitle>Популярный контент (7д)</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead className="text-right">Views</TableHead>
+                                    <TableHead>Название</TableHead>
+                                    <TableHead>Тип</TableHead>
+                                    <TableHead className="text-right">Просмотры</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

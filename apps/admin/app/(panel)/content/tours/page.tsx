@@ -57,7 +57,7 @@ const fetchTours = async ({ page, search, status }: { page: number, search: stri
     const res = await fetch(`${API_URL}/admin/tours?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch tours');
+    if (!res.ok) throw new Error('Не удалось загрузить туры');
     return res.json();
 };
 
@@ -76,31 +76,31 @@ export default function TourListPage() {
     const columns: ColumnDef<Tour>[] = [
         {
             accessorKey: "title_ru",
-            header: "Title",
+            header: "Название",
             cell: ({ row }) => <div className="font-medium">{row.getValue<string>("title_ru")}</div>,
         },
         {
             accessorKey: "city_slug",
-            header: "City",
+            header: "Город",
         },
         {
             accessorKey: "duration_minutes",
-            header: "Duration",
+            header: "Длительность",
             cell: ({ row }) => (
                 <div className="flex items-center gap-1 text-xs">
                     <Clock className="w-3 h-3" />
-                    {row.getValue("duration_minutes") || '-'} min
+                    {row.getValue("duration_minutes") || '-'} мин
                 </div>
             )
         },
         {
             accessorKey: "published_at",
-            header: "Status",
+            header: "Статус",
             cell: ({ row }) => {
                 const isPublished = !!row.getValue("published_at");
                 return (
                     <Badge variant={isPublished ? "default" : "secondary"}>
-                        {isPublished ? "Published" : "Draft"}
+                        {isPublished ? "Опубликовано" : "Черновик"}
                     </Badge>
                 );
             },
@@ -113,19 +113,19 @@ export default function TourListPage() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">Открыть меню</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
                                 <Link href={`/content/tours/${tour.id}`}>
-                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(tour.id)}>
-                                Copy ID
+                                Копировать ID
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -151,10 +151,10 @@ export default function TourListPage() {
     return (
         <div className="space-y-4 p-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Audio Tours</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Аудиотуры</h1>
                 <Link href="/content/tours/new">
                     <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Create Tour
+                        <Plus className="mr-2 h-4 w-4" /> Создать тур
                     </Button>
                 </Link>
             </div>
@@ -163,7 +163,7 @@ export default function TourListPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search tours..."
+                        placeholder="Поиск туров..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-8"
@@ -195,7 +195,7 @@ export default function TourListPage() {
                         {isLoading ? (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Loading...
+                                    Загрузка...
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -217,7 +217,7 @@ export default function TourListPage() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No tours found.
+                                    Туры не найдены.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -231,16 +231,16 @@ export default function TourListPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                 >
-                    Previous
+                    Назад
                 </Button>
-                <div className="text-sm">Page {page} of {data?.pages || 1}</div>
+                <div className="text-sm">Страница {page} из {data?.pages || 1}</div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!data || page >= data.pages}
                 >
-                    Next
+                    Вперёд
                 </Button>
             </div>
         </div>

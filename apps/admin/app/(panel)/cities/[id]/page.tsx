@@ -16,7 +16,7 @@ const fetchCity = async (id: string) => {
     const res = await fetch(`${API_URL}/admin/cities/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch city');
+    if (!res.ok) throw new Error('Не удалось загрузить город');
     return res.json();
 };
 
@@ -38,12 +38,12 @@ export default function EditCityPage() {
     }
 
     if (error) {
-        return <div className="p-8 text-red-500">Error: {error.message}</div>;
+        return <div className="p-8 text-red-500">Ошибка: {error.message}</div>;
     }
 
     return (
         <div className="space-y-4 p-8">
-            <h1 className="text-2xl font-bold tracking-tight">Edit City: {city.name_ru}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Редактировать город: {city.name_ru}</h1>
             <CityForm initialData={city} isEdit={true} />
         </div>
     );

@@ -15,10 +15,10 @@ export default function TourCreatePage() {
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                 </Link>
-                <h1 className="text-2xl font-bold tracking-tight">Create New Tour</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Создать новый тур</h1>
             </div>
 
-            <p className="text-muted-foreground mb-4">You'll be able to add route points and media after saving the basic details.</p>
+            <p className="text-muted-foreground mb-4">Вы сможете добавить точки маршрута и медиа после сохранения основных данных.</p>
 
             <TourEditor />
         </div>

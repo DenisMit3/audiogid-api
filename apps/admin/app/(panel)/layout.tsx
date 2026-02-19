@@ -36,7 +36,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
         fetch('/api/auth/me').then(res => {
             if (res.ok) return res.json();
-            throw new Error("Unauthorized");
+            throw new Error("Не авторизован");
         }).then(u => {
             setUser(u);
             const role = (u.role || 'viewer') as Role;
@@ -71,7 +71,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                 <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6 dark:bg-gray-800/40 lg:hidden">
                     <MobileSidebar permissions={permissions} />
                     <div className="w-full flex-1">
-                        <span className="font-semibold">AudioGuide</span>
+                        <span className="font-semibold">Аудиогид</span>
                     </div>
                 </header>
                 {/* PC Topbar included in shell header logic or separate? 

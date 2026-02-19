@@ -49,7 +49,7 @@ import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 const RouteMap = dynamic(() => import('./route-map').then(mod => mod.RouteMap), {
     ssr: false,
-    loading: () => <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Loading Map Engine...</div>
+    loading: () => <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Загрузка карты...</div>
 });
 
 // --- Sortable Item Component ---
@@ -86,27 +86,27 @@ function SortableItem({ item, onRemove, onEdit }: { item: any, onRemove: (id: st
                     <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
                         {item.order_index + 1}
                     </span>
-                    <span className="truncate">{item.poi_title || "Unknown POI"}</span>
+                    <span className="truncate">{item.poi_title || "Неизвестная точка"}</span>
                 </div>
 
                 {item.id === 'placeholder' ? (
-                    <div className="text-xs text-red-500 mt-1">Unsaved Item</div>
+                    <div className="text-xs text-red-500 mt-1">Несохранённый элемент</div>
                 ) : (
                     <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
                         {item.duration_seconds > 0 && (
                             <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {Math.floor(item.duration_seconds / 60)} min
+                                {Math.floor(item.duration_seconds / 60)} мин
                             </div>
                         )}
                         {item.transition_text_ru && (
                             <div className="flex items-center gap-1">
                                 <FileText className="w-3 h-3" />
-                                <span>Has transition note</span>
+                                <span>Есть заметка перехода</span>
                             </div>
                         )}
                         {(!item.duration_seconds && !item.transition_text_ru) && (
-                            <span className="italic opacity-50">No details added</span>
+                            <span className="italic opacity-50">Детали не добавлены</span>
                         )}
                     </div>
                 )}
@@ -204,21 +204,21 @@ export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpda
             <div className="flex flex-col h-full space-y-4">
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
                     <div>
-                        <h3 className="font-semibold text-sm">Route Points</h3>
-                        <p className="text-xs text-muted-foreground">{items.length} stops • {Math.round(items.reduce((acc, i) => acc + (i.duration_seconds || 0), 0) / 60)} min stay</p>
+                        <h3 className="font-semibold text-sm">Точки маршрута</h3>
+                        <p className="text-xs text-muted-foreground">{items.length} остановок • {Math.round(items.reduce((acc, i) => acc + (i.duration_seconds || 0), 0) / 60)} мин пребывания</p>
                     </div>
 
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
                             <Button variant="outline" size="sm">
-                                <Plus className="w-4 h-4 mr-2" /> Add
+                                <Plus className="w-4 h-4 mr-2" /> Добавить
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="p-0 w-[300px]" align="end">
                             <Command>
-                                <CommandInput placeholder="Search POIs..." />
+                                <CommandInput placeholder="Поиск точек..." />
                                 <CommandGroup className="max-h-[200px] overflow-auto">
-                                    {!poiOptions?.items?.length && <div className="p-2 text-xs text-center">No POIs found</div>}
+                                    {!poiOptions?.items?.length && <div className="p-2 text-xs text-center">Точки не найдены</div>}
                                     {poiOptions?.items?.map((poi: any) => (
                                         <CommandItem
                                             key={poi.id}
@@ -251,7 +251,7 @@ export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpda
                             {items.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
                                     <MapPin className="w-8 h-8 mb-2 opacity-50" />
-                                    <span className="text-sm">Route is empty</span>
+                                    <span className="text-sm">Маршрут пуст</span>
                                 </div>
                             )}
                             {items.map((item) => (
@@ -271,30 +271,30 @@ export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpda
             <Dialog open={!!editingItem} onOpenChange={(o) => !o && setEditingItem(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Stop Details</DialogTitle>
+                        <DialogTitle>Редактировать детали остановки</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="grid gap-2">
-                            <Label>Recommended Duration (sec)</Label>
+                            <Label>Рекомендуемая длительность (сек)</Label>
                             <Input
                                 type="number"
                                 value={editForm.duration}
                                 onChange={e => setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })}
                             />
-                            <p className="text-xs text-muted-foreground">{Math.floor(editForm.duration / 60)} minutes</p>
+                            <p className="text-xs text-muted-foreground">{Math.floor(editForm.duration / 60)} минут</p>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Transition Note (Next Step Guide)</Label>
+                            <Label>Заметка перехода (инструкция к следующей точке)</Label>
                             <Textarea
                                 value={editForm.text}
                                 onChange={e => setEditForm({ ...editForm, text: e.target.value })}
-                                placeholder="Walk 50m straight, turn left..."
+                                placeholder="Пройдите 50м прямо, поверните налево..."
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
-                        <Button onClick={saveEdit}>Save Changes</Button>
+                        <Button variant="outline" onClick={() => setEditingItem(null)}>Отмена</Button>
+                        <Button onClick={saveEdit}>Сохранить</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

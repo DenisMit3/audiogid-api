@@ -10,45 +10,45 @@ export default function BillingSettingsPage() {
     return (
         <div className="space-y-6 max-w-5xl">
             <div>
-                <h2 className="text-2xl font-bold tracking-tight">Billing & Plans</h2>
-                <p className="text-muted-foreground">Configure In-App Purchases and Subscription tiers.</p>
+                <h2 className="text-2xl font-bold tracking-tight">Биллинг и тарифы</h2>
+                <p className="text-muted-foreground">Настройка покупок в приложении и уровней подписки.</p>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Products Configuration</CardTitle>
-                    <CardDescription>Mapped from App Store / Play Store IDs</CardDescription>
+                    <CardTitle>Конфигурация продуктов</CardTitle>
+                    <CardDescription>Привязка к ID из App Store / Play Store</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Product ID</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Price (USD)</TableHead>
-                                <TableHead>Status</TableHead>
+                                <TableHead>ID продукта</TableHead>
+                                <TableHead>Название</TableHead>
+                                <TableHead>Тип</TableHead>
+                                <TableHead>Цена (USD)</TableHead>
+                                <TableHead>Статус</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             <TableRow>
                                 <TableCell className="font-mono">com.audiogid.full_access_1m</TableCell>
-                                <TableCell>Full Access (Monthly)</TableCell>
-                                <TableCell>Subscription</TableCell>
+                                <TableCell>Полный доступ (месяц)</TableCell>
+                                <TableCell>Подписка</TableCell>
                                 <TableCell>$9.99</TableCell>
-                                <TableCell><Badge>Active</Badge></TableCell>
+                                <TableCell><Badge>Активен</Badge></TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell className="font-mono">com.audiogid.city_kaliningrad</TableCell>
-                                <TableCell>Kaliningrad Bundle</TableCell>
-                                <TableCell>Non-Consumable</TableCell>
+                                <TableCell>Пакет Калининград</TableCell>
+                                <TableCell>Разовая покупка</TableCell>
                                 <TableCell>$4.99</TableCell>
-                                <TableCell><Badge>Active</Badge></TableCell>
+                                <TableCell><Badge>Активен</Badge></TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
                     <div className="pt-4 flex justify-end">
-                        <Button variant="outline">Sync from Stores</Button>
+                        <Button variant="outline">Синхронизировать из магазинов</Button>
                     </div>
                 </CardContent>
             </Card>

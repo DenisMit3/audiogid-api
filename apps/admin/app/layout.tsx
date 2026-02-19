@@ -9,7 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 function ErrorFallback({ error }: { error: Error }) {
     return (
         <div>
-            <h1>Something went wrong</h1>
+            <h1>Что-то пошло не так</h1>
             <pre>{error.message}</pre>
         </div>
     );

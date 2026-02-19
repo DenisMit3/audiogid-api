@@ -4,21 +4,21 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { Settings, Globe, LayoutGrid, Bell, CreditCard, Database, Bot } from 'lucide-react';
 
 const SECTIONS = [
-    { name: 'General', href: '/settings/general', icon: Settings, desc: 'App name, logos, contact info' },
-    { name: 'Localization', href: '/settings/localization', icon: Globe, desc: 'Languages and translations' },
-    { name: 'Integrations', href: '/settings/integrations', icon: LayoutGrid, desc: 'API keys and webhooks' },
-    { name: 'Notifications', href: '/settings/notifications', icon: Bell, desc: 'Email and Push settings' },
-    { name: 'Billing', href: '/settings/billing', icon: CreditCard, desc: 'Payment providers' },
-    { name: 'AI & Automation', href: '/settings/ai', icon: Bot, desc: 'TTS and Translation', ml: true },
-    { name: 'Backups', href: '/settings/backup', icon: Database, desc: 'Database snapshots' },
+    { name: 'Основные', href: '/settings/general', icon: Settings, desc: 'Название, логотипы, контакты' },
+    { name: 'Локализация', href: '/settings/localization', icon: Globe, desc: 'Языки и переводы' },
+    { name: 'Интеграции', href: '/settings/integrations', icon: LayoutGrid, desc: 'API-ключи и вебхуки' },
+    { name: 'Уведомления', href: '/settings/notifications', icon: Bell, desc: 'Настройки Email и Push' },
+    { name: 'Биллинг', href: '/settings/billing', icon: CreditCard, desc: 'Платёжные провайдеры' },
+    { name: 'ИИ и автоматизация', href: '/settings/ai', icon: Bot, desc: 'Озвучка и перевод', ml: true },
+    { name: 'Резервные копии', href: '/settings/backup', icon: Database, desc: 'Снимки базы данных' },
 ];
 
 export default function SettingsPage() {
     return (
         <div className="space-y-6 p-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                <p className="text-muted-foreground">Manage application configuration and preferences.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Настройки</h1>
+                <p className="text-muted-foreground">Управление конфигурацией и настройками приложения.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

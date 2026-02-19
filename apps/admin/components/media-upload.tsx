@@ -83,7 +83,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                 })
             });
 
-            if (!preRes.ok) throw new Error("Presign failed");
+            if (!preRes.ok) throw new Error("Не удалось получить presign URL");
             const { upload_url, final_url, method, headers } = await preRes.json();
 
             // B. Upload to Blob (PUT)
@@ -105,7 +105,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                 clearInterval(progressInterval);
                 setUploadProgress(100);
 
-                if (!uploadRes.ok) throw new Error("Upload to storage failed");
+                if (!uploadRes.ok) throw new Error("Не удалось загрузить в хранилище");
                 return final_url;
             } catch (e) {
                 clearInterval(progressInterval);
@@ -145,7 +145,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                     source_page_url: sourceUrl
                 })
             });
-            if (!res.ok) throw new Error("Failed to save metadata");
+            if (!res.ok) throw new Error("Не удалось сохранить метаданные");
             return res.json();
         },
         onSuccess: (data) => {
@@ -188,12 +188,12 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
         setUploadProgress(0);
 
         if (!ALLOWED_TYPES.includes(file.type)) {
-            setErrorMsg("Invalid file type. Only JPEG, PNG, WEBP, MP3, WAV are allowed.");
+            setErrorMsg("Неверный тип файла. Допускаются только JPEG, PNG, WEBP, MP3, WAV.");
             return;
         }
 
         if (file.size > MAX_FILE_SIZE) {
-            setErrorMsg("File too large. Max size is 50MB.");
+            setErrorMsg("Файл слишком большой. Максимум 50МБ.");
             return;
         }
 
@@ -216,7 +216,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Media Gallery</CardTitle>
+                <CardTitle className="text-lg">Галерея медиа</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* Gallery Grid */}
@@ -228,7 +228,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                             ) : (
                                 <div className="flex flex-col items-center">
                                     <Music className="w-8 h-8 text-slate-400" />
-                                    <span className="text-xs text-slate-500 mt-2">Audio</span>
+                                    <span className="text-xs text-slate-500 mt-2">Аудио</span>
                                 </div>
                             )}
 
@@ -258,10 +258,10 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                             <input {...getInputProps()} />
                             <Upload className={`w-8 h-8 mb-2 ${errorMsg ? 'text-red-400' : 'text-slate-400'}`} />
                             <span className={`text-sm font-medium text-center px-2 ${errorMsg ? 'text-red-500' : 'text-slate-500'}`}>
-                                {errorMsg || (isDragActive ? 'Drop file...' : 'Drop image/audio')}
+                                {errorMsg || (isDragActive ? 'Перетащите файл...' : 'Перетащите изображение/аудио')}
                             </span>
                             <span className="text-xs text-slate-400 mt-1">
-                                Max 50MB. Images/Audio.
+                                Макс. 50MB. Изображения/Аудио.
                             </span>
                         </div>
                     )}
@@ -274,9 +274,9 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                 }}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add Media Metadata</DialogTitle>
+                            <DialogTitle>Добавить метаданные медиа</DialogTitle>
                             <DialogDescription>
-                                {currentFile ? `File: ${currentFile.name} (${(currentFile.size / 1024 / 1024).toFixed(2)} MB)` : 'Provide media details'}
+                                {currentFile ? `Файл: ${currentFile.name} (${(currentFile.size / 1024 / 1024).toFixed(2)} MB)` : 'Укажите данные медиа'}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -285,7 +285,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                             {uploadMutation.isPending && (
                                 <div className="space-y-1">
                                     <div className="flex justify-between text-xs text-slate-500">
-                                        <span>Uploading...</span>
+                                        <span>Загрузка...</span>
                                         <span>{uploadProgress}%</span>
                                     </div>
                                     <Progress value={uploadProgress} className="h-2" />
@@ -295,21 +295,21 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                             {!uploadMutation.isPending && !uploadedUrl && uploadMutation.isError && (
                                 <div className="p-3 bg-red-50 text-red-600 rounded-md text-sm flex items-start gap-2">
                                     <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                                    <span>Upload Failed: {uploadMutation.error?.message}</span>
+                                    <span>Загрузка не удалась: {uploadMutation.error?.message}</span>
                                 </div>
                             )}
 
                             {uploadedUrl && (
                                 <div className="p-3 bg-green-50 text-green-700 rounded-md text-sm flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4" />
-                                    <span>File uploaded successfully!</span>
+                                    <span>Файл успешно загружен!</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label>License Type <span className="text-red-500">*</span></Label>
+                                <Label>Тип лицензии <span className="text-red-500">*</span></Label>
                                 <Select value={licenseType} onValueChange={setLicenseType}>
                                     <SelectTrigger>
                                         <SelectValue />
@@ -317,21 +317,21 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                                     <SelectContent>
                                         <SelectItem value="cc-by-3.0">Creative Commons BY 3.0</SelectItem>
                                         <SelectItem value="cc-by-sa-3.0">Creative Commons BY-SA 3.0</SelectItem>
-                                        <SelectItem value="cc-0">CC0 (Public Domain)</SelectItem>
-                                        <SelectItem value="own-work">Own Work (I created this)</SelectItem>
+                                        <SelectItem value="cc-0">CC0 (Общественное достояние)</SelectItem>
+                                        <SelectItem value="own-work">Собственная работа (я создал это)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label>Author / Attribution <span className="text-red-500">*</span></Label>
+                                <Label>Автор / Атрибуция <span className="text-red-500">*</span></Label>
                                 <Input
                                     value={author}
                                     onChange={e => setAuthor(e.target.value)}
-                                    placeholder="e.g. John Doe / Wikimedia Commons"
+                                    placeholder="напр. Иван Иванов / Wikimedia Commons"
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Source URL</Label>
+                                <Label>URL источника</Label>
                                 <Input
                                     value={sourceUrl}
                                     onChange={e => setSourceUrl(e.target.value)}
@@ -342,13 +342,13 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
 
                         <DialogFooter className="mt-4">
                             <Button variant="outline" onClick={() => setIsUploadModalOpen(false)} disabled={uploadMutation.isPending}>
-                                Cancel
+                                Отмена
                             </Button>
                             <Button
                                 onClick={() => saveMetaMutation.mutate()}
                                 disabled={!uploadedUrl || !author || saveMetaMutation.isPending}
                             >
-                                {saveMetaMutation.isPending ? 'Saving...' : 'Add to Library'}
+                                {saveMetaMutation.isPending ? 'Сохранение...' : 'Добавить в библиотеку'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

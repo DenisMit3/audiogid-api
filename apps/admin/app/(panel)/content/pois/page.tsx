@@ -62,7 +62,7 @@ const fetchPois = async ({ page, search, status }: { page: number, search: strin
     const res = await fetch(`${API_URL}/admin/pois?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to fetch POIs');
+    if (!res.ok) throw new Error('Не удалось загрузить точки');
     return res.json();
 };
 
@@ -89,14 +89,14 @@ export default function PoiListPage() {
                 <Checkbox
                     checked={table.getIsAllPageRowsSelected()}
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
+                    aria-label="Выбрать все"
                 />
             ),
             cell: ({ row }) => (
                 <Checkbox
                     checked={row.getIsSelected()}
                     onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
+                    aria-label="Выбрать строку"
                 />
             ),
             enableSorting: false,
@@ -104,32 +104,32 @@ export default function PoiListPage() {
         },
         {
             accessorKey: "title_ru",
-            header: "Title",
+            header: "Название",
             cell: ({ row }) => <div className="font-medium">{row.getValue("title_ru")}</div>,
         },
         {
             accessorKey: "city_slug",
-            header: "City",
+            header: "Город",
         },
         {
             accessorKey: "published_at",
-            header: "Status",
+            header: "Статус",
             cell: ({ row }) => {
                 const isPublished = !!row.getValue("published_at");
                 return (
                     <Badge variant={isPublished ? "default" : "secondary"}>
-                        {isPublished ? "Published" : "Draft"}
+                        {isPublished ? "Опубликовано" : "Черновик"}
                     </Badge>
                 );
             },
         },
         {
             accessorKey: "lat",
-            header: "Geo",
+            header: "Геолокация",
             cell: ({ row }) => {
                 const lat = row.original.lat;
                 const lon = row.original.lon;
-                if (!lat || !lon) return <span className="text-muted-foreground text-xs">No Geo</span>;
+                if (!lat || !lon) return <span className="text-muted-foreground text-xs">Нет геолокации</span>;
                 return (
                     <div className="flex items-center gap-1 text-xs">
                         <MapPin className="w-3 h-3" />
@@ -146,19 +146,19 @@ export default function PoiListPage() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">Открыть меню</span>
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
                                 <Link href={`/content/pois/${poi.id}`}>
-                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(poi.id)}>
-                                Copy ID
+                                Копировать ID
                             </DropdownMenuItem>
                             {/* Add Delete/Publish here */}
                         </DropdownMenuContent>
@@ -187,10 +187,10 @@ export default function PoiListPage() {
     return (
         <div className="space-y-4 p-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Points of Interest</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Точки интереса</h1>
                 <Link href="/content/pois/new">
                     <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add POI
+                        <Plus className="mr-2 h-4 w-4" /> Добавить точку
                     </Button>
                 </Link>
             </div>
@@ -199,7 +199,7 @@ export default function PoiListPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search POIs..."
+                        placeholder="Поиск точек..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-8"
@@ -211,7 +211,7 @@ export default function PoiListPage() {
             {Object.keys(rowSelection).length > 0 && (
                 <div className="bg-muted/50 p-2 rounded flex items-center gap-2">
                     <span className="text-sm font-medium ml-2">
-                        {Object.keys(rowSelection).length} selected
+                        {Object.keys(rowSelection).length} выбрано
                     </span>
                     <div className="flex-1" />
                     <Button
@@ -231,7 +231,7 @@ export default function PoiListPage() {
                             setRowSelection({});
                         }}
                     >
-                        Publish
+                        Опубликовать
                     </Button>
                     <Button
                         size="sm"
@@ -250,13 +250,13 @@ export default function PoiListPage() {
                             setRowSelection({});
                         }}
                     >
-                        Unpublish
+                        Снять с публикации
                     </Button>
                     <Button
                         size="sm"
                         variant="destructive"
                         onClick={async () => {
-                            if (!confirm("Are you sure?")) return;
+                            if (!confirm("Вы уверены?")) return;
                             const ids = Object.keys(rowSelection);
                             await fetch(`${API_URL}/admin/pois/bulk-delete`, {
                                 method: 'POST',
@@ -270,7 +270,7 @@ export default function PoiListPage() {
                             setRowSelection({});
                         }}
                     >
-                        Delete
+                        Удалить
                     </Button>
                 </div>
             )}
@@ -299,7 +299,7 @@ export default function PoiListPage() {
                         {isLoading ? (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Loading...
+                                    Загрузка...
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -321,7 +321,7 @@ export default function PoiListPage() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                    Нет результатов.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -337,16 +337,16 @@ export default function PoiListPage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                 >
-                    Previous
+                    Назад
                 </Button>
-                <div className="text-sm">Page {page} of {data?.pages || 1}</div>
+                <div className="text-sm">Страница {page} из {data?.pages || 1}</div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!data || page >= data.pages}
                 >
-                    Next
+                    Вперёд
                 </Button>
             </div>
         </div>

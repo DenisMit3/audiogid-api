@@ -64,9 +64,9 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center py-4 gap-2">
                 {Object.keys(rowSelection).length > 0 && (
                     <>
-                        <span className="text-sm text-muted-foreground">{Object.keys(rowSelection).length} selected</span>
-                        <Button variant="outline" size="sm" onClick={() => handleBulk('publish')}>Publish</Button>
-                        <Button variant="outline" size="sm" onClick={() => handleBulk('unpublish')}>Unpublish</Button>
+                        <span className="text-sm text-muted-foreground">{Object.keys(rowSelection).length} выбрано</span>
+                        <Button variant="outline" size="sm" onClick={() => handleBulk('publish')}>Опубликовать</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleBulk('unpublish')}>Снять с публикации</Button>
                     </>
                 )}
             </div>
@@ -108,7 +108,7 @@ export function DataTable<TData, TValue>({
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                    Нет результатов.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -122,7 +122,7 @@ export function DataTable<TData, TValue>({
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                 >
-                    Previous
+                    Назад
                 </Button>
                 <Button
                     variant="outline"
@@ -130,7 +130,7 @@ export function DataTable<TData, TValue>({
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                 >
-                    Next
+                    Вперёд
                 </Button>
             </div>
         </div>

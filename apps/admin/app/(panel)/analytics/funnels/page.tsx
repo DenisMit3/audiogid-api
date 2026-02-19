@@ -15,10 +15,10 @@ export default function FunnelsPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Funnels</h1>
+                <h1 className="text-3xl font-bold">Воронки</h1>
                 {/* Create logic could be a modal, for now just list */}
                 <Button>
-                    <Plus className="mr-2 h-4 w-4" /> New Funnel
+                    <Plus className="mr-2 h-4 w-4" /> Новая воронка
                 </Button>
             </div>
 
@@ -27,13 +27,13 @@ export default function FunnelsPage() {
                     <FunnelSection key={funnel.id} funnel={funnel} />
                 ))}
                 {funnels && funnels.length === 0 && (
-                    <div className="text-center text-muted-foreground">No funnels found. Create one to metrics.</div>
+                    <div className="text-center text-muted-foreground">Воронки не найдены. Создайте одну для отслеживания метрик.</div>
                 )}
-                {!funnels && <div>Loading funnels...</div>}
+                {!funnels && <div>Загрузка воронок...</div>}
             </div>
 
             <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Debug Tools</h3>
+                <h3 className="font-semibold mb-2">Инструменты отладки</h3>
                 <DebugTrigger />
             </div>
         </div>
@@ -66,7 +66,7 @@ function FunnelSection({ funnel }: { funnel: any }) {
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div>Loading stats...</div>
+                        <div>Загрузка статистики...</div>
                     )}
                 </div>
             </CardContent>
@@ -77,7 +77,7 @@ function FunnelSection({ funnel }: { funnel: any }) {
 function DebugTrigger() {
     const trigger = async () => {
         await fetch('/api/proxy/admin/analytics/trigger-funnels', { method: 'POST' });
-        alert('Triggered!');
+        alert('Запущено!');
         // Ideally invalidate SWR
     }
 
@@ -87,11 +87,11 @@ function DebugTrigger() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name: "Onboarding Flow",
+                name: "Поток онбординга",
                 steps: [
-                    { order_index: 0, event_type: "app_open", step_name: "App Open" },
-                    { order_index: 1, event_type: "tour_started", step_name: "Started Tour" },
-                    { order_index: 2, event_type: "purchase_completed", step_name: "Purchased" }
+                    { order_index: 0, event_type: "app_open", step_name: "Открытие приложения" },
+                    { order_index: 1, event_type: "tour_started", step_name: "Начало тура" },
+                    { order_index: 2, event_type: "purchase_completed", step_name: "Покупка" }
                 ]
             })
         });
@@ -100,8 +100,8 @@ function DebugTrigger() {
 
     return (
         <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={trigger}>Run Calc Job</Button>
-            <Button variant="outline" size="sm" onClick={createDefault}>Create Default Funnel</Button>
+            <Button variant="outline" size="sm" onClick={trigger}>Запустить расчёт</Button>
+            <Button variant="outline" size="sm" onClick={createDefault}>Создать воронку по умолчанию</Button>
         </div>
     )
 }

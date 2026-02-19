@@ -38,16 +38,16 @@ export function Sidebar({ permissions }: { permissions: string[] }) {
 
     // Stub links for now
     const links = [
-        { name: 'Dashboard', href: '/dashboard', icon: Activity, perm: '*' },
-        { name: 'Cities', href: '/cities', icon: MapPin, perm: 'city:read' },
-        { name: 'POIs', href: '/content/pois', icon: MapPin, perm: 'poi:read' },
-        { name: 'Tours', href: '/content/tours', icon: Route, perm: 'tour:read' },
-        { name: 'Media', href: '/content/media', icon: Eye, perm: 'media:read' },
-        { name: 'QR Codes', href: '/qr-codes', icon: QrCode, perm: 'poi:read' },
-        { name: 'Jobs', href: '/jobs', icon: Zap, perm: 'jobs:read' },
-        { name: 'Analytics', href: '/analytics/overview', icon: Activity, perm: 'analytics:read' },
-        { name: 'Users', href: '/users', icon: Shield, perm: 'users:manage' },
-        { name: 'Settings', href: '/settings', icon: Settings, perm: 'settings:manage' }
+        { name: 'Панель управления', href: '/dashboard', icon: Activity, perm: '*' },
+        { name: 'Города', href: '/cities', icon: MapPin, perm: 'city:read' },
+        { name: 'Точки интереса', href: '/content/pois', icon: MapPin, perm: 'poi:read' },
+        { name: 'Туры', href: '/content/tours', icon: Route, perm: 'tour:read' },
+        { name: 'Медиа', href: '/content/media', icon: Eye, perm: 'media:read' },
+        { name: 'QR-коды', href: '/qr-codes', icon: QrCode, perm: 'poi:read' },
+        { name: 'Задачи', href: '/jobs', icon: Zap, perm: 'jobs:read' },
+        { name: 'Аналитика', href: '/analytics/overview', icon: Activity, perm: 'analytics:read' },
+        { name: 'Пользователи', href: '/users', icon: Shield, perm: 'users:manage' },
+        { name: 'Настройки', href: '/settings', icon: Settings, perm: 'settings:manage' }
     ];
 
     // Filter by permissions
@@ -62,7 +62,7 @@ export function Sidebar({ permissions }: { permissions: string[] }) {
     return (
         <div className="hidden border-r bg-gray-100/40 lg:block dark:bg-gray-800/40 w-[240px] h-screen flex-col">
             <div className="flex h-[60px] items-center border-b px-6">
-                <span className="font-bold">AudioGuide Admin</span>
+                <span className="font-bold">Аудиогид Админ</span>
             </div>
             <div className="flex-1 overflow-auto py-2">
                 <nav className="grid items-start px-4 text-sm font-medium">
@@ -118,10 +118,10 @@ export function Topbar({ user, onLogout }: { user: any, onLogout: () => void }) 
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onLogout}>
-                        <LogOut className="mr-2 h-4 w-4" /> Log out
+                        <LogOut className="mr-2 h-4 w-4" /> Выйти
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

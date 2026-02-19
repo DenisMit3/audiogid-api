@@ -20,16 +20,16 @@ export default function Error({
             <div className="bg-red-50 p-4 rounded-full mb-4">
                 <AlertCircle className="h-12 w-12 text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight mb-2">Something went wrong!</h2>
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Что-то пошло не так!</h2>
             <p className="text-muted-foreground max-w-md mb-6">
-                {error.message || "An unexpected error occurred within the admin panel. Please try again."}
+                {error.message || "Произошла непредвиденная ошибка в админ-панели. Пожалуйста, попробуйте снова."}
             </p>
             <div className="flex gap-4">
                 <Button onClick={reset} variant="default">
-                    Try again
+                    Попробовать снова
                 </Button>
                 <Button onClick={() => window.location.href = '/dashboard'} variant="outline">
-                    Go to Dashboard
+                    На главную
                 </Button>
             </div>
         </div>

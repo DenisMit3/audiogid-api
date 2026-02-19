@@ -197,7 +197,7 @@ class DebugLogger {
 
     isEnabled() { return this.enabled; }
 
-    subscribe(fn: (logs: LogEntry[]) => void) {
+    subscribe(fn: (logs: LogEntry[]) => void): () => boolean {
         this.listeners.add(fn);
         return () => this.listeners.delete(fn);
     }
@@ -207,7 +207,23 @@ class DebugLogger {
     }
 }
 
-export const logger: Pick<DebugLogger, 'add' | 'info' | 'warn' | 'error' | 'success' | 'api' | 'auth' | 'nav' | 'getLogs' | 'clear' | 'toggle' | 'isEnabled' | 'subscribe'> = typeof window !== 'undefined' ? new DebugLogger() : {
+interface ILogger {
+    add(level: LogLevel, message: string, data?: any, stack?: string): void;
+    info(msg: string, data?: any): void;
+    warn(msg: string, data?: any): void;
+    error(msg: string, data?: any, stack?: string): void;
+    success(msg: string, data?: any): void;
+    api(msg: string, data?: any): void;
+    auth(msg: string, data?: any): void;
+    nav(msg: string, data?: any): void;
+    getLogs(): LogEntry[];
+    clear(): void;
+    toggle(enabled?: boolean): boolean;
+    isEnabled(): boolean;
+    subscribe(fn: (logs: LogEntry[]) => void): () => boolean;
+}
+
+const noopLogger: ILogger = {
     add: () => {},
     info: () => {},
     warn: () => {},
@@ -220,7 +236,9 @@ export const logger: Pick<DebugLogger, 'add' | 'info' | 'warn' | 'error' | 'succ
     clear: () => {},
     toggle: () => false,
     isEnabled: () => false,
-    subscribe: () => () => {}
+    subscribe: () => () => false
 };
+
+export const logger: ILogger = typeof window !== 'undefined' ? new DebugLogger() : noopLogger;
 
 export type { LogEntry, LogLevel };

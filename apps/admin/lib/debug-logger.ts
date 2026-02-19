@@ -207,7 +207,7 @@ class DebugLogger {
     }
 }
 
-export const logger = typeof window !== 'undefined' ? new DebugLogger() : {
+export const logger: Pick<DebugLogger, 'add' | 'info' | 'warn' | 'error' | 'success' | 'api' | 'auth' | 'nav' | 'getLogs' | 'clear' | 'toggle' | 'isEnabled' | 'subscribe'> = typeof window !== 'undefined' ? new DebugLogger() : {
     add: () => {},
     info: () => {},
     warn: () => {},
@@ -221,6 +221,6 @@ export const logger = typeof window !== 'undefined' ? new DebugLogger() : {
     toggle: () => false,
     isEnabled: () => false,
     subscribe: () => () => {}
-} as DebugLogger;
+};
 
 export type { LogEntry, LogLevel };

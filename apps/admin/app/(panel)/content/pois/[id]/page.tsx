@@ -7,17 +7,10 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import PoiForm from '@/components/PoiForm';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-
 const fetchPoi = async (id: string) => {
-    if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-    const res = await fetch(`${API_URL}/admin/pois/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetch(`/api/proxy/admin/pois/${id}`);
     if (!res.ok) throw new Error("Не удалось загрузить точку");
-    return res.json(); // Returns { poi: {..}, sources: [], media: [] } -> PoiForm expects { ...poi, sources, media }
+    return res.json();
 };
 
 export default function PoiEditPage({ params }: { params: { id: string } }) {

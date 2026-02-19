@@ -7,15 +7,8 @@ import { useParams } from "next/navigation";
 
 import { CityForm } from "@/components/cities/city-form";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-
 const fetchCity = async (id: string) => {
-    if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-    const res = await fetch(`${API_URL}/admin/cities/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetch(`/api/proxy/admin/cities/${id}`);
     if (!res.ok) throw new Error('Не удалось загрузить город');
     return res.json();
 };

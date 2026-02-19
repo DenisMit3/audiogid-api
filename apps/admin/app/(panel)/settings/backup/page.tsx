@@ -38,10 +38,7 @@ export default function BackupSettingsPage() {
                     </CardContent>
                     <CardFooter>
                         <Button variant="outline" className="w-full" onClick={() => {
-                            const token = localStorage.getItem('admin_token');
-                            const url = `${process.env.NEXT_PUBLIC_API_URL}/admin/pois/export`;
-                            // Fetch with auth, then download blob
-                            fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+                            fetch('/api/proxy/admin/pois/export')
                                 .then(res => res.blob())
                                 .then(blob => {
                                     const url = window.URL.createObjectURL(blob);

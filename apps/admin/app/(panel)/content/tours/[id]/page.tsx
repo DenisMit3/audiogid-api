@@ -7,15 +7,8 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import TourEditor from '@/components/tour-editor';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-
 const fetchTour = async (id: string) => {
-    if (!API_URL) throw new Error("NEXT_PUBLIC_API_URL is required");
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-    const res = await fetch(`${API_URL}/admin/tours/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetch(`/api/proxy/admin/tours/${id}`);
     if (!res.ok) throw new Error("Не удалось загрузить тур");
     return res.json();
 };

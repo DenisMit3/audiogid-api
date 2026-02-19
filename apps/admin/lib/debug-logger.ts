@@ -39,6 +39,7 @@ class DebugLogger {
     private maxLogs = 100;
     private listeners: Set<(logs: LogEntry[]) => void> = new Set();
     private enabled = true;
+    private isLogging = false; // Prevent recursion
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -51,23 +52,30 @@ class DebugLogger {
     }
 
     private interceptConsole() {
-        const origLog = console.log;
-        const origWarn = console.warn;
-        const origError = console.error;
+        const origLog = console.log.bind(console);
+        const origWarn = console.warn.bind(console);
+        const origError = console.error.bind(console);
+        const self = this;
 
-        console.log = (...args) => {
-            origLog.apply(console, args);
-            this.add('info', args.map(a => this.stringify(a)).join(' '));
+        console.log = function(...args: any[]) {
+            origLog(...args);
+            if (!self.isLogging) {
+                self.addInternal('info', args.map(a => self.stringify(a)).join(' '));
+            }
         };
 
-        console.warn = (...args) => {
-            origWarn.apply(console, args);
-            this.add('warn', args.map(a => this.stringify(a)).join(' '));
+        console.warn = function(...args: any[]) {
+            origWarn(...args);
+            if (!self.isLogging) {
+                self.addInternal('warn', args.map(a => self.stringify(a)).join(' '));
+            }
         };
 
-        console.error = (...args) => {
-            origError.apply(console, args);
-            this.add('error', args.map(a => this.stringify(a)).join(' '), undefined, new Error().stack);
+        console.error = function(...args: any[]) {
+            origError(...args);
+            if (!self.isLogging) {
+                self.addInternal('error', args.map(a => self.stringify(a)).join(' '), undefined, new Error().stack);
+            }
         };
     }
 
@@ -148,8 +156,8 @@ class DebugLogger {
         }
     }
 
-    add(level: LogLevel, message: string, data?: any, stack?: string) {
-        if (!this.enabled) return;
+    private addInternal(level: LogLevel, message: string, data?: any, stack?: string) {
+        if (!this.enabled || this.isLogging) return;
 
         const entry: LogEntry = {
             id: Math.random().toString(36).slice(2, 9),
@@ -165,11 +173,29 @@ class DebugLogger {
             this.logs = this.logs.slice(0, this.maxLogs);
         }
 
-        // Styled console output
-        const style = `color: ${COLORS[level]}; font-weight: bold;`;
-        console.log(`%c${ICONS[level]} [${level.toUpperCase()}]`, style, message);
+        this.notify();
+    }
+
+    add(level: LogLevel, message: string, data?: any, stack?: string) {
+        if (!this.enabled || this.isLogging) return;
+        this.isLogging = true;
+
+        const entry: LogEntry = {
+            id: Math.random().toString(36).slice(2, 9),
+            level,
+            message,
+            data,
+            timestamp: new Date(),
+            stack
+        };
+
+        this.logs.unshift(entry);
+        if (this.logs.length > this.maxLogs) {
+            this.logs = this.logs.slice(0, this.maxLogs);
+        }
 
         this.notify();
+        this.isLogging = false;
     }
 
     info(msg: string, data?: any) { this.add('info', msg, data); }

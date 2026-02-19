@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
-import 'package:mobile_flutter/domain/repositories/tour_repository.dart';
+import 'package:mobile_flutter/data/repositories/tour_repository.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
@@ -35,7 +35,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCity = ref.watch(selectedCityProvider).valueOrNull;
+    final selectedCity = ref.watch(selectedCityProvider).value;
 
     if (selectedCity == null) {
       return const Scaffold(
@@ -46,7 +46,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
     }
 
     final toursStream = ref.watch(tourRepositoryProvider).watchTours(selectedCity);
-    final selectedIds = ref.watch(selectionNotifierProvider);
+    final selectedIds = ref.watch(selectionProvider);
     final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
     return Scaffold(
@@ -71,7 +71,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.7,
                   child: ErrorStateWidget.generic(
-                    message: snapshot.error.toString(),
+                    error: snapshot.error.toString(),
                     onRetry: () => setState(() {}),
                   ),
                 ),
@@ -126,7 +126,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                   isSelected: selectedIds.contains(tours[index].id),
                   isSelectionMode: isMultiSelectMode,
                   onToggle: () {
-                    ref.read(selectionNotifierProvider.notifier).toggle(tours[index].id);
+                    ref.read(selectionProvider.notifier).toggle(tours[index].id);
                     if (!isMultiSelectMode) {
                         setState(() => _isMultiSelectMode = true);
                     }
@@ -157,14 +157,16 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
         title: Text('Выбрано: ${selectedIds.length}'),
         leading: AccessibleIconButton(
           icon: Icons.close,
+          tooltip: 'Отменить выбор',
           onPressed: () {
              setState(() => _isMultiSelectMode = false);
-             ref.read(selectionNotifierProvider.notifier).clear();
+             ref.read(selectionProvider.notifier).clear();
           },
         ),
         actions: [
           AccessibleIconButton(
             icon: Icons.select_all,
+            tooltip: 'Выбрать все',
             onPressed: () {
                // Logic to select all visible
             },
@@ -303,7 +305,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                            final state = ref.read(purchaseServiceProvider);
                             if (state.status == PurchaseStatusState.restored || state.status == PurchaseStatusState.success) {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Покупка успешна!')));
-                                ref.read(selectionNotifierProvider.notifier).clear();
+                                ref.read(selectionProvider.notifier).clear();
                                 setState(() => _isMultiSelectMode = false);
                            } else if (state.status == PurchaseStatusState.error) {
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error ?? 'Не удалось купить')));

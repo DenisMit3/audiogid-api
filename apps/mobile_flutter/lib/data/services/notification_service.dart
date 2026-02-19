@@ -1,12 +1,13 @@
-import 'package:dio/dio.dart';
-import '../../core/api/api_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/router/app_router.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
-final notificationServiceProvider = Provider<NotificationService>((ref) {
-  return NotificationService(ref);
-});
+part 'notification_service.g.dart';
 
 /// Notification channel IDs
 class NotificationChannels {
@@ -18,12 +19,16 @@ class NotificationChannels {
 /// Notification IDs for scheduled tour reminders
 class NotificationIds {
   static const dailyReminder = 1000;
-  static const tourReminderBase = 2000; // Tour-specific reminders start from here
+  static const tourReminderBase = 2000;
+}
+
+@Riverpod(keepAlive: true)
+NotificationService notificationService(Ref ref) {
+  return NotificationService(ref);
 }
 
 class NotificationService {
   final Ref _ref;
-  final _firebaseMessaging = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
@@ -33,19 +38,9 @@ class NotificationService {
     if (_isInitialized) return;
     
     // Initialize timezone for scheduled notifications
-    tz.initializeTimeZones();
+    tz_data.initializeTimeZones();
     
-    // 1. Request Permission
-    final settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-    
-    debugPrint('Notification permission: ${settings.authorizationStatus}');
-    
-    // 2. Local Notifications Init with notification channels
+    // Local Notifications Init
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -56,59 +51,14 @@ class NotificationService {
     const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
     await _localNotifications.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
     // Create Android notification channels
     await _createNotificationChannels();
-
-    // 3. Get Token and Register
-    try {
-      final token = await _firebaseMessaging.getToken();
-      debugPrint('FCM Token: $token'); 
-      if (token != null) {
-         await _registerToken(token);
-      }
-      
-      // Listen for refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
-         _registerToken(newToken);
-      });
-
-    } catch (e) {
-      debugPrint('Error getting FCM token: $e');
-    }
-
-
-
-  // ... inside init() ...
-    // 4. Foreground Handler
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-       _showLocalNotification(message);
-    });
-    
-    // 5. Background Tap Handler
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessageOpened);
     
     _isInitialized = true;
-  }
-
-  Future<void> _registerToken(String token) async {
-      try {
-           final dio = _ref.read(dioProvider);
-           final prefs = await SharedPreferences.getInstance();
-           final deviceId = prefs.getString('device_anon_id') ?? 'unknown';
-           
-           await dio.post('/push/register', data: {
-              'token': token,
-              'device_id': deviceId,
-              'platform': Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown') 
-           });
-           debugPrint("Push Token registered");
-      } catch (e) {
-          debugPrint("Failed to register push token: $e");
-      }
   }
 
   Future<void> _createNotificationChannels() async {
@@ -145,69 +95,31 @@ class NotificationService {
     }
   }
 
-  void _handleRemoteMessageOpened(RemoteMessage message) {
-     debugPrint('Notification opened app: ${message.data}');
-     final data = message.data;
-     _navigateFromData(data);
-  }
-
-  void _navigateFromData(Map<String, dynamic> data) {
-      final type = data['type'];
-      final id = data['id'] ?? data['target_id']; // Handle dynamic keys
-      
-      if (type != null && id != null) {
-          final router = _ref.read(routerProvider);
-          if (type == 'tour') {
-              router.push('/tour/$id');
-          } else if (type == 'poi') {
-              router.push('/poi/$id');
-          }
-      }
-  }
-
   void _onNotificationTap(NotificationResponse response) {
     debugPrint('Notification clicked: ${response.payload}');
     
-    // Parse payload and navigate
     final payload = response.payload;
     if (payload != null) {
-      // Payload format: "type:id" e.g., "tour:123" or "poi:456"
       final parts = payload.split(':');
       if (parts.length >= 2) {
         final type = parts[0];
         final id = parts[1];
         debugPrint('Navigate to $type with id $id');
         
-        // Navigation using Router
         try {
-            final router = _ref.read(routerProvider);
-            if (type == 'tour') {
-                router.push('/tour/$id');
-            } else if (type == 'poi') {
-                router.push('/poi/$id');
-            }
+          final router = _ref.read(routerProvider);
+          if (type == 'tour') {
+            router.push('/tour/$id');
+          } else if (type == 'poi') {
+            router.push('/poi/$id');
+          }
         } catch (e) {
-            debugPrint("Navigation error: $e");
-            // Fallback to storing in prefs
-             SharedPreferences.getInstance().then((prefs) {
-              prefs.setString('pending_notification_navigation', payload);
-            });
+          debugPrint("Navigation error: $e");
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('pending_notification_navigation', payload);
+          });
         }
       }
-    }
-  }
-
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    final android = message.notification?.android;
-
-    if (notification != null && android != null) {
-      await showNotification(
-        id: notification.hashCode,
-        title: notification.title,
-        body: notification.body,
-        channelId: NotificationChannels.pushMessages,
-      );
     }
   }
   
@@ -220,10 +132,10 @@ class NotificationService {
     String channelId = NotificationChannels.tourReminders,
   }) async {
     await _localNotifications.show(
-      id,
-      title,
-      body,
-      NotificationDetails(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
           channelId == NotificationChannels.tourReminders 
@@ -244,12 +156,27 @@ class NotificationService {
     );
   }
 
-  // ============== TOUR REMINDER SCHEDULING API ==============
+  /// Show a local notification with custom data
+  Future<void> showLocalNotification({
+    required int id,
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+  }) async {
+    final payloadStr = payload != null 
+        ? '${payload['type']}:${payload['id']}' 
+        : null;
+    
+    await showNotification(
+      id: id,
+      title: title,
+      body: body,
+      payload: payloadStr,
+      channelId: NotificationChannels.pushMessages,
+    );
+  }
 
   /// Schedule a daily reminder for tours at a specific time
-  /// 
-  /// [hour] and [minute] define the daily reminder time
-  /// [title] and [body] are the notification content
   Future<void> scheduleDailyTourReminder({
     required int hour,
     required int minute,
@@ -266,17 +193,16 @@ class NotificationService {
       minute,
     );
     
-    // If the scheduled time has passed today, schedule for tomorrow
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
     await _localNotifications.zonedSchedule(
-      NotificationIds.dailyReminder,
-      title,
-      body,
-      scheduledDate,
-      const NotificationDetails(
+      id: NotificationIds.dailyReminder,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           NotificationChannels.tourReminders,
           'Напоминания о турах',
@@ -291,19 +217,14 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeat daily
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
     
     debugPrint('Daily reminder scheduled for $hour:$minute');
   }
 
-  /// Schedule a reminder for a specific tour at a specific time
-  /// 
-  /// [tourId] is used to generate a unique notification ID
-  /// [scheduledDateTime] is when the reminder should fire
+  /// Schedule a reminder for a specific tour
   Future<void> scheduleTourReminder({
     required String tourId,
     required String tourTitle,
@@ -315,11 +236,11 @@ class NotificationService {
     final tzDateTime = tz.TZDateTime.from(scheduledDateTime, tz.local);
     
     await _localNotifications.zonedSchedule(
-      notificationId,
-      'Напоминание: $tourTitle',
-      message ?? 'Пора начать тур!',
-      tzDateTime,
-      NotificationDetails(
+      id: notificationId,
+      title: 'Напоминание: $tourTitle',
+      body: message ?? 'Пора начать тур!',
+      scheduledDate: tzDateTime,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           NotificationChannels.tourReminders,
           'Напоминания о турах',
@@ -334,22 +255,69 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: 'tour:$tourId',
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
     
     debugPrint('Tour reminder scheduled for $tourTitle at $scheduledDateTime');
-    
-    // Save reminder info to preferences for tracking
-    final prefs = await SharedPreferences.getInstance();
-    final reminders = prefs.getStringList('scheduled_tour_reminders') ?? [];
-    reminders.add('$tourId|$notificationId|${scheduledDateTime.toIso8601String()}');
-    await prefs.setStringList('scheduled_tour_reminders', reminders);
   }
 
-  /// Schedule a reminder relative to now (e.g., "remind me in 2 hours")
+  /// Cancel a specific notification
+  Future<void> cancelNotification(int notificationId) async {
+    await _localNotifications.cancel(id: notificationId);
+  }
+
+  /// Cancel daily reminder
+  Future<void> cancelDailyReminder() async {
+    await _localNotifications.cancel(id: NotificationIds.dailyReminder);
+  }
+
+  /// Cancel all notifications
+  Future<void> cancelAllNotifications() async {
+    await _localNotifications.cancelAll();
+  }
+
+  /// Check if notifications are enabled
+  Future<bool> areNotificationsEnabled() async {
+    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      return await androidPlugin.areNotificationsEnabled() ?? false;
+    }
+    return true;
+  }
+
+  /// Request notification permissions (iOS)
+  Future<bool> requestPermissions() async {
+    final iosPlugin = _localNotifications.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+    if (iosPlugin != null) {
+      return await iosPlugin.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      ) ?? false;
+    }
+    return true;
+  }
+
+  /// Check if notification permission is granted
+  Future<bool> hasNotificationPermission() async {
+    return await areNotificationsEnabled();
+  }
+
+  /// Request permission with explanation dialog
+  Future<bool> requestPermissionWithExplanation() async {
+    return await requestPermissions();
+  }
+
+  /// Cancel a tour-specific reminder
+  Future<void> cancelTourReminder(String tourId) async {
+    final notificationId = NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
+    await cancelNotification(notificationId);
+  }
+
+  /// Schedule a relative tour reminder (e.g., 1 hour from now)
   Future<void> scheduleRelativeTourReminder({
     required String tourId,
     required String tourTitle,
@@ -364,82 +332,4 @@ class NotificationService {
       message: message,
     );
   }
-
-  /// Cancel a specific tour reminder
-  Future<void> cancelTourReminder(String tourId) async {
-    final notificationId = NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
-    await _localNotifications.cancel(notificationId);
-    
-    // Remove from saved reminders
-    final prefs = await SharedPreferences.getInstance();
-    final reminders = prefs.getStringList('scheduled_tour_reminders') ?? [];
-    reminders.removeWhere((r) => r.startsWith('$tourId|'));
-    await prefs.setStringList('scheduled_tour_reminders', reminders);
-    
-    debugPrint('Cancelled reminder for tour $tourId');
-  }
-
-  /// Cancel the daily reminder
-  Future<void> cancelDailyReminder() async {
-    await _localNotifications.cancel(NotificationIds.dailyReminder);
-    debugPrint('Daily reminder cancelled');
-  }
-
-  /// Cancel all scheduled reminders
-  Future<void> cancelAllReminders() async {
-    await _localNotifications.cancelAll();
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('scheduled_tour_reminders');
-    
-    debugPrint('All reminders cancelled');
-  }
-
-  /// Get list of scheduled tour reminders
-  Future<List<ScheduledTourReminder>> getScheduledReminders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final reminders = prefs.getStringList('scheduled_tour_reminders') ?? [];
-    
-    return reminders.map((r) {
-      final parts = r.split('|');
-      return ScheduledTourReminder(
-        tourId: parts[0],
-        notificationId: int.parse(parts[1]),
-        scheduledTime: DateTime.parse(parts[2]),
-      );
-    }).where((r) => r.scheduledTime.isAfter(DateTime.now())).toList();
-  }
-
-  /// Check if notification permissions are granted
-  Future<bool> hasNotificationPermission() async {
-    final settings = await _firebaseMessaging.getNotificationSettings();
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-           settings.authorizationStatus == AuthorizationStatus.provisional;
-  }
-
-  /// Request notification permissions with explanation UI
-  /// Returns true if permission was granted
-  Future<bool> requestPermissionWithExplanation() async {
-    final settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-    
-    return settings.authorizationStatus == AuthorizationStatus.authorized;
-  }
-}
-
-/// Represents a scheduled tour reminder
-class ScheduledTourReminder {
-  final String tourId;
-  final int notificationId;
-  final DateTime scheduledTime;
-
-  ScheduledTourReminder({
-    required this.tourId,
-    required this.notificationId,
-    required this.scheduledTime,
-  });
 }

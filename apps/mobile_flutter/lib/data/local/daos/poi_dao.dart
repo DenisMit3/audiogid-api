@@ -26,7 +26,7 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
           .toList();
       final allMedia = rows
           .map((row) => row.readTableOrNull(media))
-          .whereType<Media>()
+          .whereType<MediaData>()
           .toSet()
           .toList();
       final allSources = rows
@@ -99,8 +99,8 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
 
     return (select(pois)
       ..where((t) => 
-        t.lat.isBetween(lat - latDelta, lat + latDelta) & 
-        t.lon.isBetween(lon - lonDelta, lon + lonDelta)
+        t.lat.isBetween(Variable(lat - latDelta), Variable(lat + latDelta)) & 
+        t.lon.isBetween(Variable(lon - lonDelta), Variable(lon + lonDelta))
       )
     ).get();
   }
@@ -113,7 +113,7 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
 class PoiWithDetails {
   final Poi poi;
   final List<Narration> narrations;
-  final List<Media> media;
+  final List<MediaData> media;
   final List<PoiSource> sources;
 
   PoiWithDetails(this.poi, this.narrations, this.media, this.sources);

@@ -41,8 +41,8 @@ class Tours extends Table {
 
 class TourItems extends Table {
   TextColumn get id => text()();
-  TextColumn get tourId => text().references(Tours, #id, onDelete: OperationAction.cascade)();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: OperationAction.cascade)();
+  TextColumn get tourId => text().references(Tours, #id, onDelete: KeyAction.cascade)();
+  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
   IntColumn get orderIndex => integer()();
 
   @override
@@ -78,7 +78,7 @@ class Pois extends Table {
 
 class Narrations extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: OperationAction.cascade)();
+  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get url => text()();
   TextColumn get locale => text()();
   RealColumn get durationSeconds => real().nullable()();
@@ -94,7 +94,7 @@ class Narrations extends Table {
 
 class Media extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: OperationAction.cascade)();
+  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get url => text()();
   TextColumn get mediaType => text()();
   TextColumn get author => text().nullable()();
@@ -108,7 +108,7 @@ class Media extends Table {
 
 class PoiSources extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: OperationAction.cascade)();
+  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
   TextColumn get url => text().nullable()();
 
@@ -257,6 +257,6 @@ LazyDatabase _openConnection() {
 }
 
 @riverpod
-AppDatabase appDatabase(AppDatabaseRef ref) {
+AppDatabase appDatabase(Ref ref) {
   return AppDatabase();
 }

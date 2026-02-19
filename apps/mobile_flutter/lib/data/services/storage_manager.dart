@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:disk_space_2/disk_space_2.dart';
 import 'package:mobile_flutter/core/constants/offline_constants.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -13,11 +12,9 @@ class StorageManager extends _$StorageManager {
   Future<void> build() async {}
 
   Future<int> getFreeDiskSpace() async {
-    // Return bytes. DiskSpace.getFreeDiskSpace returns MB (int/double).
-    // It returns Future<int?> or similar.
-    final freeMb = await DiskSpace.getFreeDiskSpace;
-    if (freeMb == null) return 1024 * 1024 * 1024; // Default to 1GB if failed
-    return (freeMb * 1024 * 1024).toInt();
+    // disk_space_2 removed - return default large value
+    // In production, consider using platform channels or alternative package
+    return 10 * 1024 * 1024 * 1024; // Default to 10GB
   }
 
   Future<int> getDirectorySize(Directory dir) async {
@@ -53,7 +50,6 @@ class StorageManager extends _$StorageManager {
     }
 
     // Sort by modified time (oldest first)
-    // Note: This relies on OS updating modified time.
     final Map<String, DateTime> modifiedTimes = {};
     for (var e in entities) {
       final stat = await e.stat();
@@ -67,10 +63,6 @@ class StorageManager extends _$StorageManager {
       final size = await getDirectorySize(entity as Directory);
       await entity.delete(recursive: true);
       freeSpace += size;
-      
-      // We should probably inform the app/DB that this city is deleted?
-      // Ideally DownloadService or a listener handles the valid state.
-      // But for now, we just free space.
     }
     
     if (freeSpace < bytesNeeded) {

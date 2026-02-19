@@ -41,7 +41,7 @@ class AppConfig {
 }
 
 @riverpod
-AppConfig appConfig(AppConfigRef ref) {
+AppConfig appConfig(Ref ref) {
   // In a real app, you might get this from String.fromEnvironment('FLAVOR')
   const flavorName = String.fromEnvironment('FLAVOR', defaultValue: 'dev');
   final flavor = AppFlavor.values.firstWhere(

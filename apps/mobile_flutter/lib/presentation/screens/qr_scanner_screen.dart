@@ -198,6 +198,14 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
       }
     }
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
+    controller.dispose();
+    super.dispose();
+  }
 }
 
 class ScannerOverlayPainter extends CustomPainter {
@@ -264,14 +272,6 @@ class ScannerOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-  
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    routeObserver.unsubscribe(this);
-    controller.dispose();
-    super.dispose();
-  }
 }
 
 /// Global route observer for detecting navigation events

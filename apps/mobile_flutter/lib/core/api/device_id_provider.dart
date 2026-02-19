@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 part 'device_id_provider.g.dart';
 
 @riverpod
-Future<String> deviceId(DeviceIdRef ref) async {
+Future<String> deviceId(Ref ref) async {
   final prefs = await SharedPreferences.getInstance();
   const key = 'device_anon_id';
   var id = prefs.getString(key);

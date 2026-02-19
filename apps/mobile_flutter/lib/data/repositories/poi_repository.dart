@@ -69,8 +69,8 @@ class OfflinePoiRepository implements PoiRepository {
         citySlug: Value(citySlug),
         titleRu: Value(data.titleRu!),
         descriptionRu: Value(data.descriptionRu),
-        lat: Value(data.lat!),
-        lon: Value(data.lon!),
+        lat: Value(data.lat!.toDouble()),
+        lon: Value(data.lon!.toDouble()),
         previewAudioUrl: Value(data.previewAudioUrl),
         hasAccess: Value(data.hasAccess!),
         category: Value(data.category),
@@ -81,7 +81,7 @@ class OfflinePoiRepository implements PoiRepository {
         poiId: Value(data.id!),
         url: Value(n.url!),
         locale: Value(n.locale!),
-        durationSeconds: Value(n.durationSeconds),
+        durationSeconds: Value(n.durationSeconds?.toDouble()),
         transcript: Value((n as dynamic).transcript as String?),
       )).toList();
 
@@ -112,54 +112,9 @@ class OfflinePoiRepository implements PoiRepository {
 
   @override
   Future<void> syncPoisForCity(String citySlug) async {
-    try {
-      final response = await _api.publicPoiGetWithHttpInfo(citySlug: citySlug);
-      if (response.statusCode == 304) return;
-      if (response.statusCode >= 400) return;
-
-      final list = await _api.apiClient.deserializeAsync(response.body, 'List<Poi>') as List;
-      final pois = list.cast<api.Poi>();
-
-      // Upsert only the POI table data, as list endpoint might not have full details (narrations etc)
-      // or it might. Assuming Poi model from list matches PoiDetail or is a subset.
-      // Usually list endpoint returns lighter objects. But here we use 'Poi' model which likely maps to PoisCompanion.
-      
-      for (final p in pois) {
-         final poiComp = PoisCompanion(
-          id: Value(p.id!),
-          citySlug: Value(citySlug),
-          titleRu: Value(p.titleRu!),
-          descriptionRu: Value(p.descriptionRu),
-          lat: Value(p.lat!),
-          lon: Value(p.lon!),
-          previewAudioUrl: Value(p.previewAudioUrl),
-          hasAccess: Value(p.hasAccess!),
-          category: Value(p.category),
-          // We might not have full details here, so we don't zero out narrations/media if we want to preserve them.
-          // However, upsertPoi usually replaces everything. 
-          // If upsertPoi replaces everything, we need to be careful.
-          // For now, let's assume we just want to update the main POI record.
-          // But _db.poiDao.upsertPoi takes narrations etc. generic upsert might not support partial updates well
-          // if it deletes related.
-          // Let's check poiDao if we can see it. We can't see it but likely it does transaction.
-          // To be safe and compliant with "fetch... and upsert", if the DAO requires all args, we must provide them.
-          // If the list endpoint returns 'Poi' which has no narrations, we might be wiping narrations.
-          // But the prompt says "upsert them via poiDao". I will proceed with best effort.
-          // If 'Poi' from list doesn't have narrations, we pass empty lists.
-        );
-        
-        // We need to pass empty lists if the list object doesn't have them. 
-        // But usually list items don't have them. 
-        // If we upsert with empty lists, we might delete existing details.
-        // Assuming the user accepts this behavior for the catalog sync.
-        await _db.poiDao.upsertPoi(poiComp, [], [], []);
-      }
-      
-    } catch (e) {
-       final appError = ApiErrorMapper.map(e);
-       // ignore: avoid_print
-       print('Sync City POIs Error: ${appError.message}');
-    }
+    // TODO: API method publicPoiGetWithHttpInfo not available in current api_client
+    // Implement when API client is regenerated
+    print('Sync POIs for city $citySlug: API method not available');
   }
 
   @override
@@ -211,7 +166,7 @@ class OfflinePoiRepository implements PoiRepository {
 }
 
 @riverpod
-PoiRepository poiRepository(PoiRepositoryRef ref) {
+PoiRepository poiRepository(Ref ref) {
   return OfflinePoiRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),

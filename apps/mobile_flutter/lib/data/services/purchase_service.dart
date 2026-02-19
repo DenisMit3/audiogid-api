@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:api_client/api.dart';
-import 'package:dio/dio.dart';
+import 'package:api_client/api.dart' as api;
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
-import 'package:mobile_flutter/domain/repositories/entitlement_repository.dart';
+import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
@@ -27,7 +27,7 @@ class PurchaseState {
 }
 
 @riverpod
-InAppPurchase inAppPurchase(InAppPurchaseRef ref) {
+InAppPurchase inAppPurchase(Ref ref) {
   return InAppPurchase.instance;
 }
 
@@ -59,7 +59,7 @@ class PurchaseService extends _$PurchaseService {
     }
     
     if (Platform.isIOS) {
-      final iosPlatform = _iap.getPlatformAddition<InAppPurchaseStoreKitPlatform>();
+      final iosPlatform = _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       await iosPlatform.setDelegate(PaymentQueueDelegate());
     }
 
@@ -130,33 +130,33 @@ class PurchaseService extends _$PurchaseService {
 
         if (Platform.isIOS) {
             final response = await billingApi.verifyAppleReceipt(
-                verifyAppleReceiptRequest: VerifyAppleReceiptRequest((b) => b
-                  ..receipt = verificationData.serverVerificationData
-                  ..productId = purchaseDetails.productID
-                  ..idempotencyKey = const Uuid().v4()
-                  ..deviceAnonId = deviceId
+                api.VerifyAppleReceiptRequest(
+                  receipt: verificationData.serverVerificationData,
+                  productId: purchaseDetails.productID,
+                  idempotencyKey: const Uuid().v4(),
+                  deviceAnonId: deviceId,
                 )
             );
-            if (response.data != null) {
-              verified = response.data!.verified;
-              granted = response.data!.granted;
-              errorMsg = response.data!.error;
+            if (response != null) {
+              verified = response.verified ?? false;
+              granted = response.granted ?? false;
+              errorMsg = response.error;
             }
         } else if (Platform.isAndroid) {
              final packageInfo = await PackageInfo.fromPlatform();
              final response = await billingApi.verifyGooglePurchase(
-                 verifyGooglePurchaseRequest: VerifyGooglePurchaseRequest((b) => b
-                    ..packageName = packageInfo.packageName
-                    ..productId = purchaseDetails.productID
-                    ..purchaseToken = verificationData.serverVerificationData
-                    ..idempotencyKey = const Uuid().v4()
-                    ..deviceAnonId = deviceId
+                 api.VerifyGooglePurchaseRequest(
+                    packageName: packageInfo.packageName,
+                    productId: purchaseDetails.productID,
+                    purchaseToken: verificationData.serverVerificationData,
+                    idempotencyKey: const Uuid().v4(),
+                    deviceAnonId: deviceId,
                  )
              );
-             if (response.data != null) {
-              verified = response.data!.verified;
-              granted = response.data!.granted;
-              errorMsg = response.data!.error;
+             if (response != null) {
+              verified = response.verified ?? false;
+              granted = response.granted ?? false;
+              errorMsg = response.error;
             }
         }
         
@@ -166,8 +166,8 @@ class PurchaseService extends _$PurchaseService {
              // Log analytics
              ref.read(analyticsServiceProvider).logEvent('purchase_completed', {
                'product_id': purchaseDetails.productID,
-               'price': purchaseDetails.transactionDate, // Transaction date as proxy or need to get price from product details
-               'currency': 'RUB', // Hardcoded for now as we don't have price info here easily without looking up product again
+               'price': purchaseDetails.transactionDate,
+               'currency': 'RUB',
              });
              
              return true;
@@ -197,19 +197,21 @@ class PurchaseService extends _$PurchaseService {
   Future<void> buyBatch(List<String> poiIds, List<String> tourIds) async {
       state = PurchaseState(status: PurchaseStatusState.pending);
       try {
-         final api = ref.read(billingApiProvider);
-         // Use strict mapping
-         final res = await api.batchPurchase(
-            batchPurchaseReq: BatchPurchaseReq((b) => b
-               ..poiIds.replace(poiIds)
-               ..tourIds.replace(tourIds)
+         final billingApi = ref.read(billingApiProvider);
+         final prefs = await SharedPreferences.getInstance();
+         final deviceId = prefs.getString('device_anon_id') ?? '';
+         
+         final res = await billingApi.batchPurchase(
+            api.BatchPurchaseRequest(
+               poiIds: poiIds,
+               tourIds: tourIds,
+               deviceAnonId: deviceId,
             )
          );
          
-         final data = res.data;
-         if (data == null) throw Exception("Empty response");
+         if (res == null) throw Exception("Empty response");
 
-         final products = data.productIds?.toList() ?? [];
+         final products = res.productIds?.toList() ?? [];
          
          if (products.isEmpty) {
              await ref.read(entitlementRepositoryProvider).syncGrants();
@@ -250,24 +252,14 @@ class PurchaseService extends _$PurchaseService {
       try {
         // Platform specific handling for server-side restore
         if (Platform.isIOS) {
-             // For iOS, we need the app receipt. 
-             // Tricky to get without refresh. 
-             // We will rely on _iap.restorePurchases() for simple cases,
-             // but if we want to use the billing/restore endpoint we need the receipt.
-             // We can trigger a refresh via SKRequest if needed, but in_app_purchase doesn't expose it easily.
-             // So we'll use the standard plugin path which we already listen to.
              await _iap.restorePurchases();
-             // The stream will handle verification and setting restored state.
-             // state = PurchaseState(status: PurchaseStatusState.restored);
         } else if (Platform.isAndroid) {
-             // For Android, we can query past purchases and send them to /billing/restore
-             final androidPlatform = _iap.getPlatformAddition<InAppPurchaseAndroidPlatform>();
+             final androidPlatform = _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
              final response = await androidPlatform.queryPastPurchases();
              
              if (response.pastPurchases.isNotEmpty) {
                await _startServerRestoreAndroid(response.pastPurchases);
              } else {
-               // Nothing to restore
                state = PurchaseState(status: PurchaseStatusState.restored);
              }
         } else {
@@ -285,32 +277,36 @@ class PurchaseService extends _$PurchaseService {
       final packageInfo = await PackageInfo.fromPlatform();
 
       // Convert to GooglePurchaseItem
-      final googleItems = purchases.map((p) => GooglePurchaseItem((b) => b
-         ..packageName = packageInfo.packageName
-         ..productId = p.productID
-         ..purchaseToken = p.verificationData.serverVerificationData
+      final googleItems = purchases.map((p) => api.GooglePurchaseItem(
+         packageName: packageInfo.packageName,
+         productId: p.productID,
+         purchaseToken: p.verificationData.serverVerificationData,
       )).toList();
 
       try {
         final result = await billingApi.restorePurchases(
-           restorePurchasesRequest: RestorePurchasesRequest((b) => b
-              ..platform = RestorePurchasesRequestPlatformEnum.google
-              ..idempotencyKey = const Uuid().v4()
-              ..deviceAnonId = deviceId
-              ..googlePurchases.replace(googleItems)
+           api.RestorePurchasesRequest(
+              platform: api.RestorePurchasesRequestPlatformEnum.google,
+              idempotencyKey: const Uuid().v4(),
+              deviceAnonId: deviceId,
+              googlePurchases: googleItems,
            )
         );
         
-        if (result.data != null) {
-           await _pollRestoreJob(result.data!.jobId);
+        if (result != null) {
+           await _pollRestoreJob(result.jobId ?? '');
         }
       } catch (e) {
-         // Fallback to local
          state = PurchaseState(status: PurchaseStatusState.error, error: "Server restore failed, check internet");
       }
   }
   
   Future<void> _pollRestoreJob(String jobId) async {
+      if (jobId.isEmpty) {
+        state = PurchaseState(status: PurchaseStatusState.error, error: "No job ID returned");
+        return;
+      }
+      
       final billingApi = ref.read(billingApiProvider);
       int attempts = 0;
       
@@ -318,17 +314,16 @@ class PurchaseService extends _$PurchaseService {
          attempts++;
          await Future.delayed(_restorePollInterval);
          try {
-           final status = await billingApi.getRestoreJobStatus(jobId: jobId);
-           if (status.data?.status == RestoreJobReadStatusEnum.COMPLETED) {
+           final status = await billingApi.getRestoreJobStatus(jobId);
+           if (status?.status == api.RestoreJobReadStatusEnum.COMPLETED) {
               await ref.read(entitlementRepositoryProvider).syncGrants();
               state = PurchaseState(status: PurchaseStatusState.restored);
               break;
-           } else if (status.data?.status == RestoreJobReadStatusEnum.FAILED) {
-              state = PurchaseState(status: PurchaseStatusState.error, error: status.data?.lastError ?? "Restore Job Failed");
+           } else if (status?.status == api.RestoreJobReadStatusEnum.FAILED) {
+              state = PurchaseState(status: PurchaseStatusState.error, error: status?.lastError ?? "Restore Job Failed");
               break;
            }
          } catch (e) {
-            // Stop polling on error or continue?
              state = PurchaseState(status: PurchaseStatusState.error, error: "Polling failed");
              break;
          }

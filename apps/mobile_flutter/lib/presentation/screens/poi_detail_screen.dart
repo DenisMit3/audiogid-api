@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
-import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
+import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/presentation/widgets/paywall_widget.dart';
 import 'package:mobile_flutter/core/audio/audio_player_service.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
@@ -38,7 +38,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
   Future<void> _syncData() async {
     // Performance tracing removed
     try {
-      final selectedCity = ref.read(selectedCityProvider).valueOrNull;
+      final selectedCity = ref.read(selectedCityProvider).value;
       if (selectedCity != null) {
         await ref.read(poiRepositoryProvider).syncPoi(widget.poiId, selectedCity);
       }
@@ -85,7 +85,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           );
         }
 
-        final grants = grantsAsync.valueOrNull ?? [];
+        final grants = grantsAsync.value ?? [];
         final hasAccess = poi.hasAccess || grants.any((g) => 
           g.isActive && g.scope == 'city' && g.ref == poi.citySlug
         );
@@ -250,7 +250,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           onPressed: () {
             HapticFeedback.lightImpact();
             Share.share(
-              'Посмотри ${poi.titleRu} в приложении Аудиогид!\n${poi.address ?? ''}\nhttps://audiogid.app/dl/poi/${poi.id}', 
+              'Посмотри ${poi.titleRu} в приложении Аудиогид!\nhttps://audiogid.app/dl/poi/${poi.id}', 
               subject: poi.titleRu
             );
           },
@@ -284,25 +284,6 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (poi.address != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: BodyText(
-                    poi.address!,
-                    maxLines: 2,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -392,12 +373,11 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                   ),
                 ),
               ),
-              ),
               Expanded(
                 child: Consumer(
                   builder: (context, ref, _) {
                     final itineraryIdsAsync = ref.watch(itineraryIdsProvider);
-                    final ids = itineraryIdsAsync.valueOrNull ?? [];
+                    final ids = itineraryIdsAsync.value ?? [];
                     final isInItinerary = ids.contains(poi.id);
 
                     return Semantics(

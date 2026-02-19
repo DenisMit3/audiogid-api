@@ -9,6 +9,9 @@ import 'package:mobile_flutter/core/audio/audio_player_service.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/notification_service.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'tour_mode_service.g.dart';
 
 class TourModeState {
   final Tour? activeTour;
@@ -63,8 +66,8 @@ class TourModeState {
   }
 }
 
-class TourModeService extends StateNotifier<TourModeState> {
-  final Ref _ref;
+@riverpod
+class TourModeService extends _$TourModeService {
   StreamSubscription<Position>? _positionSubscription;
   StreamSubscription<PlaybackState>? _playbackSubscription;
   StreamSubscription<MediaItem?>? _mediaItemSubscription;
@@ -80,7 +83,13 @@ class TourModeService extends StateNotifier<TourModeState> {
   String? _lastAutoPlayPoiId;
   DateTime? _lastOffRouteNotificationTime;
 
-  TourModeService(this._ref) : super(TourModeState());
+  @override
+  TourModeState build() {
+    ref.onDispose(() {
+      _cancelSubscriptions();
+    });
+    return TourModeState();
+  }
 
   void startTour(Tour tour, {int startIndex = 0}) {
     // Build mapping
@@ -116,7 +125,7 @@ class TourModeService extends StateNotifier<TourModeState> {
       // Find initial queue index
       final initialQueueIndex = _itemToQueueIndex[startIndex] ?? 0;
       
-      _ref.read(audioPlayerServiceProvider).loadPlaylist(
+      ref.read(audioPlayerServiceProvider).loadPlaylist(
         tourId: tour.id,
         pois: validPois,
         initialIndex: initialQueueIndex,
@@ -129,8 +138,8 @@ class TourModeService extends StateNotifier<TourModeState> {
   void stopTour() {
     state = TourModeState(isActive: false);
     _cancelSubscriptions();
-    _ref.read(audioPlayerServiceProvider).stop();
-    _ref.read(settingsRepositoryProvider).then((s) => s.clearTourProgress());
+    ref.read(audioPlayerServiceProvider).stop();
+    ref.read(settingsRepositoryProvider).value?.clearTourProgress();
   }
   
   void _cancelSubscriptions() {
@@ -182,13 +191,13 @@ class TourModeService extends StateNotifier<TourModeState> {
     if (_itemToQueueIndex.containsKey(stepIndex)) {
       final queueIndex = _itemToQueueIndex[stepIndex]!;
       if (queueIndex < _queueLength) {
-        _ref.read(audioHandlerProvider).skipToQueueItem(queueIndex);
+        ref.read(audioHandlerProvider).skipToQueueItem(queueIndex);
       }
     }
   }
 
   void _listenToLocation() {
-    final locationService = _ref.read(locationServiceProvider);
+    final locationService = ref.read(locationServiceProvider);
     _positionSubscription?.cancel();
     _positionSubscription = locationService.positionStream.listen((position) {
       if (!state.isActive || state.currentPoi == null) return;
@@ -236,7 +245,7 @@ class TourModeService extends StateNotifier<TourModeState> {
         now.difference(_lastOffRouteNotificationTime!) > const Duration(minutes: 5)) {
         
         _lastOffRouteNotificationTime = now;
-        _ref.read(notificationServiceProvider).showNotification(
+        ref.read(notificationServiceProvider).showNotification(
           id: 12345, // Fixed ID to avoid spamming multiple notifications
           title: 'Вы отклонились от маршрута',
           body: 'Вернитесь к точке ${state.currentPoi?.titleRu ?? "маршрута"}',
@@ -252,7 +261,7 @@ class TourModeService extends StateNotifier<TourModeState> {
     // Prevent re-triggering for the same POI
     if (_lastAutoPlayPoiId == state.currentPoi!.id) return;
 
-    final audioHandler = _ref.read(audioHandlerProvider);
+    final audioHandler = ref.read(audioHandlerProvider);
     final playbackState = audioHandler.playbackState.value;
     
     // Only play if not already playing or processing
@@ -266,7 +275,7 @@ class TourModeService extends StateNotifier<TourModeState> {
   }
 
   void _listenToPlayback() {
-    final audioHandler = _ref.read(audioHandlerProvider);
+    final audioHandler = ref.read(audioHandlerProvider);
     
     _mediaItemSubscription?.cancel();
     _mediaItemSubscription = audioHandler.mediaItem.listen((mediaItem) {
@@ -291,9 +300,9 @@ class TourModeService extends StateNotifier<TourModeState> {
     _playbackSubscription = audioHandler.playbackState.listen((playbackState) {
       if (playbackState.processingState == AudioProcessingState.completed) {
         if (state.isAutoPlayEnabled) {
-          // Auto-advance
+          // Auto-advance after delay
           Future.delayed(const Duration(seconds: 2), () {
-            if (mounted && state.isActive) nextStep();
+            if (state.isActive) nextStep();
           });
         }
       }
@@ -302,16 +311,13 @@ class TourModeService extends StateNotifier<TourModeState> {
   
   Future<void> _saveProgress() async {
     if (state.activeTour == null) return;
-    await _ref.read(settingsRepositoryProvider.future).then((settings) {
-      settings.saveTourProgress(
+    final settings = ref.read(settingsRepositoryProvider).value;
+    if (settings != null) {
+      await settings.saveTourProgress(
         state.activeTour!.id, 
         state.currentStepIndex, 
         state.isAutoPlayEnabled
       );
-    });
+    }
   }
 }
-
-final tourModeServiceProvider = StateNotifierProvider<TourModeService, TourModeState>((ref) {
-  return TourModeService(ref);
-});

@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'api_health_service.g.dart';
 
 @riverpod
-ApiHealthService apiHealthService(ApiHealthServiceRef ref) {
+ApiHealthService apiHealthService(Ref ref) {
   final config = ref.watch(appConfigProvider);
   return ApiHealthService(config.apiBaseUrl);
 }

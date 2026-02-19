@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
-import 'package:mobile_flutter/domain/repositories/tour_repository.dart';
+import 'package:mobile_flutter/data/repositories/tour_repository.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/core/audio/audio_player_service.dart';
@@ -31,7 +31,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCity = ref.watch(selectedCityProvider).valueOrNull;
+    final selectedCity = ref.watch(selectedCityProvider).value;
     if (selectedCity == null) return const Scaffold();
 
     final tourStream = ref.watch(tourRepositoryProvider).watchTour(widget.tourId);
@@ -57,7 +57,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
             slivers: [
               _buildAppBar(context, tour),
               _buildTourInfo(context, tour),
-              _buildPoiList(context, items),
+              _buildPoiList(context, tour, items),
             ],
           ),
           bottomNavigationBar: _buildBottomBar(context, tour),
@@ -347,7 +347,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
     );
   }
 
-  Widget _buildPoiList(BuildContext context, List<TourItemEntity> items) {
+  Widget _buildPoiList(BuildContext context, Tour tour, List<TourItemEntity> items) {
     if (items.isEmpty) {
       return const SliverToBoxAdapter(
         child: Center(child: Padding(padding: EdgeInsets.all(32), child: Text('Маршрут пуст'))),
@@ -461,7 +461,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                   : () async {
                       setState(() => _isBuying = true);
                       try {
-                        await ref.read(purchaseServiceProvider).buyBatch(
+                        await ref.read(purchaseServiceProvider.notifier).buyBatch(
                           _selectedPoiIds.toList(), 
                           [], // No tours selected here
                         );

@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
-import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 
 class FavoritesScreen extends ConsumerWidget {
@@ -48,7 +48,7 @@ class FavoritesScreen extends ConsumerWidget {
           // Error state
           if (snapshot.hasError) {
             return ErrorStateWidget.generic(
-              message: snapshot.error.toString(),
+              error: snapshot.error.toString(),
               onRetry: () {
                 // Trigger refresh by rebuilding
               },

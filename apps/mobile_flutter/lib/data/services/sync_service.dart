@@ -2,6 +2,10 @@ import 'package:mobile_flutter/domain/repositories/city_repository.dart';
 import 'package:mobile_flutter/domain/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/repositories/tour_repository.dart';
+import 'package:mobile_flutter/data/repositories/city_repository.dart';
+import 'package:mobile_flutter/data/repositories/tour_repository.dart';
+import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
+import 'package:mobile_flutter/data/repositories/poi_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sync_service.g.dart';
@@ -46,7 +50,7 @@ class SyncService {
 }
 
 @riverpod
-SyncService syncService(SyncServiceRef ref) {
+SyncService syncService(Ref ref) {
   return SyncService(
     ref.watch(cityRepositoryProvider),
     ref.watch(tourRepositoryProvider),

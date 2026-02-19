@@ -24,7 +24,8 @@ class _PaywallWidgetState extends ConsumerState<PaywallWidget> {
 
   Future<void> _loadProducts() async {
     try {
-      final products = await ref.read(purchaseServiceProvider.notifier).fetchProducts(IapIds.all);
+      // Load available products - using fullCityAccess as default
+      final products = await ref.read(purchaseServiceProvider.notifier).fetchProducts({IAPIds.fullCityAccess});
       if (mounted) {
         setState(() {
           _products = products;

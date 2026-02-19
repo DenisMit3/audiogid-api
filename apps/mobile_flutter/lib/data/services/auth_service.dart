@@ -1,7 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:api_client/api.dart';
+import 'package:api_client/api.dart' as api;
 import '../../core/api/api_provider.dart';
 import '../../domain/entities/user.dart';
 
@@ -9,18 +8,20 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(ref.watch(authApiProvider));
 });
 
-final currentUserProvider = StateNotifierProvider<CurrentUserNotifier, AsyncValue<User?>>((ref) {
-  return CurrentUserNotifier(ref.watch(authServiceProvider));
+final currentUserProvider = NotifierProvider<CurrentUserNotifier, AsyncValue<User?>>(() {
+  return CurrentUserNotifier();
 });
 
-class CurrentUserNotifier extends StateNotifier<AsyncValue<User?>> {
-  final AuthService _authService;
-
-  CurrentUserNotifier(this._authService) : super(const AsyncValue.loading()) {
-    checkAuth();
+class CurrentUserNotifier extends Notifier<AsyncValue<User?>> {
+  @override
+  AsyncValue<User?> build() {
+    _checkAuth();
+    return const AsyncValue.loading();
   }
 
-  Future<void> checkAuth() async {
+  AuthService get _authService => ref.read(authServiceProvider);
+
+  Future<void> _checkAuth() async {
     try {
       final user = await _authService.me();
       state = AsyncValue.data(user);
@@ -30,21 +31,21 @@ class CurrentUserNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> loginWithSms(String phone) async {
-      await _authService.loginWithSms(phone);
+    await _authService.loginWithSms(phone);
   }
 
   Future<void> verifySms(String phone, String code) async {
-      state = const AsyncValue.loading();
-      try {
-          final user = await _authService.verifySms(phone, code);
-          state = AsyncValue.data(user);
-      } catch (e, st) {
-          state = AsyncValue.error(e, st);
-          rethrow;
-      }
+    state = const AsyncValue.loading();
+    try {
+      final user = await _authService.verifySms(phone, code);
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 
-  Future<void> loginWithTelegram(TelegramLogin data) async {
+  Future<void> loginWithTelegram(api.TelegramLogin data) async {
     state = const AsyncValue.loading();
     try {
       final user = await _authService.loginWithTelegram(data);
@@ -62,7 +63,7 @@ class CurrentUserNotifier extends StateNotifier<AsyncValue<User?>> {
 }
 
 class AuthService {
-  final AuthApi _api;
+  final api.AuthApi _api;
   final _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -71,14 +72,14 @@ class AuthService {
   AuthService(this._api);
 
   Future<void> loginWithSms(String phone) async {
-    await _api.loginSmsInit(phoneInit: PhoneInit((b) => b..phone = phone));
+    await _api.loginSmsInit(api.PhoneInit(phone: phone));
   }
 
-  Future<User> loginWithTelegram(TelegramLogin data) async {
-    final res = await _api.loginTelegram(telegramLogin: data);
+  Future<User> loginWithTelegram(api.TelegramLogin data) async {
+    final res = await _api.loginTelegram(data);
     
-    final token = res.data?.accessToken;
-    final refreshToken = res.data?.refreshToken;
+    final token = res?.accessToken;
+    final refreshToken = res?.refreshToken;
     
     if (token == null) throw Exception("No access token returned");
 
@@ -91,14 +92,11 @@ class AuthService {
 
   Future<User> verifySms(String phone, String code) async {
     final res = await _api.loginSmsVerify(
-        phoneVerify: PhoneVerify((b) => b
-          ..phone = phone
-          ..code = code
-        )
+        api.PhoneVerify(phone: phone, code: code)
     );
     
-    final token = res.data?.accessToken;
-    final refreshToken = res.data?.refreshToken;
+    final token = res?.accessToken;
+    final refreshToken = res?.refreshToken;
     
     if (token == null) throw Exception("No access token returned");
 
@@ -111,25 +109,18 @@ class AuthService {
 
   Future<User> me() async {
     final res = await _api.me();
-    if (res.data == null) throw Exception("Failed to fetch user");
-    // Convert generated User DTO to efficient internal User entity if needed, 
-    // or if they are same, just return. Assuming User entity matches or is the DTO.
-    // The previous code used User.fromJson(res.data) so it implies a manual User class.
-    // We should probably Map it.
-    // However, if the generated client replaces the manual User, we use that.
-    // Assuming for now we map it or the types align if generated in same namespace (unlikely).
-    // Let's assume manual mapping is safer given existing code structure.
+    if (res == null) throw Exception("Failed to fetch user");
     return User(
-        id: res.data!.id,
-        role: res.data!.role ?? 'user',
-        isActive: res.data!.isActive ?? true,
+        id: res.id ?? '',
+        role: res.role ?? 'user',
+        isActive: res.isActive ?? true,
     );
   }
 
   Future<void> logout() async {
     try {
         final refresh = await _storage.read(key: 'refresh_token');
-        await _api.logout(refreshReq: RefreshReq((b) => b..refreshToken = refresh ?? ""));
+        await _api.logout(refreshReq: api.RefreshReq(refreshToken: refresh ?? ""));
     } catch (e) {
         // Log error but proceed to clear local
     }
@@ -142,16 +133,10 @@ class AuthService {
     if (refresh == null) return null;
     
     try {
-      // Note: This method re-uses the main API client which has interceptors.
-      // This might cause loop if interceptor calls this.
-      // But AuthService usually is called by UI or logic, not by Interceptor directly (Interceptor does its own refresh).
-      // However, to match the Interceptor's raw logic avoiding loops is safer.
-      // But here we are in Service.
+      final res = await _api.refreshToken(api.RefreshReq(refreshToken: refresh));
       
-      final res = await _api.refreshToken(refreshReq: RefreshReq((b) => b..refreshToken = refresh));
-      
-      final newToken = res.data?.accessToken;
-      final newRefresh = res.data?.refreshToken;
+      final newToken = res?.accessToken;
+      final newRefresh = res?.refreshToken;
       
       if (newToken != null) {
           await _storage.write(key: 'jwt_token', value: newToken);

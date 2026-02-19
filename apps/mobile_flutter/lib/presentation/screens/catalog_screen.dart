@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
-import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
+import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/data/services/purchase_service.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
@@ -39,7 +39,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   @override
   void initState() {
     super.initState();
-    final city = ref.read(selectedCityProvider).valueOrNull;
+    final city = ref.read(selectedCityProvider).value;
     if (city != null) {
       ref.read(poiRepositoryProvider).syncPoisForCity(city).ignore();
     }
@@ -55,19 +55,19 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(selectedCityProvider, (prev, next) {
-      final city = next.valueOrNull;
-      if (city != null && city != prev?.valueOrNull) {
+      final city = next.value;
+      if (city != null && city != prev?.value) {
         ref.read(poiRepositoryProvider).syncPoisForCity(city).ignore();
       }
     });
 
-    final selectedCity = ref.watch(selectedCityProvider).valueOrNull;
+    final selectedCity = ref.watch(selectedCityProvider).value;
     if (selectedCity == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final poisStream = ref.watch(poiRepositoryProvider).watchPoisForCity(selectedCity);
-    final selectedIds = ref.watch(selectionNotifierProvider);
+    final selectedIds = ref.watch(selectionProvider);
     final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
     return Scaffold(
@@ -83,7 +83,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           // Error state
           if (snapshot.hasError) {
             return ErrorStateWidget.generic(
-              message: snapshot.error.toString(),
+              error: snapshot.error.toString(),
               onRetry: () {
                 ref.read(poiRepositoryProvider).syncPoisForCity(selectedCity);
               },
@@ -175,7 +175,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           onPressed: () {
             HapticFeedback.lightImpact();
             setState(() => _isMultiSelectMode = false);
-            ref.read(selectionNotifierProvider.notifier).clear();
+            ref.read(selectionProvider.notifier).clear();
           },
         ),
         actions: [
@@ -299,7 +299,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           onTap: () {
             HapticFeedback.lightImpact();
             if (selectedIds.isNotEmpty || _isMultiSelectMode) {
-              ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
+              ref.read(selectionProvider.notifier).toggle(poi.id);
             } else {
               context.push('/poi/${poi.id}');
             }
@@ -308,7 +308,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               ? () {
                   HapticFeedback.mediumImpact();
                   setState(() => _isMultiSelectMode = true);
-                  ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
+                  ref.read(selectionProvider.notifier).toggle(poi.id);
                 }
               : null,
           borderRadius: BorderRadius.circular(16),
@@ -380,7 +380,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         value: isSelected,
                         onChanged: (val) {
                           HapticFeedback.selectionClick();
-                          ref.read(selectionNotifierProvider.notifier).toggle(poi.id);
+                          ref.read(selectionProvider.notifier).toggle(poi.id);
                         },
                       ),
                   ],
@@ -437,7 +437,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                            final state = ref.read(purchaseServiceProvider);
                            if (state.status == PurchaseStatusState.restored || state.status == PurchaseStatusState.success) {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Покупка успешна!')));
-                                ref.read(selectionNotifierProvider.notifier).clear();
+                                ref.read(selectionProvider.notifier).clear();
                                 setState(() => _isMultiSelectMode = false);
                            } else if (state.status == PurchaseStatusState.error) {
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error ?? 'Не удалось купить')));
@@ -464,7 +464,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                      ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Добавлено ${selectedIds.length} мест в маршрут')),
                     );
-                    ref.read(selectionNotifierProvider.notifier).clear();
+                    ref.read(selectionProvider.notifier).clear();
                     setState(() => _isMultiSelectMode = false);
                   },
               icon: const Icon(Icons.playlist_add),

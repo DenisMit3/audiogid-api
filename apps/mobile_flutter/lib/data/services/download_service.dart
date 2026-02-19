@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:mobile_flutter/core/constants/offline_constants.dart';
@@ -13,7 +14,7 @@ import 'package:mobile_flutter/data/local/app_database.dart';
 import 'package:mobile_flutter/data/services/storage_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:api_client/api_client.dart';
+import 'package:api_client/api.dart' as api;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -121,13 +122,13 @@ class DownloadService extends _$DownloadService {
       
       // 1. Enqueue Build
       final idempotencyKey = const Uuid().v4();
-      final buildReq = BuildOfflineBundleRequest(
+      final buildReq = api.BuildOfflineBundleRequest(
         citySlug: citySlug,
         idempotencyKey: idempotencyKey,
       );
       
-      final enqueueRes = await offlineApi.buildOfflineBundle(buildOfflineBundleRequest: buildReq);
-      final jobId = enqueueRes.data?.jobId;
+      final enqueueRes = await offlineApi.buildOfflineBundle(buildReq);
+      final jobId = enqueueRes?.jobId;
       if (jobId == null) throw Exception("No job ID returned");
 
       state = {
@@ -136,7 +137,7 @@ class DownloadService extends _$DownloadService {
       };
 
       // 2. Poll Status
-      OfflineJobRead? jobResult;
+      api.OfflineJobRead? jobResult;
       int attempts = 0;
       const maxAttempts = 30; // 60 seconds approx
       int delaySeconds = 2;
@@ -144,14 +145,14 @@ class DownloadService extends _$DownloadService {
       while (attempts < maxAttempts) {
         await Future.delayed(Duration(seconds: delaySeconds));
         try {
-          final pollRes = await offlineApi.getOfflineBundleStatus(jobId: jobId);
-          final status = pollRes.data?.status;
+          final pollRes = await offlineApi.getOfflineBundleStatus(jobId);
+          final status = pollRes?.status;
           
           if (status == 'COMPLETED') {
-            jobResult = pollRes.data!;
+            jobResult = pollRes;
             break;
           } else if (status == 'FAILED') {
-            throw Exception('Bundle build failed: ${pollRes.data?.lastError}');
+            throw Exception('Bundle build failed: ${pollRes?.lastError}');
           }
         } on DioException catch (e) {
           // Retry on network/timeout errors
@@ -239,7 +240,7 @@ class DownloadService extends _$DownloadService {
     final citySlug = _tasks[taskId];
     if (citySlug == null) return;
 
-    final downloadStatus = DownloadTaskStatus(status);
+    final downloadStatus = DownloadTaskStatus.values[status];
     
     if (downloadStatus == DownloadTaskStatus.running) {
        state = {
@@ -416,7 +417,7 @@ class DownloadService extends _$DownloadService {
 }
 
 @riverpod
-Future<List<String>> downloadedCities(DownloadedCitiesRef ref) async {
+Future<List<String>> downloadedCities(Ref ref) async {
   // Watch download service to refresh when download completes
   final downloadState = ref.watch(downloadServiceProvider);
   // Also force refresh when delete calls invalidate? 

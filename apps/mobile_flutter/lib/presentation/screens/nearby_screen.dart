@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:vector_map_tiles/vector_map_tiles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/domain/entities/helper.dart';
@@ -28,15 +27,11 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
   final MapController _mapController = MapController();
   bool _permissionGranted = false;
   bool _permissionDenied = false;
-  Style? _mapStyle;
-  bool _isLoadingStyle = true;
-  String? _mapError;
 
   @override
   void initState() {
     super.initState();
     _checkPermission();
-    _loadMapStyle();
   }
 
   Future<void> _checkPermission() async {
@@ -49,37 +44,13 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     }
   }
 
-  Future<void> _loadMapStyle() async {
-    final url = ref.read(mapStyleUrlProvider);
-    try {
-      final style = await StyleReader(
-        uri: url,
-        logger: const Logger.console(),
-      ).read();
-      if (mounted) {
-        setState(() {
-          _mapStyle = style;
-          _isLoadingStyle = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Failed to load map style: $e');
-      if (mounted) {
-        setState(() {
-          _mapError = e.toString();
-          _isLoadingStyle = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final helpersAsync = ref.watch(nearbyHelpersProvider);
     final selectedType = ref.watch(selectedHelperTypeProvider);
     final userLocationAsync = ref.watch(userLocationStreamProvider);
     final cityAsync = ref.watch(selectedCityProvider);
-    final citySlug = cityAsync.valueOrNull;
+    final citySlug = cityAsync.value;
     final colorScheme = Theme.of(context).colorScheme;
     final freeWalkState = ref.watch(freeWalkingServiceProvider);
 
@@ -121,19 +92,11 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                   ),
                 ),
                 children: [
-                  // Map tiles
-                  if (_mapStyle != null)
-                    VectorTileLayer(
-                      tileProviders: _mapStyle!.providers,
-                      theme: _mapStyle!.theme,
-                      sprites: _mapStyle!.sprites,
-                      maximumZoom: 22,
-                    )
-                  else
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.audiogid.app',
-                    ),
+                  // Map tiles - using OSM
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.audiogid.app',
+                  ),
 
                   // Markers
                   helpersAsync.when(
@@ -465,7 +428,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                           _buildDragHandle(),
                           Expanded(
                             child: ErrorStateWidget.generic(
-                              message: e.toString(),
+                              error: e.toString(),
                               onRetry: () {
                                 ref.invalidate(nearbyHelpersProvider);
                               },

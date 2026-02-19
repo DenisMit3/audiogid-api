@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,12 +59,12 @@ class TrustedContacts extends _$TrustedContacts {
 }
 
 @riverpod
-ShareService shareService(ShareServiceRef ref) {
+ShareService shareService(Ref ref) {
   return ShareService(ref);
 }
 
 class ShareService {
-  final ShareServiceRef _ref;
+  final Ref _ref;
   
   ShareService(this._ref);
   
@@ -79,20 +80,20 @@ class ShareService {
   
   Future<void> shareTrip(double lat, double lon) async {
       final url = await createTripShareLink(lat, lon);
-      await Share.share('Следи за мной здесь: $url');
+      await Share.share('????? ?? ???? ?????????: $url');
   }
 
   Future<void> sendSos(double lat, double lon) async {
     final contacts = await _ref.read(trustedContactsProvider.future);
     if (contacts.isEmpty) {
-        throw Exception("Нет доверенных контактов");
+        throw Exception("??? ?????????? ?????????");
     }
 
     final mapsLink = "https://maps.google.com/?q=$lat,$lon";
     // Attempt to get a shorter tracking link if possible, but SOS needs speed.
     // We send Maps link directly.
     
-    final message = "SOS! Мне нужна помощь. Моя геопозиция: $mapsLink";
+    final message = "SOS! ??? ????? ??????. ??? ??????????: $mapsLink";
     
     final phones = contacts.map((c) => c.phone).join(',');
     
@@ -103,7 +104,7 @@ class ShareService {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-       throw Exception("Не удалось открыть SMS");
+       throw Exception("?? ??????? ??????? SMS");
     }
   }
 }

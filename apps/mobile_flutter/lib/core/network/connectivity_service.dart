@@ -1,16 +1,21 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'connectivity_service.g.dart';
 
 enum ConnectionStatus {
   online,
   offline,
 }
 
-class ConnectivityService extends StateNotifier<ConnectionStatus> {
+@riverpod
+class ConnectivityService extends _$ConnectivityService {
   final Connectivity _connectivity = Connectivity();
 
-  ConnectivityService() : super(ConnectionStatus.online) {
+  @override
+  ConnectionStatus build() {
     _init();
+    return ConnectionStatus.online;
   }
 
   void _init() async {
@@ -18,20 +23,15 @@ class ConnectivityService extends StateNotifier<ConnectionStatus> {
     _updateStatus(result);
 
     _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-       // connectivity_plus v6 emits list
       _updateStatus(results);
     });
   }
 
   void _updateStatus(List<ConnectivityResult> results) {
-     if (results.contains(ConnectivityResult.none) && results.length == 1) {
-       state = ConnectionStatus.offline;
-     } else {
-       state = ConnectionStatus.online;
-     }
+    if (results.contains(ConnectivityResult.none) && results.length == 1) {
+      state = ConnectionStatus.offline;
+    } else {
+      state = ConnectionStatus.online;
+    }
   }
 }
-
-final connectivityServiceProvider = StateNotifierProvider<ConnectivityService, ConnectionStatus>((ref) {
-  return ConnectivityService();
-});

@@ -27,7 +27,7 @@ import 'package:flutter/material.dart';
 part 'app_router.g.dart';
 
 @riverpod
-GoRouter router(RouterRef ref) {
+GoRouter router(Ref ref) {
   final selectedCityAsync = ref.watch(selectedCityProvider);
 
   final analyticsObserver = AnalyticsObserver(ref);
@@ -38,7 +38,7 @@ GoRouter router(RouterRef ref) {
     redirect: (context, state) {
       if (selectedCityAsync.isLoading) return null;
 
-      final selectedCity = selectedCityAsync.valueOrNull;
+      final selectedCity = selectedCityAsync.value;
       final isSelecting = state.matchedLocation == '/select-city';
 
       if (selectedCity == null) {

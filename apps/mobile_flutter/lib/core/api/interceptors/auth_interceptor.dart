@@ -40,16 +40,15 @@ class AuthInterceptor extends Interceptor {
        final refreshToken = await _storage.read(key: 'refresh_token');
        if (refreshToken != null) {
           try {
-             final dio = Dio(BaseOptions(baseUrl: baseUrl));
-             final client = ApiClient(dio: dio);
+             final client = ApiClient(basePath: baseUrl);
              final authApi = AuthApi(client);
              
              final res = await authApi.refreshToken(
-                 refreshReq: RefreshReq((b) => b..refreshToken = refreshToken)
+                 RefreshReq(refreshToken: refreshToken)
              );
              
-             final newToken = res.data?.accessToken;
-             final newRefresh = res.data?.refreshToken;
+             final newToken = res?.accessToken;
+             final newRefresh = res?.refreshToken;
              
              if (newToken != null) {
                  await _storage.write(key: 'jwt_token', value: newToken);
@@ -61,6 +60,7 @@ class AuthInterceptor extends Interceptor {
                  final opts = err.requestOptions;
                  opts.headers['Authorization'] = 'Bearer $newToken';
                  
+                 final dio = Dio(BaseOptions(baseUrl: baseUrl));
                  final retryRes = await dio.request(
                      opts.path,
                      options: Options(
@@ -75,9 +75,7 @@ class AuthInterceptor extends Interceptor {
                  return handler.resolve(retryRes);
              }
           } catch (e) {
-             // If refresh fails (blacklisted or expired), verify server logout/blacklist status?
-             // Prompt: "if refresh fails (blacklisted?), trigger full logout."
-             // Here we just delete tokens.
+             // If refresh fails (blacklisted or expired), trigger full logout.
              await _storage.delete(key: 'jwt_token');
              await _storage.delete(key: 'refresh_token');
           }
@@ -86,4 +84,3 @@ class AuthInterceptor extends Interceptor {
     handler.next(err);
   }
 }
-

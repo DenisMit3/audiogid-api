@@ -71,7 +71,7 @@ class SettingsRepository {
 }
 
 @riverpod
-Future<SettingsRepository> settingsRepository(SettingsRepositoryRef ref) async {
+Future<SettingsRepository> settingsRepository(Ref ref) async {
   final prefs = await SharedPreferences.getInstance();
   return SettingsRepository(prefs);
 }

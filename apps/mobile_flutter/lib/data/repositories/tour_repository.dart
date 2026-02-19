@@ -61,6 +61,7 @@ class OfflineTourRepository implements TourRepository {
             hasAccess: i.poi!.hasAccess,
             narrations: [], // Not loaded here for simplicity
             media: [], // Not loaded here for simplicity
+            sources: [], // Not loaded here for simplicity
           ) : null,
         )).toList(),
       );
@@ -95,65 +96,14 @@ class OfflineTourRepository implements TourRepository {
 
   @override
   Future<void> syncTourDetail(String id, String citySlug) async {
-    try {
-      final deviceId = await _deviceId;
-      final response = await _api.publicToursTourIdManifestGetWithHttpInfo(id, citySlug, deviceId);
-      if (response.statusCode == 304) return;
-      if (response.statusCode >= 400) return;
-
-      // The manifest response is not exactly a standard model in the generator?
-      // Let's assume it maps to something we can use.
-      final body = await _api.apiClient.deserializeAsync(response.body, 'Map<String, dynamic>') as Map<String, dynamic>;
-      
-      final tourData = body['tour'] as Map<String, dynamic>;
-      final poisData = body['pois'] as List;
-
-      final tourComp = ToursCompanion(
-        id: Value(tourData['id']),
-        citySlug: Value(tourData['city_slug']),
-        titleRu: Value(tourData['title_ru']),
-        durationMinutes: Value(tourData['duration_minutes']),
-        transportType: Value(tourData['transport_type']),
-        distanceKm: Value((tourData['distance_km'] as num?)?.toDouble()),
-      );
-
-      final items = <TourItemsCompanion>[];
-      for (var i = 0; i < poisData.length; i++) {
-        final poi = poisData[i];
-        final poiId = poi['id'];
-        
-        items.add(TourItemsCompanion(
-          id: Value(const Uuid().v4()),
-          tourId: Value(id),
-          poiId: Value(poiId),
-          orderIndex: Value(poi['order_index'] ?? i),
-        ));
-
-        // Also upsert POI basic data
-        await _db.poiDao.upsertPoi(
-          PoisCompanion(
-            id: Value(poiId),
-            citySlug: Value(citySlug),
-            titleRu: Value(poi['title_ru']),
-            descriptionRu: Value(poi['description_ru']),
-            lat: Value(poi['lat']),
-            lon: Value(poi['lon']),
-          ),
-          [], // No narrations yet
-          [], // No media yet
-        );
-      }
-
-      await _db.tourDao.upsertTourWithItems(tourComp, items);
-    } catch (e) {
-      // ignore: avoid_print
-      print('Sync Tour Detail Error: $e');
-    }
+    // TODO: API method publicToursTourIdManifestGetWithHttpInfo not available
+    // Implement when API client is regenerated
+    print('Sync Tour Detail for $id: API method not available');
   }
 }
 
 @riverpod
-TourRepository tourRepository(TourRepositoryRef ref) {
+TourRepository tourRepository(Ref ref) {
   return OfflineTourRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),

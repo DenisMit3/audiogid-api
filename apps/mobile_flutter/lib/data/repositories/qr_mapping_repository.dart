@@ -63,7 +63,6 @@ class QrMappingRepository {
         {},
         {},
         null,
-        [''],
       );
 
       if (response.statusCode == 200 && response.body != null) {
@@ -165,7 +164,7 @@ class QrMappingRepository {
 }
 
 @riverpod
-QrMappingRepository qrMappingRepository(QrMappingRepositoryRef ref) {
+QrMappingRepository qrMappingRepository(Ref ref) {
   return QrMappingRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),

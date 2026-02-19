@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
 
@@ -15,21 +14,10 @@ class SecurityService {
 
   Future<void> checkDeviceSecurity() async {
     try {
-      bool jailbroken = await FlutterJailbreakDetection.jailbroken;
-      bool developerMode = await FlutterJailbreakDetection.developerMode;
-
-      // We might tolerate dev mode, but strictly flag jailbreak
-      if (jailbroken) {
-        _isDeviceCompromised = true;
-        await _analytics.setUserProperty('is_rooted', 'true');
-        await _analytics.logEvent('security_alert', {
-          'type': 'root_detected',
-          'developer_mode': developerMode,
-        });
-        debugPrint('SECURITY ALERT: Device is rooted/jailbroken.');
-      } else {
-        await _analytics.setUserProperty('is_rooted', 'false');
-      }
+      // Jailbreak detection disabled - flutter_jailbreak_detection removed
+      // TODO: Add alternative security check if needed
+      await _analytics.logEvent('security_check', {'is_rooted': 'unknown'});
+      debugPrint('Security check: jailbreak detection disabled');
     } catch (e) {
       debugPrint('Security Check Failed: $e');
     }

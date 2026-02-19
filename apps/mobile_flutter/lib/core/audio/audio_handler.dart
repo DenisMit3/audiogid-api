@@ -100,16 +100,16 @@ class AudiogidAudioHandler extends BaseAudioHandler
   Future<void> skipToPrevious() => _skip(-1);
 
   Future<void> _skip(int offset) async {
-    final mediaItem = mediaItem.value;
-    final queue = queue.value;
-    if (mediaItem == null || queue.isEmpty) return;
+    final currentItem = this.mediaItem.value;
+    final currentQueue = this.queue.value;
+    if (currentItem == null || currentQueue.isEmpty) return;
 
-    final index = queue.indexOf(mediaItem);
+    final index = currentQueue.indexOf(currentItem);
     if (index == -1) return;
 
     final newIndex = index + offset;
-    if (newIndex >= 0 && newIndex < queue.length) {
-      final nextItem = queue[newIndex];
+    if (newIndex >= 0 && newIndex < currentQueue.length) {
+      final nextItem = currentQueue[newIndex];
       // Update media item immediately for UI responsiveness
       this.mediaItem.add(nextItem); 
       // Prepare and play
@@ -182,7 +182,7 @@ class AudiogidAudioHandler extends BaseAudioHandler
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
-      queueIndex: queue.valueOrNull?.indexWhere((item) => item.id == mediaItem.valueOrNull?.id),
+      queueIndex: queue.value?.indexWhere((item) => item.id == mediaItem.value?.id),
     ));
   }
 }

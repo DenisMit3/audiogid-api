@@ -169,7 +169,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
-    final user = userAsync.valueOrNull;
+    final user = userAsync.value;
 
     return Scaffold(
       appBar: AppBar(

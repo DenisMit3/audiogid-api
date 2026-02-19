@@ -143,7 +143,7 @@ class AudioPlayerScreen extends ConsumerWidget {
   }
   
   Duration _currentPosition(AudioHandler handler) {
-     final state = handler.playbackState.valueOrNull;
+     final state = handler.playbackState.value;
      if (state == null) return Duration.zero;
      if (!state.playing) return state.position;
      

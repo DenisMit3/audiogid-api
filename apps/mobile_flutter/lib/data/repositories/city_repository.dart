@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:mobile_flutter/core/error/api_error.dart';
 import 'package:mobile_flutter/data/local/app_database.dart';
-import 'package:mobile_flutter/domain/entities/city.dart';
+import 'package:mobile_flutter/domain/entities/city.dart' as domain;
 import 'package:mobile_flutter/domain/repositories/city_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -16,10 +16,10 @@ class OfflineCityRepository implements CityRepository {
   OfflineCityRepository(this._api, this._db);
 
   @override
-  Stream<List<City>> watchCities() {
+  Stream<List<domain.City>> watchCities() {
     syncCities().ignore(); 
     
-    return _db.cityDao.watchAllCities().map((rows) => rows.map((r) => City(
+    return _db.cityDao.watchAllCities().map((rows) => rows.map((r) => domain.City(
       id: r.id,
       slug: r.slug,
       nameRu: r.nameRu,
@@ -54,7 +54,7 @@ class OfflineCityRepository implements CityRepository {
 }
 
 @riverpod
-CityRepository cityRepository(CityRepositoryRef ref) {
+CityRepository cityRepository(Ref ref) {
   return OfflineCityRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),

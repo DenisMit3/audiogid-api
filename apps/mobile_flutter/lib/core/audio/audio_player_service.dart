@@ -6,6 +6,7 @@ import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/domain/entities/entitlement_grant.dart';
 
 class AudioPlayerService {
   final AudioHandler _handler;
@@ -21,7 +22,8 @@ class AudioPlayerService {
     required int initialIndex,
   }) async {
     // 1. Check entitlements
-    final grants = await _ref.read(entitlementGrantsProvider.future);
+    final grantsStream = _ref.read(entitlementGrantsProvider);
+    final grants = grantsStream.value ?? <EntitlementGrant>[];
     final hasAccess = grants.any((g) =>
         g.isActive &&
         ((g.scope == 'tour' && g.ref == tourId) || 
@@ -29,7 +31,8 @@ class AudioPlayerService {
          g.scope == 'all_access'));
 
     // Check Kids Mode
-    final kidsMode = _ref.read(settingsRepositoryProvider).getKidsModeEnabled();
+    final settingsAsync = _ref.read(settingsRepositoryProvider);
+    final kidsMode = settingsAsync.value?.getKidsModeEnabled() ?? false;
 
     final queue = <MediaItem>[];
     
@@ -114,7 +117,7 @@ class AudioPlayerService {
             'is_preview': isPreview,
             'tour_id': item.extras!['tourId'],
           });
-          _ref.read(analyticsServiceProvider).logAudioPlay(item.title);
+          _ref.read(analyticsServiceProvider).logAudioPlay(poiId, item.title);
         }
       }
     });

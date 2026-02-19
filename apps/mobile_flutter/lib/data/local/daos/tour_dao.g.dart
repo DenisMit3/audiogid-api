@@ -1,0 +1,22 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'tour_dao.dart';
+
+// ignore_for_file: type=lint
+mixin _$TourDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ToursTable get tours => attachedDatabase.tours;
+  $PoisTable get pois => attachedDatabase.pois;
+  $TourItemsTable get tourItems => attachedDatabase.tourItems;
+  TourDaoManager get managers => TourDaoManager(this);
+}
+
+class TourDaoManager {
+  final _$TourDaoMixin _db;
+  TourDaoManager(this._db);
+  $$ToursTableTableManager get tours =>
+      $$ToursTableTableManager(_db.attachedDatabase, _db.tours);
+  $$PoisTableTableManager get pois =>
+      $$PoisTableTableManager(_db.attachedDatabase, _db.pois);
+  $$TourItemsTableTableManager get tourItems =>
+      $$TourItemsTableTableManager(_db.attachedDatabase, _db.tourItems);
+}

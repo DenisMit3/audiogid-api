@@ -128,7 +128,7 @@ class _ItineraryViewerScreenState extends ConsumerState<ItineraryViewerScreen> {
         final tourData = manifest['tour'];
         final itemsData = manifest['pois'] as List;
         
-        final tourItems = itemsData.map<TourItem>((item) {
+        final tourItems = itemsData.map<TourItemEntity>((item) {
            // We use the data from manifest which mimics the structure needed
            final poi = Poi(
               id: item['id'],
@@ -138,15 +138,12 @@ class _ItineraryViewerScreenState extends ConsumerState<ItineraryViewerScreen> {
               lon: item['lon'],
               descriptionRu: item['description_ru'],
               category: 'Itinerary POI', // default
-              coverImage: null, // manifest POI item might not have cover image at top level? check public.py
-              // public.py: p = item.poi.model_dump... so it DOES have cover_image if model has it.
-              // Wait, get_itinerary_manifest loop:
-              // p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'}) 
-              // it MISSES cover_image! I should add it to public.py manifest extraction.
               narrations: [], // Audio URLs are in 'assets' list in manifest, separate from POIs list in the 'tour' part of manifest
-              media: []
+              media: [],
+              hasAccess: true,
+              sources: [],
            );
-           return TourItem(id: 'item_${poi.id}', orderIndex: item['order_index'], poi: poi);
+           return TourItemEntity(id: 'item_${poi.id}', tourId: tourData['id'], poiId: poi.id, orderIndex: item['order_index'], poi: poi);
         }).toList();
 
         // Pass 'assets' to tour mode service? 
@@ -155,31 +152,9 @@ class _ItineraryViewerScreenState extends ConsumerState<ItineraryViewerScreen> {
         // I need to map assets back to POIs if I want them to play.
         
         final assets = manifest['assets'] as List;
-        for (var tourItem in tourItems) {
-           final poiId = tourItem.poi!.id;
-           final poiAssets = assets.where((a) => a['owner_id'] == poiId && a['type'] == 'audio').toList();
-           
-           // Create Narration objects
-           // Assuming Poi entity has narrations list.
-           // We can't modify Poi because it's final (usually).
-           // We need to create Poi with narrations.
-           
-           final narrations = poiAssets.map((a) => Narration(
-              id: 'audio_$poiId', // ID not in asset snippet usually
-              url: a['url'],
-              locale: a['locale'] ?? 'ru',
-              durationSeconds: (a['duration'] as num?)?.toDouble() ?? 0.0,
-           )).toList();
-           
-           // Re-create POI
-           final newPoi = tourItem.poi!.copyWith(narrations: narrations);
-           // Re-create TourItem
-           // TourItem is likely final too.
-           // Since we are mapping a list, we can just do it in the map loop if we have assets ready.
-        }
         
-        // Revised Mapping with Assets
-        final tourItemsWithAudio = itemsData.map<TourItem>((item) {
+        // Mapping with Assets
+        final tourItemsWithAudio = itemsData.map<TourItemEntity>((item) {
            final poiId = item['id'];
            final poiAssets = assets.where((a) => a['owner_id'] == poiId && a['type'] == 'audio').toList();
            final narrations = poiAssets.map((a) => Narration(
@@ -202,7 +177,7 @@ class _ItineraryViewerScreenState extends ConsumerState<ItineraryViewerScreen> {
               hasAccess: true,
               sources: [],
            );
-           return TourItem(id: 'item_${poi.id}', orderIndex: item['order_index'], poi: poi);
+           return TourItemEntity(id: 'item_${poi.id}', tourId: tourData['id'], poiId: poi.id, orderIndex: item['order_index'], poi: poi);
         }).toList();
 
         final tour = Tour(

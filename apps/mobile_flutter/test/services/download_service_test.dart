@@ -148,6 +148,8 @@ void main() {
       // This is hard to test fully without refactoring `_downloadManifest` and extraction logic.
       // But I can check if state becomes "requestingBuild" -> "buildingBundle".
       
+    });
+
     test('should retry on network error during polling', () async {
       final service = container.read(downloadServiceProvider.notifier);
       

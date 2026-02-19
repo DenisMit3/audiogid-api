@@ -52,7 +52,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
     final validPois = items.map((i) => i.poi).whereType<Poi>().toList();
     final points = validPois.map((p) => LatLng(p.lat, p.lon)).toList();
 
-    final userPosition = ref.watch(locationStreamProvider).valueOrNull;
+    final userPosition = ref.watch(locationStreamProvider).value;
 
     // Auto-center Logic
     if (_shouldFollowUser && userPosition != null) {
@@ -102,7 +102,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                       points: nextPointPath,
                       color: Colors.orange,
                       strokeWidth: 3.0,
-                      isDotted: true, 
+                      pattern: const StrokePattern.dotted(), 
                     ),
                 ],
               ),

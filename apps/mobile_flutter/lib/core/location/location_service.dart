@@ -55,14 +55,14 @@ class LocationService {
         accuracy: LocationAccuracy.medium,
         distanceFilter: 10,
         foregroundNotificationConfig: backgroundEnabled ? const ForegroundNotificationConfig(
-          notificationTitle: "Аудиогид",
-          notificationText: "Отслеживание маршрута",
+          notificationTitle: "????????",
+          notificationText: "???????????? ????????",
           notificationIcon: AndroidResource(name: 'ic_launcher'),
         ) : null,
       );
     } else if (Platform.isIOS) {
       locationSettings = AppleSettings(
-        accuracy: LocationAccuracy.nearestTenMeters,
+        accuracy: LocationAccuracy.high,
         activityType: ActivityType.fitness,
         distanceFilter: 10,
         pauseLocationUpdatesAutomatically: !backgroundEnabled,
@@ -103,12 +103,12 @@ class LocationService {
 }
 
 @Riverpod(keepAlive: true)
-LocationService locationService(LocationServiceRef ref) {
+LocationService locationService(Ref ref) {
   return LocationService(ref);
 }
 
 @riverpod
-Stream<Position> locationStream(LocationStreamRef ref) {
+Stream<Position> locationStream(Ref ref) {
   final service = ref.watch(locationServiceProvider);
   return service.positionStream;
 }

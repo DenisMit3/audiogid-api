@@ -31,12 +31,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         actions: [
           // Share Button - only shown when POIs are loaded, but we need state access.
           // Simpler: Show it always, but handle empty inside.
-          if (itineraryIdsAsync.valueOrNull?.isNotEmpty == true)
+          if (itineraryIdsAsync.value?.isNotEmpty == true)
              IconButton(
                icon: const Icon(Icons.share_outlined),
                tooltip: 'Поделиться маршрутом',
                onPressed: () async {
-                  final ids = itineraryIdsAsync.valueOrNull!;
+                  final ids = itineraryIdsAsync.value!;
                   final pois = await ref.read(poiRepositoryProvider).getPoisByIds(ids);
                   _shareItinerary(pois);
                },
@@ -208,7 +208,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
        id: 'custom_itinerary',
        citySlug: ref.read(selectedCityProvider).value ?? '',
        titleRu: 'Мой маршрут',
-       items: pois.map((p) => TourItem(id: p.id, orderIndex: 0, poi: p)).toList(), 
+       items: pois.map((p) => TourItemEntity(id: p.id, tourId: 'custom_itinerary', poiId: p.id, orderIndex: 0, poi: p)).toList(), 
        // We don't have true TourItems but service handles logic.
     );
     

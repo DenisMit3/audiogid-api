@@ -77,6 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 TextButton(
                     onPressed: () => setState(() => _codeSent = false),
+                    child: const Text('Изменить номер'),
                 )
             ],
             const SizedBox(height: 24),

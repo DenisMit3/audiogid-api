@@ -1,8 +1,8 @@
 import 'package:mobile_flutter/domain/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart' as domain;
 import 'package:mobile_flutter/data/local/app_database.dart';
+import 'package:mobile_flutter/data/local/daos/poi_dao.dart';
 import 'package:api_client/api.dart'; // PublicApi
-import 'package:dio/dio.dart'; // Response
 import 'package:drift/drift.dart';
 
 class PoiRepositoryImpl implements PoiRepository {
@@ -27,14 +27,14 @@ class PoiRepositoryImpl implements PoiRepository {
       final p = response;
       
       final mainComp = PoisCompanion(
-        id: Value(p.id),
+        id: Value(p.id ?? id),
         citySlug: Value(citySlug),
-        titleRu: Value(p.titleRu),
+        titleRu: Value(p.titleRu ?? ''),
         descriptionRu: Value(p.descriptionRu),
-        lat: Value(p.lat),
-        lon: Value(p.lon),
+        lat: Value(p.lat?.toDouble() ?? 0.0),
+        lon: Value(p.lon?.toDouble() ?? 0.0),
         previewAudioUrl: Value(p.previewAudioUrl),
-        hasAccess: Value(p.hasAccess),
+        hasAccess: Value(p.hasAccess ?? false),
         category: Value(p.category),
         // isFavorite preserved? Upsert usually overwrites. 
         // We should check existing and preserve. 
@@ -46,32 +46,32 @@ class PoiRepositoryImpl implements PoiRepository {
       // Simple implementation: Use DAO upsert
       // Need to map children
       final nars = p.narrations.map((n) => NarrationsCompanion(
-        id: Value(n.id),
-        poiId: Value(p.id),
-        url: Value(n.url),
-        locale: Value(n.locale),
-        durationSeconds: Value(n.durationSeconds),
+        id: Value(n.id ?? ''),
+        poiId: Value(p.id ?? id),
+        url: Value(n.url ?? ''),
+        locale: Value(n.locale ?? 'ru'),
+        durationSeconds: Value(n.durationSeconds?.toDouble()),
         transcript: Value(n.transcript),
         // kidsUrl might not be present in generated client yet if not regenerated
         // Using dynamic cast for safety during transition if needed, 
         // but ideally client is updated. Assuming updated client:
-        kidsUrl: Value((n as dynamic).kidsUrl), 
+        kidsUrl: Value((n as dynamic).kidsUrl as String?), 
       )).toList();
 
       final meds = p.media.map((m) => MediaCompanion(
-        id: Value(m.id),
-        poiId: Value(p.id),
-        url: Value(m.url),
-        mediaType: Value(m.mediaType),
+        id: Value(m.id ?? ''),
+        poiId: Value(p.id ?? id),
+        url: Value(m.url ?? ''),
+        mediaType: Value(m.mediaType ?? 'image'),
         author: Value(m.author),
         sourcePageUrl: Value(m.sourcePageUrl),
         licenseType: Value(m.licenseType),
       )).toList();
 
       final srcs = p.sources.map((s) => PoiSourcesCompanion(
-        id: Value(s.id),
-        poiId: Value(p.id),
-        name: Value(s.name),
+        id: Value(s.id ?? ''),
+        poiId: Value(p.id ?? id),
+        name: Value(s.name ?? ''),
         url: Value(s.url),
       )).toList();
 

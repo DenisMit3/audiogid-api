@@ -91,4 +91,22 @@ class DeepLinkService {
   void dispose() {
     _sub?.cancel();
   }
+
+  /// Handle a deep link from external source (e.g., pending link from terminated state)
+  void handleDeepLink(Map<String, dynamic> data) {
+    final type = data['type'] as String?;
+    final id = data['id'] as String?;
+    
+    if (type != null && id != null) {
+      debugPrint('Handling deep link: type=$type, id=$id');
+      // Navigation will be handled by GoRouter based on the current route
+      // For now, just track attribution if present
+      final utmSource = data['utm_source'] as String?;
+      if (utmSource != null) {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setString('attribution_source', utmSource);
+        });
+      }
+    }
+  }
 }

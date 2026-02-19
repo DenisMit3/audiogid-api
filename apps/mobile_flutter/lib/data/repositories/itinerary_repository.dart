@@ -2,15 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'itinerary_repository.g.dart';
-
 import 'package:dio/dio.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
-
 import 'package:mobile_flutter/data/local/app_database.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
+
+part 'itinerary_repository.g.dart';
 
 class ItineraryRepository {
   final SharedPreferences _prefs;
@@ -85,7 +83,6 @@ class ItineraryRepository {
         citySlug: Value(tourData['city_slug']),
         titleRu: Value(tourData['title_ru']),
         durationMinutes: Value(tourData['duration_minutes']),
-        // transportType: Value("walking"), // default
       );
 
       final items = <TourItemsCompanion>[];
@@ -107,11 +104,12 @@ class ItineraryRepository {
             citySlug: Value(tourData['city_slug']),
             titleRu: Value(poi['title_ru']),
             descriptionRu: Value(poi['description_ru']),
-            lat: Value(poi['lat']),
-            lon: Value(poi['lon']),
+            lat: Value((poi['lat'] as num).toDouble()),
+            lon: Value((poi['lon'] as num).toDouble()),
           ),
           [], 
           [], 
+          [],
         );
       }
 
@@ -120,7 +118,7 @@ class ItineraryRepository {
 }
 
 @riverpod
-Future<ItineraryRepository> itineraryRepository(ItineraryRepositoryRef ref) async {
+Future<ItineraryRepository> itineraryRepository(Ref ref) async {
   final prefs = await SharedPreferences.getInstance();
   final dio = ref.watch(dioProvider);
   final db = ref.watch(appDatabaseProvider);

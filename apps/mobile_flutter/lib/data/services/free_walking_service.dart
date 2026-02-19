@@ -7,6 +7,9 @@ import 'package:mobile_flutter/core/location/location_service.dart';
 import 'package:mobile_flutter/data/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/data/services/notification_service.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'free_walking_service.g.dart';
 
 class FreeWalkingState {
   final bool isActive;
@@ -52,31 +55,33 @@ class FreeWalkingState {
   }
 }
 
-class FreeWalkingService extends StateNotifier<FreeWalkingState> {
-  final Ref _ref;
+@Riverpod(keepAlive: true)
+class FreeWalkingService extends _$FreeWalkingService {
   StreamSubscription<Position>? _positionSubscription;
   
-  
   // Configuration
-  // static const double TRIGGER_RADIUS_METERS = 50.0; // Now in state
   static const double CHECK_INTERVAL_METERS = 10.0;
   
   final Map<String, DateTime> _lastPlayedMap = {};
   
   Position? _lastCheckPosition;
 
-  FreeWalkingService(this._ref) : super(FreeWalkingState());
+  @override
+  FreeWalkingState build() {
+    ref.onDispose(() {
+      _positionSubscription?.cancel();
+    });
+    return FreeWalkingState();
+  }
 
   void start() {
-    _ref.read(locationServiceProvider).updateBackgroundTracking(true);
+    ref.read(locationServiceProvider).updateBackgroundTracking(true);
     state = state.copyWith(isActive: true, statusMessage: 'Scanning...');
     _listenToLocation();
   }
 
   void stop() {
-    // We might not want to disable background tracking if user enabled it elsewhere, 
-    // but for now assume this mode manages it.
-    _ref.read(locationServiceProvider).updateBackgroundTracking(false);
+    ref.read(locationServiceProvider).updateBackgroundTracking(false);
     state = state.copyWith(isActive: false, statusMessage: 'Paused');
     _positionSubscription?.cancel();
   }
@@ -94,7 +99,7 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
 
   void _listenToLocation() {
     _positionSubscription?.cancel();
-    final locationService = _ref.read(locationServiceProvider);
+    final locationService = ref.read(locationServiceProvider);
 
     _positionSubscription = locationService.positionStream.listen((pos) {
       if (!state.isActive) return;
@@ -114,11 +119,10 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
   }
 
   Future<void> _checkForNearbyPoi(Position pos) async {
-    final poiRepo = _ref.read(poiRepositoryProvider);
-    final locationService = _ref.read(locationServiceProvider);
+    final poiRepo = ref.read(poiRepositoryProvider);
+    final locationService = ref.read(locationServiceProvider);
     
     // Get candidates from local DB (efficient bounding box)
-    // Use slightly larger radius for fetch to ensure we catch edge cases
     final fetchRadius = state.activationRadius * 1.5;
     final candidates = await poiRepo.getNearbyCandidates(pos.latitude, pos.longitude, fetchRadius);
     
@@ -165,7 +169,7 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
           _playPoi(nearest);
       } else {
           // Send local notification
-          _ref.read(notificationServiceProvider).showLocalNotification(
+          ref.read(notificationServiceProvider).showLocalNotification(
                id: nearest.id.hashCode,
                title: "Рядом интересное!",
                body: nearest.titleRu,
@@ -176,20 +180,11 @@ class FreeWalkingService extends StateNotifier<FreeWalkingState> {
   }
 
   Future<void> _playPoi(Poi poi) async {
-     // Ensure full details are loaded (e.g. narrations from relation)
-     // Actually loadPlaylist expects Poi entity which we have.
-     // But we might need check entitlements or if narration is available?
-     // AudioPlayerService handles preview/full logic.
-     
-     await _ref.read(audioPlayerServiceProvider).loadPlaylist(
+     await ref.read(audioPlayerServiceProvider).loadPlaylist(
          tourId: 'free_walking', // Pseudo ID
          pois: [poi], 
          initialIndex: 0
      );
-     await _ref.read(audioPlayerServiceProvider).play();
+     await ref.read(audioPlayerServiceProvider).play();
   }
 }
-
-final freeWalkingServiceProvider = StateNotifierProvider<FreeWalkingService, FreeWalkingState>((ref) {
-  return FreeWalkingService(ref);
-});

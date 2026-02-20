@@ -202,27 +202,62 @@ def get_poi(
     session: Session = Depends(get_session),
     user: User = Depends(require_permission('poi:read'))
 ):
-    poi = session.get(Poi, poi_id)
-    if not poi or poi.is_deleted: raise HTTPException(404, "POI not found")
+    import traceback
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # Load relations separately to avoid selectinload issues
-    sources = session.exec(select(PoiSource).where(PoiSource.poi_id == poi_id)).all()
-    media = session.exec(select(PoiMedia).where(PoiMedia.poi_id == poi_id)).all()
-    narrations = session.exec(select(Narration).where(Narration.poi_id == poi_id)).all()
-    
-    # Logic for can_publish
-    issues = []
-    if not poi.description_ru or len(poi.description_ru) < 10: issues.append("Description too short")
-    if poi.lat is None: issues.append("Missing coordinates")
-    
-    return {
-        "poi": poi,
-        "sources": sources,
-        "media": media,
-        "narrations": narrations,
-        "can_publish": len(issues) == 0,
-        "publish_issues": issues
-    }
+    try:
+        poi = session.get(Poi, poi_id)
+        if not poi or poi.is_deleted: raise HTTPException(404, "POI not found")
+        
+        # Load relations separately to avoid selectinload issues
+        sources = session.exec(select(PoiSource).where(PoiSource.poi_id == poi_id)).all()
+        media = session.exec(select(PoiMedia).where(PoiMedia.poi_id == poi_id)).all()
+        narrations = session.exec(select(Narration).where(Narration.poi_id == poi_id)).all()
+        
+        # Logic for can_publish
+        issues = []
+        if not poi.description_ru or len(poi.description_ru) < 10: issues.append("Description too short")
+        if poi.lat is None: issues.append("Missing coordinates")
+        
+        # Convert to dict to avoid geo serialization issues
+        poi_dict = {
+            "id": poi.id,
+            "title_ru": poi.title_ru,
+            "city_slug": poi.city_slug,
+            "description_ru": poi.description_ru,
+            "title_en": poi.title_en,
+            "description_en": poi.description_en,
+            "category": poi.category,
+            "address": poi.address,
+            "cover_image": poi.cover_image,
+            "opening_hours": poi.opening_hours,
+            "external_links": poi.external_links,
+            "published_at": poi.published_at,
+            "lat": poi.lat,
+            "lon": poi.lon,
+            "osm_id": poi.osm_id,
+            "wikidata_id": poi.wikidata_id,
+            "confidence_score": poi.confidence_score,
+            "preview_audio_url": poi.preview_audio_url,
+            "preview_bullets": poi.preview_bullets,
+            "updated_at": poi.updated_at,
+            "is_deleted": poi.is_deleted,
+        }
+        
+        return {
+            "poi": poi_dict,
+            "sources": sources,
+            "media": media,
+            "narrations": narrations,
+            "can_publish": len(issues) == 0,
+            "publish_issues": issues
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"get_poi error: {e}\n{traceback.format_exc()}")
+        raise HTTPException(500, f"Internal error: {str(e)}")
 
 @router.patch("/admin/pois/{poi_id}", response_model=PoiRead, dependencies=[Depends(require_permission('poi:write'))])
 def update_poi(

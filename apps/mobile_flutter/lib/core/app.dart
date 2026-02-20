@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,12 +8,36 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/core/network/connectivity_service.dart';
 
+// #region agent log
+void _debugLog(String location, String message, Map<String, dynamic> data) {
+  try {
+    final logFile = File('/data/data/app.audiogid.mobile_flutter/files/debug.log');
+    final entry = jsonEncode({
+      'sessionId': '03cf79',
+      'location': location,
+      'message': message,
+      'data': data,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    logFile.writeAsStringSync('$entry\n', mode: FileMode.append, flush: true);
+  } catch (e) {
+    debugPrint('DEBUG_LOG_ERROR: $e');
+  }
+}
+// #endregion
+
 class AudiogidApp extends ConsumerWidget {
   const AudiogidApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // #region agent log
+    _debugLog('app.dart:AudiogidApp:build', 'H8: AudiogidApp build called', {});
+    // #endregion
     final router = ref.watch(routerProvider);
+    // #region agent log
+    _debugLog('app.dart:AudiogidApp:build:afterRouter', 'H8: router obtained', {'routerNull': router == null});
+    // #endregion
 
     return MaterialApp.router(
       title: 'Аудиогид',
@@ -38,12 +64,8 @@ class AudiogidApp extends ConsumerWidget {
       
       // Builder for global wrappers
       builder: (context, child) {
-        // Get the text scale factor and clamp it for accessibility
         final mediaQuery = MediaQuery.of(context);
         final textScaleFactor = mediaQuery.textScaler.scale(1.0);
-        
-        // Allow font scaling up to 1.6 (160%) but prevent layout breaking
-        // at extreme scales
         final clampedTextScaler = TextScaler.linear(
           textScaleFactor.clamp(0.8, 1.6),
         );
@@ -53,7 +75,6 @@ class AudiogidApp extends ConsumerWidget {
             textScaler: clampedTextScaler,
           ),
           child: GestureDetector(
-            // Dismiss keyboard on tap outside
             onTap: () {
               final currentFocus = FocusScope.of(context);
               if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
@@ -76,6 +97,9 @@ class _ConnectivityWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // #region agent log
+    _debugLog('app.dart:ConnectivityWrapper:build', 'H9: ConnectivityWrapper build called', {});
+    // #endregion
     // We need to import the provider first, but to keep clean file edits we assume imports are handled or we add them.
     // Actually imports are needed. I will check imports in next step if this fails or add them now if I can.
     // Since I can't easily add global imports in replace_file_content, I'll rely on a second pass or the user context.

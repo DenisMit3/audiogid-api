@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,24 @@ import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/sync_service.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+
+// #region agent log
+void _debugLog(String location, String message, Map<String, dynamic> data) {
+  try {
+    final logFile = File('/data/data/app.audiogid.mobile_flutter/files/debug.log');
+    final entry = jsonEncode({
+      'sessionId': '03cf79',
+      'location': location,
+      'message': message,
+      'data': data,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    logFile.writeAsStringSync('$entry\n', mode: FileMode.append, flush: true);
+  } catch (e) {
+    debugPrint('DEBUG_LOG_ERROR: $e');
+  }
+}
+// #endregion
 
 class CitySelectScreen extends ConsumerStatefulWidget {
   const CitySelectScreen({super.key});
@@ -25,6 +45,10 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
   @override
   void initState() {
     super.initState();
+    // #region agent log
+    _debugLog('city_select_screen.dart:initState', 'H7: CitySelectScreen initState called', {});
+    // #endregion
+    
     _animController = AnimationController(
       duration: AppDurations.slow,
       vsync: this,
@@ -54,6 +78,9 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
 
   @override
   Widget build(BuildContext context) {
+    // #region agent log
+    _debugLog('city_select_screen.dart:build', 'H11: CitySelectScreen build called', {});
+    // #endregion
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -194,6 +221,10 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
   }
 
   Future<void> _selectCity(String slug) async {
+    // #region agent log
+    _debugLog('city_select_screen.dart:_selectCity:start', 'H16: _selectCity started', {'slug': slug, 'mounted': mounted});
+    // #endregion
+    
     if (_isLoading) return;
 
     HapticFeedback.lightImpact();
@@ -204,15 +235,58 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
     });
 
     try {
-      await ref.read(selectedCityProvider.notifier).set(slug);
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:before_set', 'H16: Before selectedCityProvider.set', {'mounted': mounted});
+      // #endregion
+      
+      if (!mounted) {
+        // #region agent log
+        _debugLog('city_select_screen.dart:_selectCity:not_mounted_1', 'H16: Not mounted before set', {});
+        // #endregion
+        return;
+      }
+      
+      final notifier = ref.read(selectedCityProvider.notifier);
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:got_notifier', 'H16: Got notifier', {'notifier': notifier.toString()});
+      // #endregion
+      
+      await notifier.set(slug);
+      
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:after_set', 'H16: After set', {'mounted': mounted});
+      // #endregion
+      
+      if (!mounted) {
+        // #region agent log
+        _debugLog('city_select_screen.dart:_selectCity:not_mounted_2', 'H16: Not mounted after set', {});
+        // #endregion
+        return;
+      }
+      
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:before_sync', 'H16: Before syncAll', {});
+      // #endregion
       
       // Trigger initial sync
       ref.read(syncServiceProvider).syncAll(slug).ignore();
       
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:before_go', 'H16: Before context.go', {'mounted': mounted});
+      // #endregion
+      
       if (mounted) {
         context.go('/');
       }
-    } catch (e) {
+      
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:done', 'H16: _selectCity completed', {});
+      // #endregion
+    } catch (e, st) {
+      // #region agent log
+      _debugLog('city_select_screen.dart:_selectCity:error', 'H16: Error in _selectCity', {'error': e.toString(), 'stackTrace': st.toString().substring(0, 500)});
+      // #endregion
+      
       if (mounted) {
         setState(() {
           _isLoading = false;

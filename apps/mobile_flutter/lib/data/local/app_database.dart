@@ -256,7 +256,10 @@ LazyDatabase _openConnection() {
   });
 }
 
+// Singleton instance
+AppDatabase? _dbInstance;
+
 @riverpod
 AppDatabase appDatabase(Ref ref) {
-  return AppDatabase();
+  return _dbInstance ??= AppDatabase();
 }

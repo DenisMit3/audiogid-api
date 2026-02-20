@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:mobile_flutter/presentation/screens/sos_screen.dart';
 import 'package:mobile_flutter/presentation/screens/trusted_contacts_screen.dart';
 import 'package:mobile_flutter/presentation/screens/shared_location_screen.dart';
@@ -26,17 +28,53 @@ import 'package:flutter/material.dart';
 
 part 'app_router.g.dart';
 
+// #region agent log
+void _debugLog(String location, String message, Map<String, dynamic> data) {
+  try {
+    final logFile = File('/data/data/app.audiogid.mobile_flutter/files/debug.log');
+    final entry = jsonEncode({
+      'sessionId': '03cf79',
+      'location': location,
+      'message': message,
+      'data': data,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    logFile.writeAsStringSync('$entry\n', mode: FileMode.append, flush: true);
+  } catch (e) {
+    debugPrint('DEBUG_LOG_ERROR: $e');
+  }
+}
+// #endregion
+
 @riverpod
 GoRouter router(Ref ref) {
-  final selectedCityAsync = ref.watch(selectedCityProvider);
-
+  // #region agent log
+  _debugLog('app_router.dart:router:start', 'H3: router provider started', {});
+  // #endregion
+  
   final analyticsObserver = AnalyticsObserver(ref);
 
-  return GoRouter(
-    initialLocation: '/',
+  final router = GoRouter(
+    initialLocation: '/select-city',
     observers: [analyticsObserver],
     redirect: (context, state) {
-      if (selectedCityAsync.isLoading) return null;
+      final selectedCityAsync = ref.read(selectedCityProvider);
+      
+      // #region agent log
+      _debugLog('app_router.dart:redirect', 'H3: redirect called', {
+        'matchedLocation': state.matchedLocation,
+        'isLoading': selectedCityAsync.isLoading,
+        'value': selectedCityAsync.value,
+      });
+      // #endregion
+      
+      // While loading, stay on city selection
+      if (selectedCityAsync.isLoading) {
+        if (state.matchedLocation != '/select-city') {
+          return '/select-city';
+        }
+        return null;
+      }
 
       final selectedCity = selectedCityAsync.value;
       final isSelecting = state.matchedLocation == '/select-city';
@@ -163,4 +201,6 @@ GoRouter router(Ref ref) {
       ),
     ],
   );
+  
+  return router;
 }

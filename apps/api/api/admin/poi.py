@@ -494,18 +494,8 @@ def get_presigned_url(
     pathname = f"{req.entity_type}/{req.entity_id}/{unique_name}"
     
     if not settings.VERCEL_BLOB_READ_WRITE_TOKEN:
-        # Fail-fast in production
-        if os.getenv("VERCEL_ENV") == "production":
-             raise HTTPException(500, "Storage configuration error: VERCEL_BLOB_READ_WRITE_TOKEN missing in production")
-
-        # Fallback for dev without token
-        return {
-            "upload_url": "https://httpbin.org/put",
-            "final_url": f"https://cdn.example.com/{pathname}",
-            "method": "PUT",
-            "headers": {"Content-Type": req.content_type},
-            "expires_at": datetime.utcnow() + timedelta(minutes=15)
-        }
+        # Return 503 Service Unavailable with clear message
+        raise HTTPException(503, "Media upload temporarily unavailable. Storage not configured.")
 
     try:
         # Using Vercel Blob MPU endpoint for client-side upload support

@@ -196,33 +196,30 @@ def create_poi(
     session.refresh(db_poi)
     return db_poi
 
-from sqlalchemy.orm import selectinload
-
 @router.get("/admin/pois/{poi_id}", response_model=PoiDetailResponse)
 def get_poi(
     poi_id: uuid.UUID,
     session: Session = Depends(get_session),
     user: User = Depends(require_permission('poi:read'))
 ):
-    query = select(Poi).where(Poi.id == poi_id).options(
-        selectinload(Poi.sources),
-        selectinload(Poi.media),
-        selectinload(Poi.narrations)
-    )
-    poi = session.exec(query).first()
+    poi = session.get(Poi, poi_id)
     if not poi or poi.is_deleted: raise HTTPException(404, "POI not found")
+    
+    # Load relations separately to avoid selectinload issues
+    sources = session.exec(select(PoiSource).where(PoiSource.poi_id == poi_id)).all()
+    media = session.exec(select(PoiMedia).where(PoiMedia.poi_id == poi_id)).all()
+    narrations = session.exec(select(Narration).where(Narration.poi_id == poi_id)).all()
     
     # Logic for can_publish
     issues = []
     if not poi.description_ru or len(poi.description_ru) < 10: issues.append("Description too short")
     if poi.lat is None: issues.append("Missing coordinates")
-    # if not poi.sources: issues.append("Missing sources")
     
     return {
         "poi": poi,
-        "sources": poi.sources,
-        "media": poi.media,
-        "narrations": poi.narrations,
+        "sources": sources,
+        "media": media,
+        "narrations": narrations,
         "can_publish": len(issues) == 0,
         "publish_issues": issues
     }

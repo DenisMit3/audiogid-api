@@ -17,8 +17,8 @@ class AppConfig:
         if not self.ADMIN_API_TOKEN and os.getenv("VERCEL_ENV") == "production":
              raise RuntimeError("CRITICAL: ADMIN_API_TOKEN is required in production.")
         
-        # Optional with default
-        self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
+        # Optional with default - check both BLOB_READ_WRITE_TOKEN and VERCEL_BLOB_READ_WRITE_TOKEN
+        self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("BLOB_READ_WRITE_TOKEN") or os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
         self.OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip()
         self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "openai").strip()
         self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()

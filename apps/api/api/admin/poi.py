@@ -537,6 +537,8 @@ def check_poi_publish_status(
         issues.append("Description too short")
     if poi.lat is None or poi.lon is None:
         issues.append("Coordinates missing")
+    
+    return {"can_publish": len(issues) == 0, "issues": issues}
         
 
 # --- AI / Tools ---

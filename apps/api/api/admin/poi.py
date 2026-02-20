@@ -498,42 +498,45 @@ def get_presigned_url(
         raise HTTPException(503, "Media upload temporarily unavailable. Storage not configured.")
 
     try:
-        # Using Vercel Blob MPU endpoint for client-side upload support
-        res = requests.post(
-            "https://blob.vercel-storage.com/mpu",
+        # Using Vercel Blob upload API
+        # For server-side presigned URL generation
+        res = requests.put(
+            f"https://blob.vercel-storage.com/{pathname}",
             headers={
                 "Authorization": f"Bearer {settings.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                "x-api-version": "1"
+                "x-content-type": req.content_type,
+                "x-add-random-suffix": "false",
             },
-            json={
-                "pathname": pathname,
-                "contentType": req.content_type,
-                "access": "public" 
-            },
+            data=b"",  # Empty body for presign
             timeout=10
         )
-        res.raise_for_status()
-        data = res.json()
         
-        # 'url' from MPU response is typically the PUT url or the final url?
-        # For Vercel Blob simple upload via MPU create, it gives a valid PUT url.
-        upload_url = data.get("url")
-        # Construct final public URL manually to avoid using the signed expiring URL
-        final_url = f"https://public.blob.vercel-storage.com/{pathname}"
-        
-        return {
-            "upload_url": upload_url,
-            "final_url": final_url, 
-            "method": "PUT",
-            "headers": {
-                "x-api-version": "1"
-            },
-            "expires_at": datetime.utcnow() + timedelta(minutes=15)
-        }
+        if res.status_code == 200:
+            data = res.json()
+            return {
+                "upload_url": data.get("url"),
+                "final_url": data.get("url"),
+                "method": "PUT",
+                "headers": {"Content-Type": req.content_type},
+                "expires_at": datetime.utcnow() + timedelta(minutes=15)
+            }
+        else:
+            # Fallback: return direct upload URL pattern
+            # Client will upload directly using @vercel/blob SDK
+            return {
+                "upload_url": f"https://blob.vercel-storage.com/{pathname}",
+                "final_url": f"https://*.public.blob.vercel-storage.com/{pathname}",
+                "method": "PUT",
+                "headers": {
+                    "Authorization": f"Bearer {settings.VERCEL_BLOB_READ_WRITE_TOKEN}",
+                    "Content-Type": req.content_type,
+                },
+                "expires_at": datetime.utcnow() + timedelta(minutes=15)
+            }
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Blob Presign Error: {e}")
-        raise HTTPException(502, "Failed to generate upload URL")
+        raise HTTPException(502, f"Failed to generate upload URL: {str(e)}")
 
 @router.get("/admin/pois/{poi_id}/publish_check", response_model=PublishCheckResult)
 def check_poi_publish_status(

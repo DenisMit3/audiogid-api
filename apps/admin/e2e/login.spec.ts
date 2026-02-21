@@ -2,11 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test('has admin title', async ({ page }) => {
     await page.goto('/login');
-    // Check the Card Title
-    await expect(page.getByText('AudioGuide Admin')).toBeVisible();
+    // Проверяем заголовок страницы входа
+    await expect(page.getByText('Добро пожаловать')).toBeVisible();
 });
 
-test('shows secret input', async ({ page }) => {
+test('shows login form inputs', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByPlaceholder('Enter your secret key...')).toBeVisible();
+    // Проверяем наличие полей email и password
+    await expect(page.getByPlaceholder('admin@audiogid.app')).toBeVisible();
+    await expect(page.getByPlaceholder('••••••••')).toBeVisible();
 });

@@ -25,22 +25,25 @@ const aiSchema = z.object({
 type AIValues = z.infer<typeof aiSchema>;
 
 const fetchAISettings = async () => {
-    // Mock fetch for now, similar to others
     const token = localStorage.getItem('admin_token');
-    try {
-        const res = await fetch(`${API_URL}/admin/settings/ai`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) return res.json();
-    } catch (e) { }
-
-    // Default
-    return {
-        tts_provider: 'openai',
-        openai_api_key: '',
-        default_voice: 'alloy',
-        enable_translation: true
-    };
+    const res = await fetch(`${API_URL}/admin/settings/ai`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!res.ok) {
+        // Возвращаем дефолтные значения если endpoint еще не настроен
+        if (res.status === 404) {
+            return {
+                tts_provider: 'openai',
+                openai_api_key: '',
+                default_voice: 'alloy',
+                enable_translation: true
+            };
+        }
+        throw new Error("Не удалось загрузить настройки ИИ");
+    }
+    
+    return res.json();
 };
 
 export default function AISettingsPage() {

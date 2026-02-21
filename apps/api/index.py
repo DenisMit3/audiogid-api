@@ -173,6 +173,12 @@ if admin_media_router: app.include_router(admin_media_router, prefix="/v1")
 if admin_validation_router: app.include_router(admin_validation_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")
 
+# Settings and Push routers
+admin_settings_router = safe_import_router("api.admin.settings")
+push_router = safe_import_router("api.push.router")
+if admin_settings_router: app.include_router(admin_settings_router, prefix="/v1")
+if push_router: app.include_router(push_router, prefix="/v1")
+
 deeplinks_router = safe_import_router("api.deeplinks")
 if deeplinks_router: app.include_router(deeplinks_router) # No prefix for .well-known
 

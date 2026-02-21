@@ -34,14 +34,16 @@ def get_password_hash(password):
 def create_access_token(user_id: uuid.UUID, role: str) -> str:
     if not SECRET_KEY: raise RuntimeError("JWT_SECRET missing configuration")
     # Shorten access_token TTL to 15-30min (per prompt)
-    expire = datetime.utcnow() + timedelta(minutes=30)
-    to_encode = {"sub": str(user_id), "role": role, "exp": expire, "type": "access"}
+    now = datetime.utcnow()
+    expire = now + timedelta(minutes=30)
+    to_encode = {"sub": str(user_id), "role": role, "exp": expire, "iat": now.timestamp(), "type": "access"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def create_refresh_token(user_id: uuid.UUID) -> str:
     if not SECRET_KEY: raise RuntimeError("JWT_SECRET missing configuration")
-    expire = datetime.utcnow() + timedelta(days=7) # Refresh token lives 7 days (per prompt)
-    to_encode = {"sub": str(user_id), "exp": expire, "type": "refresh"}
+    now = datetime.utcnow()
+    expire = now + timedelta(days=7) # Refresh token lives 7 days (per prompt)
+    to_encode = {"sub": str(user_id), "exp": expire, "iat": now.timestamp(), "type": "refresh"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def verify_token(token: str, expected_type: str = "access") -> Optional[dict]:
@@ -76,10 +78,36 @@ def is_token_blacklisted(session: Session, token: str) -> bool:
     # Check for expired blacklisted tokens cleanup here? No, separate job.
     # Just check existence
     found = session.get(BlacklistedToken, token_hash)
-    if not found: return False
+    if found:
+        return True
     
-    # If it's expired in the DB, it's still blacklisted, but theoretically doesn't matter.
-    return True
+    # Также проверяем, был ли отозван доступ для user_id этого токена
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
+        user_id = payload.get("sub")
+        token_iat = payload.get("iat")  # issued at
+        
+        if user_id:
+            # Проверяем есть ли revoke маркер для этого пользователя
+            revoke_markers = session.exec(
+                select(BlacklistedToken).where(
+                    BlacklistedToken.user_id == uuid.UUID(user_id),
+                    BlacklistedToken.token_hash.startswith("revoke_all_") | BlacklistedToken.token_hash.startswith("blocked_")
+                )
+            ).all()
+            
+            for marker in revoke_markers:
+                # Если маркер создан после выпуска токена - токен невалиден
+                marker_ts = float(marker.token_hash.split("_")[-1])
+                if token_iat and marker_ts > token_iat:
+                    return True
+                # Если нет iat в токене, считаем токен невалидным если есть любой маркер
+                elif not token_iat:
+                    return True
+    except Exception:
+        pass
+    
+    return False
 
 async def initiate_sms_login(session: Session, phone: str) -> Tuple[bool, str]:
     """Returns (success, message/error)"""

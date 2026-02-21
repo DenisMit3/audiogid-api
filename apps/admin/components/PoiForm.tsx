@@ -59,7 +59,8 @@ const poiSchema = z.object({
     lat: z.coerce.number().min(-90).max(90).optional(),
     lon: z.coerce.number().min(-180).max(180).optional(),
     is_active: z.boolean().default(true),
-    // TODO: opening_hours, external_links json support
+    opening_hours: z.any().optional(),
+    external_links: z.array(z.string().url()).optional(),
 });
 
 type PoiFormValues = z.infer<typeof poiSchema>;
@@ -72,11 +73,15 @@ type PoiData = PoiFormValues & {
     published_at?: string;
     can_publish: boolean;
     publish_issues: string[];
+    opening_hours?: any;
+    external_links?: string[];
 };
 
 export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?: (id: string) => void }) {
     const [activeTab, setActiveTab] = useState('general');
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+    const [externalLinks, setExternalLinks] = useState<string[]>(poi?.external_links || []);
+    const [newLink, setNewLink] = useState('');
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -94,6 +99,8 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
             lat: poi?.lat,
             lon: poi?.lon,
             is_active: poi?.is_active ?? true,
+            opening_hours: poi?.opening_hours || null,
+            external_links: poi?.external_links || [],
         }
     });
 
@@ -320,6 +327,91 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                         </FormItem>
                                                     )}
                                                 />
+                                            </div>
+
+                                            {/* Opening Hours */}
+                                            <div className="space-y-2">
+                                                <Label>Часы работы</Label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day, idx) => {
+                                                        const dayKey = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][idx];
+                                                        const hours = form.watch('opening_hours') || {};
+                                                        return (
+                                                            <div key={day} className="flex items-center gap-2">
+                                                                <span className="w-8 text-sm font-medium">{day}</span>
+                                                                <Input
+                                                                    placeholder="09:00-18:00"
+                                                                    className="h-8 text-sm"
+                                                                    value={hours[dayKey] || ''}
+                                                                    onChange={(e) => {
+                                                                        const newHours = { ...hours, [dayKey]: e.target.value };
+                                                                        form.setValue('opening_hours', newHours);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">Формат: 09:00-18:00 или "выходной"</p>
+                                            </div>
+
+                                            {/* External Links */}
+                                            <div className="space-y-2">
+                                                <Label>Внешние ссылки</Label>
+                                                <div className="space-y-2">
+                                                    {externalLinks.map((link, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2">
+                                                            <Input value={link} readOnly className="flex-1 h-8 text-sm bg-slate-50" />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    const newLinks = externalLinks.filter((_, i) => i !== idx);
+                                                                    setExternalLinks(newLinks);
+                                                                    form.setValue('external_links', newLinks);
+                                                                }}
+                                                            >
+                                                                ✕
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex items-center gap-2">
+                                                        <Input
+                                                            placeholder="https://example.com"
+                                                            className="flex-1 h-8 text-sm"
+                                                            value={newLink}
+                                                            onChange={(e) => setNewLink(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    if (newLink && newLink.startsWith('http')) {
+                                                                        const newLinks = [...externalLinks, newLink];
+                                                                        setExternalLinks(newLinks);
+                                                                        form.setValue('external_links', newLinks);
+                                                                        setNewLink('');
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                if (newLink && newLink.startsWith('http')) {
+                                                                    const newLinks = [...externalLinks, newLink];
+                                                                    setExternalLinks(newLinks);
+                                                                    form.setValue('external_links', newLinks);
+                                                                    setNewLink('');
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">Официальный сайт, Wikipedia, и т.д.</p>
                                             </div>
 
                                             <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg">

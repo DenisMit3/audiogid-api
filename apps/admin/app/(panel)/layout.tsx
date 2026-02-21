@@ -10,51 +10,40 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     const [user, setUser] = useState<any>(null);
     const [permissions, setPermissions] = useState<string[]>([]);
     const [mounted, setMounted] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
         setMounted(true);
-        // Only run on client
-        // In real app, standard way is check cookie via middleware, 
-        // but here we might also need user info for UI (avatar, name).
-        // For Phase 1 we relied on backend session or cookie.
-        // Let's assume we can fetch /api/auth/me or verify cookie.
-        // Since we are inside layout, middleware already passed.
-        // We probably need a way to get the USER object for the Avatar/Name.
-        // For MVP, if we don't have an endpoint for "me", we rely on what was stored in localstorage?
-        // Wait, Phase 1 we removed localStorage and set Cookie. 
-        // So we need an endpoint to get current user info from cookie.
-        // TODO: Create /api/auth/me or read from a server component and pass down?
-        // For now, let's just render. If we need RBAC in Sidebar, we need the role.
-
-        // Quick fix: decode token from cookie in Client? No, cookie is HTTPOnly.
-        // We MUST fetch user from an endpoint.
-
-        // Let's mock for a second or try to fetch.
-        // Actually the user prompts said "Sidebar links po permissions (usePermissions() iz lib/permissions.ts)".
-        // usePermissions needs the role.
-        // Let's try to fetch a "me" endpoint.
-
-        fetch('/api/auth/me').then(res => {
-            if (res.ok) return res.json();
-            throw new Error("Не авторизован");
-        }).then(u => {
-            setUser(u);
-            const role = (u.role || 'viewer') as Role;
-            const perms: string[] = [...(ROLE_PERMISSIONS[role] || [])];
-            if (role === 'admin') perms.push('*');
-            setPermissions(perms);
-        }).catch(() => {
-            // BACKDOOR: If auth fails, mock an admin for debug
-            console.log("Using Mock Admin for debug");
-            setUser({
-                id: 'mock-admin',
-                full_name: 'Administrator (Debug Mode)',
-                role: 'admin'
+        
+        fetch('/api/auth/me')
+            .then(res => {
+                if (res.ok) return res.json();
+                if (res.status === 401) {
+                    throw new Error("NOT_AUTHENTICATED");
+                }
+                throw new Error("AUTH_ERROR");
+            })
+            .then(u => {
+                setUser(u);
+                const role = (u.role || 'viewer') as Role;
+                const perms: string[] = [...(ROLE_PERMISSIONS[role] || [])];
+                if (role === 'admin') perms.push('*');
+                setPermissions(perms);
+                setAuthError(null);
+            })
+            .catch((err) => {
+                console.error("Auth error:", err.message);
+                if (err.message === "NOT_AUTHENTICATED") {
+                    // Редирект на логин
+                    router.push('/login');
+                } else {
+                    // Показываем ошибку, но не даем доступ
+                    setAuthError("Ошибка авторизации. Попробуйте войти заново.");
+                    setTimeout(() => router.push('/login'), 2000);
+                }
             });
-            setPermissions(['*']); // Full access
-        });
 
-    }, []);
+    }, [router]);
 
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -62,7 +51,33 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         router.refresh();
     };
 
-    if (!mounted) return null; // Avoid hydration mismatch on theme/localstorage
+    if (!mounted) return null;
+
+    // Показываем ошибку авторизации
+    if (authError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div className="text-red-500 mb-4">
+                        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <p className="text-gray-700">{authError}</p>
+                    <p className="text-sm text-gray-500 mt-2">Перенаправление на страницу входа...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Показываем загрузку пока нет пользователя
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="grid min-h-screen w-full lg:grid-cols-[240px_1fr]">
@@ -74,9 +89,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                         <span className="font-semibold">Аудиогид</span>
                     </div>
                 </header>
-                {/* PC Topbar included in shell header logic or separate? 
-                    The shell.tsx Topbar component is good.
-                */}
                 <div className="hidden lg:block">
                     <Topbar user={user} onLogout={handleLogout} />
                 </div>

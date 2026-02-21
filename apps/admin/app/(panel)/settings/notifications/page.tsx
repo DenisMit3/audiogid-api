@@ -115,13 +115,15 @@ export default function NotificationsSettingsPage() {
             return res.json();
         },
         onSuccess: (data) => {
-            toast({ title: "Push отправлен", description: `Сообщение поставлено в очередь для ${data.recipient_count || 'всех'} устройств.` });
+            toast({ title: "Push отправлен", description: `Сообщение доставлено на ${data.success_count || 0} из ${data.recipient_count || 0} устройств.` });
             setSendTestOpen(false);
         },
-        onError: () => {
-            // Mock success for demo if backend not ready
-            toast({ title: "Push отправлен (тест)", description: "Бэкенд не готов, симуляция успеха.", variant: "default" });
-            setSendTestOpen(false);
+        onError: (error: any) => {
+            toast({ 
+                title: "Ошибка отправки", 
+                description: error.message || "Не удалось отправить push-уведомление. Проверьте настройки FCM.", 
+                variant: "destructive" 
+            });
         }
     });
 

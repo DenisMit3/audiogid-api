@@ -504,6 +504,13 @@ class UserPushToken(SQLModel, table=True):
     platform: str = Field(default="unknown") # android, ios
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+class AppSettings(SQLModel, table=True):
+    __tablename__ = "app_settings"
+    key: str = Field(primary_key=True)
+    value: str = Field(default="")
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_by: Optional[uuid.UUID] = Field(default=None)
+
 
 # --- Itineraries (User Created) ---
 

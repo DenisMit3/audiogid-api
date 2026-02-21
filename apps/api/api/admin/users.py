@@ -7,7 +7,7 @@ from pydantic import BaseModel
 import uuid
 
 from ..core.database import engine
-from ..core.models import User, UserIdentity, Role, AuditLog
+from ..core.models import User, UserIdentity, Role, AuditLog, BlacklistedToken
 from ..auth.deps import get_session, require_permission
 
 router = APIRouter()
@@ -134,26 +134,81 @@ def revoke_user_sessions(
     admin: User = Depends(require_permission('users:manage'))
 ):
     """
-    Revokes access by setting last_login to None or future re-auth requirement.
-    Since using stateless JWT/OTP, real revocation requires blacklist or secret rotation.
-    For this MVP, we will:
-    1. Log the revocation
-    2. Maybe clear OTP codes?
+    Отзыв всех сессий пользователя.
+    Добавляет все активные токены пользователя в blacklist.
+    """
+    from ..auth.service import blacklist_token, create_access_token
+    from datetime import timedelta
+    
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    # Получаем все identity пользователя для логирования
+    idents = session.exec(select(UserIdentity).where(UserIdentity.user_id == user_id)).all()
+    
+    # Добавляем запись в blacklist с user_id
+    # Это позволит проверять при валидации токена, был ли он выпущен до revoke
+    # Создаем специальную запись-маркер для user_id
+    revoke_marker = BlacklistedToken(
+        token_hash=f"revoke_all_{user_id}_{datetime.utcnow().timestamp()}",
+        expires_at=datetime.utcnow() + timedelta(days=7),  # Срок жизни refresh token
+        user_id=user_id
+    )
+    session.add(revoke_marker)
+    
+    # Обновляем user - устанавливаем флаг принудительной реаутентификации
+    # Для этого можно использовать поле или просто полагаться на blacklist
+    
+    # Audit log
+    audit = AuditLog(
+        action="revoke_sessions",
+        target_id=user_id,
+        actor_type="admin",
+        actor_fingerprint=str(admin.id),
+        trace_id=f"identities_count: {len(idents)}"
+    )
+    session.add(audit)
+    session.commit()
+    
+    return {
+        "status": "revoked", 
+        "message": f"Все сессии пользователя отозваны. Затронуто {len(idents)} identity.",
+        "identities_affected": len(idents)
+    }
+
+@router.post("/admin/users/{user_id}/block")
+def block_user(
+    user_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    admin: User = Depends(require_permission('users:manage'))
+):
+    """
+    Блокировка пользователя.
+    Деактивирует аккаунт и отзывает все сессии.
     """
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(404, "User not found")
-        
-    # Clear OTP codes (if any pending)
-    # Find identieis
-    idents = session.exec(select(UserIdentity).where(UserIdentity.user_id == user_id)).all()
-    # If phone numbers, clear OTPs where phone matches?
-    # Logic in auth might rely on valid OTP. Clearning OTPs prevents NEW logins, but doesn't kill existing JWT.
-    # To kill existing JWT we need a token version or blacklist. Not implemented yet.
-    # We will log audit entry "REVOKED_SESSIONS" which frontend/auth middleware could check if implemented.
     
+    if user.id == admin.id:
+        raise HTTPException(400, "Нельзя заблокировать самого себя")
+    
+    # Деактивируем пользователя
+    user.is_active = False
+    session.add(user)
+    
+    # Отзываем сессии (добавляем маркер в blacklist)
+    revoke_marker = BlacklistedToken(
+        token_hash=f"blocked_{user_id}_{datetime.utcnow().timestamp()}",
+        expires_at=datetime.utcnow() + timedelta(days=365),  # Блокировка на год
+        user_id=user_id
+    )
+    session.add(revoke_marker)
+    
+    # Audit log
     audit = AuditLog(
-        action="revoke_sessions",
+        action="block_user",
         target_id=user_id,
         actor_type="admin",
         actor_fingerprint=str(admin.id)
@@ -161,4 +216,32 @@ def revoke_user_sessions(
     session.add(audit)
     session.commit()
     
-    return {"status": "revoked", "message": "Tokens not necessarily invalid (stateless), but OTPs cleared if logic existed."}
+    return {"status": "blocked", "message": "Пользователь заблокирован"}
+
+@router.post("/admin/users/{user_id}/unblock")
+def unblock_user(
+    user_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    admin: User = Depends(require_permission('users:manage'))
+):
+    """
+    Разблокировка пользователя.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    user.is_active = True
+    session.add(user)
+    
+    # Audit log
+    audit = AuditLog(
+        action="unblock_user",
+        target_id=user_id,
+        actor_type="admin",
+        actor_fingerprint=str(admin.id)
+    )
+    session.add(audit)
+    session.commit()
+    
+    return {"status": "unblocked", "message": "Пользователь разблокирован"}

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,24 @@ import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
 import 'package:mobile_flutter/data/services/purchase_service.dart';
+
+// #region agent log
+void _debugLog(String location, String message, Map<String, dynamic> data) {
+  try {
+    final logFile = File('/data/data/app.audiogid.mobile_flutter/files/debug.log');
+    final entry = jsonEncode({
+      'sessionId': '03cf79',
+      'location': location,
+      'message': message,
+      'data': data,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+    logFile.writeAsStringSync('$entry\n', mode: FileMode.append, flush: true);
+  } catch (e) {
+    debugPrint('DEBUG_LOG_ERROR: $e');
+  }
+}
+// #endregion
 
 
 class ToursListScreen extends ConsumerStatefulWidget {
@@ -37,7 +57,14 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
   Widget build(BuildContext context) {
     final selectedCity = ref.watch(selectedCityProvider).value;
 
+    // #region agent log
+    _debugLog('tours_list_screen.dart:build', 'H7: ToursListScreen build called', {'selectedCity': selectedCity});
+    // #endregion
+
     if (selectedCity == null) {
+      // #region agent log
+      _debugLog('tours_list_screen.dart:build:null', 'H7: selectedCity is null, showing skeleton', {});
+      // #endregion
       return const Scaffold(
         body: Center(
           child: SkeletonTourDetail(),

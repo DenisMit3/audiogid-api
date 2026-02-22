@@ -256,7 +256,7 @@ LazyDatabase _openConnection() {
   });
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 AppDatabase appDatabase(Ref ref) {
   return AppDatabase();
 }

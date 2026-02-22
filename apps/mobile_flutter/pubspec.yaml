@@ -14,7 +14,7 @@ dependencies:
   go_router: ^17.1.0
   dio: ^5.4.0
   drift: ^2.14.1
-  sqlite3_flutter_libs: ^0.6.0+eol
+  sqlite3_flutter_libs: ^0.5.28
   path_provider: ^2.1.1
   path: ^1.8.3
   shared_preferences: ^2.2.2

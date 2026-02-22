@@ -7313,7 +7313,7 @@ final class AppDatabaseProvider
           argument: null,
           retry: null,
           name: r'appDatabaseProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -7340,4 +7340,4 @@ final class AppDatabaseProvider
   }
 }
 
-String _$appDatabaseHash() => r'18ce5c8c4d8ddbfe5a7d819d8fb7d5aca76bf416';
+String _$appDatabaseHash() => r'8c69eb46d45206533c176c88a926608e79ca927d';

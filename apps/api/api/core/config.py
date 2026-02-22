@@ -3,6 +3,7 @@ import os
 class AppConfig:
     def __init__(self):
         # FAIL-FAST: Explicitly verify required vars.
+        # Use pooled URL for Neon (unpooled has cold start issues on free tier)
         self.DATABASE_URL = self._get_required("DATABASE_URL")
         
         # Ingestion Env (Strategy A: Readiness-only check, optional at startup)

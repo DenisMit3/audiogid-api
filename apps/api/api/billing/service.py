@@ -1,6 +1,7 @@
 import logging
 import datetime
 import uuid
+from typing import Optional
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 

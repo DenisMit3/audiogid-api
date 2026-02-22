@@ -1,11 +1,12 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Response, Query
+import hashlib
+from fastapi import APIRouter, Depends, Response, Query, Request
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from .core.database import engine
 from .core.models import HelperPlace
-from .core.caching import check_etag
+from .core.caching import check_etag_versioned, generate_version_marker
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ class AttributionResponse(BaseModel):
 
 @router.get("/public/map/attribution")
 def get_map_attribution(
+    request: Request,
     response: Response, 
     city: str = Query(..., description="Tenant slug"), 
     session: Session = Depends(get_session)
@@ -32,13 +34,15 @@ def get_map_attribution(
         "license": "ODbL 1.0"
     }
     
-    # ETag Check
-    check_etag(response.request, response, data)
+    # Static ETag for attribution (rarely changes)
+    etag = 'W/"osm-attribution-v1"'
+    check_etag_versioned(request, response, etag, is_public=True)
     
     return data
 
 @router.get("/public/helpers")
 def get_helpers(
+    request: Request,
     response: Response,
     city: str = Query(..., description="Tenant slug"),
     category: Optional[str] = Query(None, description="Filter by category (toilet, water, cafe)"),
@@ -50,9 +54,10 @@ def get_helpers(
         query = query.where(HelperPlace.type == category)
         
     helpers = session.exec(query).all()
-    # Read last persisted data, returns empty list if none exist
     data = [helper.model_dump() for helper in helpers]
     
-    check_etag(response.request, response, data)
+    # Generate ETag from data
+    etag = generate_version_marker(session, HelperPlace, city)
+    check_etag_versioned(request, response, etag, is_public=True)
     
     return data

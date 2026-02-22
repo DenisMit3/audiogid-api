@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from .core.database import engine
 from .core.models import Poi, PoiSource, PoiMedia, AuditLog
-from .core.caching import check_etag
+# caching import removed - not used in this module
 from .core.config import config
 
 router = APIRouter()

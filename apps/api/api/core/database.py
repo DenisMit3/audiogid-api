@@ -2,15 +2,18 @@ from sqlmodel import create_engine, SQLModel
 from .config import config
 
 # Singleton DB Engine
-# echo=True only for debugging/preview, strictly controlled in prod
 from sqlalchemy.pool import NullPool
 
-# Singleton DB Engine
-# Use NullPool for serverless environments (Vercel) to avoid connection leaks
+# For Neon: use pooled URL with psycopg2 driver
+# The unpooled URL has cold start issues on free tier
+db_url = config.DATABASE_URL
+
 engine = create_engine(
-    config.DATABASE_URL, 
+    db_url, 
     echo=False,
     poolclass=NullPool,
-    pool_pre_ping=True
+    connect_args={
+        "connect_timeout": 60
+    }
 )
 

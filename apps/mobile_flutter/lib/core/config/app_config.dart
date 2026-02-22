@@ -34,7 +34,8 @@ class AppConfig {
       case AppFlavor.prod:
         return AppConfig(
           flavor: AppFlavor.prod,
-          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'https://audiogid-api.vercel.app/v1',
+          // Cloud.ru VM - после открытия портов в Security Group
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://82.202.159.64/v1',
         );
     }
   }

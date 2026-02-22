@@ -69,11 +69,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 # Fallback to server-local memory
 
         # Prune old timestamps (In-memory fallback)
-        timestamps = _rate_limit_store[client_ip]
+        # Use same key structure as Redis: IP + path prefix
+        prefix = path.split("/")[2] if len(path.split("/")) > 2 else "root"
+        store_key = f"{client_ip}:{prefix}"
+        
+        timestamps = _rate_limit_store[store_key]
         timestamps = [t for t in timestamps if now - t < 60]
-        _rate_limit_store[client_ip] = timestamps
+        _rate_limit_store[store_key] = timestamps
+        
+        # #region agent log
+        import urllib.request, json as _json
+        try: urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',data=_json.dumps({'sessionId':'fb1afd','location':'middleware_ratelimit.py:82','message':'rate_limit_check','data':{'store_key':store_key,'count':len(timestamps),'limit':limit,'path':path},'timestamp':int(time.time()*1000)}).encode(),headers={'Content-Type':'application/json','X-Debug-Session-Id':'fb1afd'}),timeout=0.5)
+        except: pass
+        # #endregion
         
         if len(timestamps) >= limit:
+            # #region agent log
+            try: urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',data=_json.dumps({'sessionId':'fb1afd','location':'middleware_ratelimit.py:89','message':'rate_limit_exceeded','data':{'store_key':store_key,'count':len(timestamps),'limit':limit},'timestamp':int(time.time()*1000)}).encode(),headers={'Content-Type':'application/json','X-Debug-Session-Id':'fb1afd'}),timeout=0.5)
+            except: pass
+            # #endregion
             return JSONResponse(
                 {"error": "Too many requests", "detail": "Rate limit exceeded (Local)"}, 
                 status_code=429

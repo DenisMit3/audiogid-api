@@ -31,13 +31,15 @@ export async function POST(request: Request) {
         const response = NextResponse.json({ success: true });
 
         // Set HttpOnly Cookie
+        // Only set Secure flag if using HTTPS (check via X-Forwarded-Proto or request URL)
+        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || origin.startsWith('https');
         response.cookies.set({
             name: 'token',
             value: token,
             httpOnly: true,
             path: '/',
             maxAge: 60 * 60 * 24, // 1 day
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             sameSite: 'lax'
         });
 

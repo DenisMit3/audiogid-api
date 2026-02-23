@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uuid
 import logging
+import io
 from ..core.config import config
 from ..auth.deps import get_current_user
 from ..core.models import User
@@ -89,3 +91,74 @@ async def presign_media_upload(
     except Exception as e:
         logger.error(f"Presign Exception: {e}")
         raise HTTPException(500, str(e))
+
+
+class UploadResponse(BaseModel):
+    url: str
+    filename: str
+    size: int
+
+
+@router.post("/media/upload", response_model=UploadResponse)
+async def upload_media_file(
+    file: UploadFile = File(...),
+    entity_type: str = Form(default="uploads"),
+    entity_id: str = Form(default=None),
+    user: User = Depends(require_admin)
+):
+    """
+    Direct file upload to S3-compatible storage.
+    Use this when presigned URLs don't work (e.g., CORS issues).
+    
+    Supported entity_types: tours, pois, cities, uploads
+    """
+    s3 = get_s3_client()
+    if not s3:
+        raise HTTPException(500, "Storage not configured. Set S3_ENDPOINT_URL, S3_ACCESS_KEY, S3_SECRET_KEY")
+    
+    # Validate file type
+    allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if file.content_type not in allowed_types:
+        raise HTTPException(400, f"Invalid file type: {file.content_type}. Allowed: {allowed_types}")
+    
+    # Limit file size (10MB)
+    max_size = 10 * 1024 * 1024
+    contents = await file.read()
+    if len(contents) > max_size:
+        raise HTTPException(400, f"File too large. Max size: {max_size // 1024 // 1024}MB")
+    
+    # Generate object key
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    if entity_id:
+        object_key = f"{entity_type}/{entity_id}/{uuid.uuid4()}.{ext}"
+    else:
+        object_key = f"{entity_type}/{uuid.uuid4()}.{ext}"
+    
+    try:
+        # Upload to S3
+        s3.upload_fileobj(
+            io.BytesIO(contents),
+            config.S3_BUCKET_NAME,
+            object_key,
+            ExtraArgs={
+                'ContentType': file.content_type,
+                'ACL': 'public-read'
+            }
+        )
+        
+        # Generate public URL
+        if config.S3_PUBLIC_URL:
+            final_url = f"{config.S3_PUBLIC_URL.rstrip('/')}/{object_key}"
+        else:
+            final_url = f"{config.S3_ENDPOINT_URL.rstrip('/')}/{config.S3_BUCKET_NAME}/{object_key}"
+        
+        logger.info(f"Uploaded {file.filename} to {final_url} by user {user.id}")
+        
+        return UploadResponse(
+            url=final_url,
+            filename=object_key,
+            size=len(contents)
+        )
+    except Exception as e:
+        logger.error(f"Upload Exception: {e}")
+        raise HTTPException(500, f"Upload failed: {str(e)}")

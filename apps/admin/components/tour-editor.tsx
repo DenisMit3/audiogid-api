@@ -35,6 +35,7 @@ import { MediaUploader } from './media-upload';
 import { SourcesManager } from './sources-manager';
 import { RouteBuilder } from './route-builder';
 import { PublishCheckModal } from './publish-check-modal';
+import { CoverImageUploader } from './cover-image-uploader';
 
 const API_URL = '/api/proxy';
 // throw removed for build
@@ -395,8 +396,15 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                     name="cover_image"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>URL обложки</FormLabel>
-                                                            <FormControl><Input {...field} placeholder="https://..." /></FormControl>
+                                                            <FormLabel>Обложка тура</FormLabel>
+                                                            <FormControl>
+                                                                <CoverImageUploader
+                                                                    value={field.value}
+                                                                    onChange={field.onChange}
+                                                                    entityType="tours"
+                                                                    entityId={tour?.id}
+                                                                />
+                                                            </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}

@@ -21,19 +21,30 @@ class OfflineTourRepository implements TourRepository {
 
   @override
   Stream<List<domain.Tour>> watchTours(String citySlug) {
+    // #region agent log
+    print('[DEBUG f46abe] watchTours: starting watch for citySlug=$citySlug');
+    // #endregion
     syncTours(citySlug).ignore();
     
-    return _db.tourDao.watchToursByCity(citySlug).map((rows) => rows.map((r) => domain.Tour(
-      id: r.id,
-      citySlug: r.citySlug,
-      titleRu: r.titleRu,
-      descriptionRu: r.descriptionRu,
-      coverImage: r.coverImage,
-      durationMinutes: r.durationMinutes,
-      transportType: r.transportType,
-      distanceKm: r.distanceKm,
-      tourType: r.tourType,
-    )).toList());
+    return _db.tourDao.watchToursByCity(citySlug).map((rows) {
+      // #region agent log
+      print('[DEBUG f46abe] watchTours: DB returned ${rows.length} tours');
+      for (final r in rows) {
+        print('[DEBUG f46abe] watchTours DB ROW: id=${r.id}, title=${r.titleRu}, coverImage=${r.coverImage}');
+      }
+      // #endregion
+      return rows.map((r) => domain.Tour(
+        id: r.id,
+        citySlug: r.citySlug,
+        titleRu: r.titleRu,
+        descriptionRu: r.descriptionRu,
+        coverImage: r.coverImage,
+        durationMinutes: r.durationMinutes,
+        transportType: r.transportType,
+        distanceKm: r.distanceKm,
+        tourType: r.tourType,
+      )).toList();
+    });
   }
 
   @override

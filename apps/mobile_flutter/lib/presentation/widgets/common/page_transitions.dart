@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
@@ -208,8 +209,15 @@ class HeroImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // #region agent log
+    print('[DEBUG f46abe] HeroImage.build: tag=$tag, imageUrl=$imageUrl');
+    // #endregion
+
     Widget imageWidget;
     if (imageUrl == null || imageUrl!.isEmpty) {
+      // #region agent log
+      print('[DEBUG f46abe] HeroImage: URL is null/empty, showing placeholder');
+      // #endregion
       imageWidget = placeholder ?? Container(
         width: width,
         height: height,
@@ -229,30 +237,119 @@ class HeroImage extends StatelessWidget {
         ),
       );
     } else {
-      imageWidget = CachedNetworkImage(
-        imageUrl: imageUrl!,
-        width: width,
-        height: height,
-        fit: fit,
-        placeholder: (context, url) => placeholder ?? Container(
-           width: width,
-           height: height,
-           decoration: BoxDecoration(
-             gradient: LinearGradient(
-               colors: [
-                 colorScheme.primary.withOpacity(0.6),
-                 colorScheme.secondary.withOpacity(0.6),
-               ],
-             ),
-           ),
-        ),
-        errorWidget: (context, error, stack) => placeholder ?? Container(
+      // #region agent log
+      print('[DEBUG f46abe] HeroImage: Loading image from URL: $imageUrl');
+      // #endregion
+      
+      // Check if it's a data URL (base64 encoded)
+      if (imageUrl!.startsWith('data:')) {
+        // #region agent log
+        print('[DEBUG f46abe] HeroImage: Detected data URL, using Image.memory');
+        // #endregion
+        try {
+          // Extract base64 data from data URL
+          final dataUri = Uri.parse(imageUrl!);
+          final base64Data = imageUrl!.split(',').last;
+          final bytes = base64Decode(base64Data);
+          imageWidget = Image.memory(
+            bytes,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) {
+              // #region agent log
+              print('[DEBUG f46abe] HeroImage data URL ERROR: $error');
+              // #endregion
+              return Container(
+                width: width,
+                height: height,
+                color: colorScheme.errorContainer,
+                child: Icon(Icons.broken_image, color: colorScheme.onErrorContainer),
+              );
+            },
+          );
+        } catch (e) {
+          // #region agent log
+          print('[DEBUG f46abe] HeroImage data URL parse ERROR: $e');
+          // #endregion
+          imageWidget = Container(
+            width: width,
+            height: height,
+            color: colorScheme.errorContainer,
+            child: Icon(Icons.broken_image, color: colorScheme.onErrorContainer),
+          );
+        }
+      } else {
+        // Regular network URL
+        imageWidget = CachedNetworkImage(
+          imageUrl: imageUrl!,
           width: width,
           height: height,
-          color: colorScheme.surfaceVariant,
-          child: Icon(Icons.broken_image, color: colorScheme.onSurfaceVariant),
-        ),
-      );
+          fit: fit,
+          progressIndicatorBuilder: (context, url, progress) {
+            // #region agent log
+            print('[DEBUG f46abe] HeroImage PROGRESS: url=$url, downloaded=${progress.downloaded}, total=${progress.totalSize}, percent=${progress.progress}');
+            // #endregion
+            return Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.primary.withOpacity(0.6),
+                    colorScheme.secondary.withOpacity(0.6),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      value: progress.progress,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      progress.progress != null 
+                        ? '${(progress.progress! * 100).toInt()}%'
+                        : 'Загрузка...',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          errorWidget: (context, url, error) {
+            // #region agent log
+            print('[DEBUG f46abe] HeroImage ERROR: url=$url, error=$error');
+            // #endregion
+            return Container(
+              width: width,
+              height: height,
+              color: colorScheme.errorContainer,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.broken_image, color: colorScheme.onErrorContainer, size: 32),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'Ошибка: $error',
+                      style: TextStyle(color: colorScheme.onErrorContainer, fontSize: 10),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      }
     }
 
     if (borderRadius != null) {

@@ -334,6 +334,18 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
   late final GeneratedColumn<String> titleRu = GeneratedColumn<String>(
       'title_ru', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionRuMeta =
+      const VerificationMeta('descriptionRu');
+  @override
+  late final GeneratedColumn<String> descriptionRu = GeneratedColumn<String>(
+      'description_ru', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _coverImageMeta =
+      const VerificationMeta('coverImage');
+  @override
+  late final GeneratedColumn<String> coverImage = GeneratedColumn<String>(
+      'cover_image', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _durationMinutesMeta =
       const VerificationMeta('durationMinutes');
   @override
@@ -373,6 +385,8 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
         id,
         citySlug,
         titleRu,
+        descriptionRu,
+        coverImage,
         durationMinutes,
         transportType,
         distanceKm,
@@ -405,6 +419,18 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
           titleRu.isAcceptableOrUnknown(data['title_ru']!, _titleRuMeta));
     } else if (isInserting) {
       context.missing(_titleRuMeta);
+    }
+    if (data.containsKey('description_ru')) {
+      context.handle(
+          _descriptionRuMeta,
+          descriptionRu.isAcceptableOrUnknown(
+              data['description_ru']!, _descriptionRuMeta));
+    }
+    if (data.containsKey('cover_image')) {
+      context.handle(
+          _coverImageMeta,
+          coverImage.isAcceptableOrUnknown(
+              data['cover_image']!, _coverImageMeta));
     }
     if (data.containsKey('duration_minutes')) {
       context.handle(
@@ -449,6 +475,10 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
           .read(DriftSqlType.string, data['${effectivePrefix}city_slug'])!,
       titleRu: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}title_ru'])!,
+      descriptionRu: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description_ru']),
+      coverImage: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cover_image']),
       durationMinutes: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}duration_minutes']),
       transportType: attachedDatabase.typeMapping
@@ -472,6 +502,8 @@ class Tour extends DataClass implements Insertable<Tour> {
   final String id;
   final String citySlug;
   final String titleRu;
+  final String? descriptionRu;
+  final String? coverImage;
   final int? durationMinutes;
   final String? transportType;
   final double? distanceKm;
@@ -481,6 +513,8 @@ class Tour extends DataClass implements Insertable<Tour> {
       {required this.id,
       required this.citySlug,
       required this.titleRu,
+      this.descriptionRu,
+      this.coverImage,
       this.durationMinutes,
       this.transportType,
       this.distanceKm,
@@ -492,6 +526,12 @@ class Tour extends DataClass implements Insertable<Tour> {
     map['id'] = Variable<String>(id);
     map['city_slug'] = Variable<String>(citySlug);
     map['title_ru'] = Variable<String>(titleRu);
+    if (!nullToAbsent || descriptionRu != null) {
+      map['description_ru'] = Variable<String>(descriptionRu);
+    }
+    if (!nullToAbsent || coverImage != null) {
+      map['cover_image'] = Variable<String>(coverImage);
+    }
     if (!nullToAbsent || durationMinutes != null) {
       map['duration_minutes'] = Variable<int>(durationMinutes);
     }
@@ -511,6 +551,12 @@ class Tour extends DataClass implements Insertable<Tour> {
       id: Value(id),
       citySlug: Value(citySlug),
       titleRu: Value(titleRu),
+      descriptionRu: descriptionRu == null && nullToAbsent
+          ? const Value.absent()
+          : Value(descriptionRu),
+      coverImage: coverImage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverImage),
       durationMinutes: durationMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(durationMinutes),
@@ -532,6 +578,8 @@ class Tour extends DataClass implements Insertable<Tour> {
       id: serializer.fromJson<String>(json['id']),
       citySlug: serializer.fromJson<String>(json['citySlug']),
       titleRu: serializer.fromJson<String>(json['titleRu']),
+      descriptionRu: serializer.fromJson<String?>(json['descriptionRu']),
+      coverImage: serializer.fromJson<String?>(json['coverImage']),
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
       transportType: serializer.fromJson<String?>(json['transportType']),
       distanceKm: serializer.fromJson<double?>(json['distanceKm']),
@@ -546,6 +594,8 @@ class Tour extends DataClass implements Insertable<Tour> {
       'id': serializer.toJson<String>(id),
       'citySlug': serializer.toJson<String>(citySlug),
       'titleRu': serializer.toJson<String>(titleRu),
+      'descriptionRu': serializer.toJson<String?>(descriptionRu),
+      'coverImage': serializer.toJson<String?>(coverImage),
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
       'transportType': serializer.toJson<String?>(transportType),
       'distanceKm': serializer.toJson<double?>(distanceKm),
@@ -558,6 +608,8 @@ class Tour extends DataClass implements Insertable<Tour> {
           {String? id,
           String? citySlug,
           String? titleRu,
+          Value<String?> descriptionRu = const Value.absent(),
+          Value<String?> coverImage = const Value.absent(),
           Value<int?> durationMinutes = const Value.absent(),
           Value<String?> transportType = const Value.absent(),
           Value<double?> distanceKm = const Value.absent(),
@@ -567,6 +619,9 @@ class Tour extends DataClass implements Insertable<Tour> {
         id: id ?? this.id,
         citySlug: citySlug ?? this.citySlug,
         titleRu: titleRu ?? this.titleRu,
+        descriptionRu:
+            descriptionRu.present ? descriptionRu.value : this.descriptionRu,
+        coverImage: coverImage.present ? coverImage.value : this.coverImage,
         durationMinutes: durationMinutes.present
             ? durationMinutes.value
             : this.durationMinutes,
@@ -581,6 +636,11 @@ class Tour extends DataClass implements Insertable<Tour> {
       id: data.id.present ? data.id.value : this.id,
       citySlug: data.citySlug.present ? data.citySlug.value : this.citySlug,
       titleRu: data.titleRu.present ? data.titleRu.value : this.titleRu,
+      descriptionRu: data.descriptionRu.present
+          ? data.descriptionRu.value
+          : this.descriptionRu,
+      coverImage:
+          data.coverImage.present ? data.coverImage.value : this.coverImage,
       durationMinutes: data.durationMinutes.present
           ? data.durationMinutes.value
           : this.durationMinutes,
@@ -601,6 +661,8 @@ class Tour extends DataClass implements Insertable<Tour> {
           ..write('id: $id, ')
           ..write('citySlug: $citySlug, ')
           ..write('titleRu: $titleRu, ')
+          ..write('descriptionRu: $descriptionRu, ')
+          ..write('coverImage: $coverImage, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('transportType: $transportType, ')
           ..write('distanceKm: $distanceKm, ')
@@ -611,8 +673,17 @@ class Tour extends DataClass implements Insertable<Tour> {
   }
 
   @override
-  int get hashCode => Object.hash(id, citySlug, titleRu, durationMinutes,
-      transportType, distanceKm, tourType, difficulty);
+  int get hashCode => Object.hash(
+      id,
+      citySlug,
+      titleRu,
+      descriptionRu,
+      coverImage,
+      durationMinutes,
+      transportType,
+      distanceKm,
+      tourType,
+      difficulty);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -620,6 +691,8 @@ class Tour extends DataClass implements Insertable<Tour> {
           other.id == this.id &&
           other.citySlug == this.citySlug &&
           other.titleRu == this.titleRu &&
+          other.descriptionRu == this.descriptionRu &&
+          other.coverImage == this.coverImage &&
           other.durationMinutes == this.durationMinutes &&
           other.transportType == this.transportType &&
           other.distanceKm == this.distanceKm &&
@@ -631,6 +704,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
   final Value<String> id;
   final Value<String> citySlug;
   final Value<String> titleRu;
+  final Value<String?> descriptionRu;
+  final Value<String?> coverImage;
   final Value<int?> durationMinutes;
   final Value<String?> transportType;
   final Value<double?> distanceKm;
@@ -641,6 +716,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     this.id = const Value.absent(),
     this.citySlug = const Value.absent(),
     this.titleRu = const Value.absent(),
+    this.descriptionRu = const Value.absent(),
+    this.coverImage = const Value.absent(),
     this.durationMinutes = const Value.absent(),
     this.transportType = const Value.absent(),
     this.distanceKm = const Value.absent(),
@@ -652,6 +729,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     required String id,
     required String citySlug,
     required String titleRu,
+    this.descriptionRu = const Value.absent(),
+    this.coverImage = const Value.absent(),
     this.durationMinutes = const Value.absent(),
     this.transportType = const Value.absent(),
     this.distanceKm = const Value.absent(),
@@ -665,6 +744,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     Expression<String>? id,
     Expression<String>? citySlug,
     Expression<String>? titleRu,
+    Expression<String>? descriptionRu,
+    Expression<String>? coverImage,
     Expression<int>? durationMinutes,
     Expression<String>? transportType,
     Expression<double>? distanceKm,
@@ -676,6 +757,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       if (id != null) 'id': id,
       if (citySlug != null) 'city_slug': citySlug,
       if (titleRu != null) 'title_ru': titleRu,
+      if (descriptionRu != null) 'description_ru': descriptionRu,
+      if (coverImage != null) 'cover_image': coverImage,
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
       if (transportType != null) 'transport_type': transportType,
       if (distanceKm != null) 'distance_km': distanceKm,
@@ -689,6 +772,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       {Value<String>? id,
       Value<String>? citySlug,
       Value<String>? titleRu,
+      Value<String?>? descriptionRu,
+      Value<String?>? coverImage,
       Value<int?>? durationMinutes,
       Value<String?>? transportType,
       Value<double?>? distanceKm,
@@ -699,6 +784,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       id: id ?? this.id,
       citySlug: citySlug ?? this.citySlug,
       titleRu: titleRu ?? this.titleRu,
+      descriptionRu: descriptionRu ?? this.descriptionRu,
+      coverImage: coverImage ?? this.coverImage,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       transportType: transportType ?? this.transportType,
       distanceKm: distanceKm ?? this.distanceKm,
@@ -719,6 +806,12 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     }
     if (titleRu.present) {
       map['title_ru'] = Variable<String>(titleRu.value);
+    }
+    if (descriptionRu.present) {
+      map['description_ru'] = Variable<String>(descriptionRu.value);
+    }
+    if (coverImage.present) {
+      map['cover_image'] = Variable<String>(coverImage.value);
     }
     if (durationMinutes.present) {
       map['duration_minutes'] = Variable<int>(durationMinutes.value);
@@ -747,6 +840,8 @@ class ToursCompanion extends UpdateCompanion<Tour> {
           ..write('id: $id, ')
           ..write('citySlug: $citySlug, ')
           ..write('titleRu: $titleRu, ')
+          ..write('descriptionRu: $descriptionRu, ')
+          ..write('coverImage: $coverImage, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('transportType: $transportType, ')
           ..write('distanceKm: $distanceKm, ')
@@ -4438,6 +4533,8 @@ typedef $$ToursTableCreateCompanionBuilder = ToursCompanion Function({
   required String id,
   required String citySlug,
   required String titleRu,
+  Value<String?> descriptionRu,
+  Value<String?> coverImage,
   Value<int?> durationMinutes,
   Value<String?> transportType,
   Value<double?> distanceKm,
@@ -4449,6 +4546,8 @@ typedef $$ToursTableUpdateCompanionBuilder = ToursCompanion Function({
   Value<String> id,
   Value<String> citySlug,
   Value<String> titleRu,
+  Value<String?> descriptionRu,
+  Value<String?> coverImage,
   Value<int?> durationMinutes,
   Value<String?> transportType,
   Value<double?> distanceKm,
@@ -4492,6 +4591,12 @@ class $$ToursTableFilterComposer extends Composer<_$AppDatabase, $ToursTable> {
 
   ColumnFilters<String> get titleRu => $composableBuilder(
       column: $table.titleRu, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get descriptionRu => $composableBuilder(
+      column: $table.descriptionRu, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get coverImage => $composableBuilder(
+      column: $table.coverImage, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get durationMinutes => $composableBuilder(
       column: $table.durationMinutes,
@@ -4549,6 +4654,13 @@ class $$ToursTableOrderingComposer
   ColumnOrderings<String> get titleRu => $composableBuilder(
       column: $table.titleRu, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get descriptionRu => $composableBuilder(
+      column: $table.descriptionRu,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get coverImage => $composableBuilder(
+      column: $table.coverImage, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get durationMinutes => $composableBuilder(
       column: $table.durationMinutes,
       builder: (column) => ColumnOrderings(column));
@@ -4584,6 +4696,12 @@ class $$ToursTableAnnotationComposer
 
   GeneratedColumn<String> get titleRu =>
       $composableBuilder(column: $table.titleRu, builder: (column) => column);
+
+  GeneratedColumn<String> get descriptionRu => $composableBuilder(
+      column: $table.descriptionRu, builder: (column) => column);
+
+  GeneratedColumn<String> get coverImage => $composableBuilder(
+      column: $table.coverImage, builder: (column) => column);
 
   GeneratedColumn<int> get durationMinutes => $composableBuilder(
       column: $table.durationMinutes, builder: (column) => column);
@@ -4648,6 +4766,8 @@ class $$ToursTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String> citySlug = const Value.absent(),
             Value<String> titleRu = const Value.absent(),
+            Value<String?> descriptionRu = const Value.absent(),
+            Value<String?> coverImage = const Value.absent(),
             Value<int?> durationMinutes = const Value.absent(),
             Value<String?> transportType = const Value.absent(),
             Value<double?> distanceKm = const Value.absent(),
@@ -4659,6 +4779,8 @@ class $$ToursTableTableManager extends RootTableManager<
             id: id,
             citySlug: citySlug,
             titleRu: titleRu,
+            descriptionRu: descriptionRu,
+            coverImage: coverImage,
             durationMinutes: durationMinutes,
             transportType: transportType,
             distanceKm: distanceKm,
@@ -4670,6 +4792,8 @@ class $$ToursTableTableManager extends RootTableManager<
             required String id,
             required String citySlug,
             required String titleRu,
+            Value<String?> descriptionRu = const Value.absent(),
+            Value<String?> coverImage = const Value.absent(),
             Value<int?> durationMinutes = const Value.absent(),
             Value<String?> transportType = const Value.absent(),
             Value<double?> distanceKm = const Value.absent(),
@@ -4681,6 +4805,8 @@ class $$ToursTableTableManager extends RootTableManager<
             id: id,
             citySlug: citySlug,
             titleRu: titleRu,
+            descriptionRu: descriptionRu,
+            coverImage: coverImage,
             durationMinutes: durationMinutes,
             transportType: transportType,
             distanceKm: distanceKm,

@@ -186,7 +186,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -245,6 +245,10 @@ class AppDatabase extends _$AppDatabase {
            }
            if (from < 13) {
              await m.addColumn(narrations, narrations.kidsUrl);
+           }
+           if (from < 14) {
+             await m.addColumn(tours, tours.descriptionRu);
+             await m.addColumn(tours, tours.coverImage);
            }
         },
       );

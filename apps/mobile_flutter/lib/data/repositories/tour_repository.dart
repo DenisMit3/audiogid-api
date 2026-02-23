@@ -76,12 +76,25 @@ class OfflineTourRepository implements TourRepository {
 
   @override
   Future<void> syncTours(String citySlug) async {
+    // #region agent log
+    print('[DEBUG f46abe] syncTours: started for citySlug=$citySlug');
+    // #endregion
     try {
       final response = await _api.publicCatalogGetWithHttpInfo(citySlug);
+      // #region agent log
+      print('[DEBUG f46abe] syncTours: response status=${response.statusCode}, body=${response.body?.substring(0, (response.body?.length ?? 0) > 500 ? 500 : response.body?.length ?? 0)}');
+      // #endregion
       if (response.statusCode == 304) return;
       if (response.statusCode >= 400) return;
 
       final tours = await _api.apiClient.deserializeAsync(response.body, 'List<TourSnippet>') as List;
+      // #region agent log
+      print('[DEBUG f46abe] syncTours: deserialized ${tours.length} tours');
+      if (tours.isNotEmpty) {
+        final first = tours.first as api.TourSnippet;
+        print('[DEBUG f46abe] syncTours: first tour coverImage=${first.coverImage}, descriptionRu=${first.descriptionRu}');
+      }
+      // #endregion
       final companions = tours.cast<api.TourSnippet>().map((t) => ToursCompanion(
         id: Value(t.id!),
         citySlug: Value(t.citySlug!),
@@ -94,7 +107,13 @@ class OfflineTourRepository implements TourRepository {
       )).toList();
 
       await _db.tourDao.upsertTours(companions);
+      // #region agent log
+      print('[DEBUG f46abe] syncTours: upserted ${companions.length} tours to DB');
+      // #endregion
     } catch (e) {
+      // #region agent log
+      print('[DEBUG f46abe] syncTours ERROR: $e');
+      // #endregion
       final appError = ApiErrorMapper.map(e);
       // ignore: avoid_print
       print('Sync Tours Error: ${appError.message}');

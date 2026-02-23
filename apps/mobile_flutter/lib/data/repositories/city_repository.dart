@@ -30,12 +30,24 @@ class OfflineCityRepository implements CityRepository {
 
   @override
   Future<void> syncCities() async {
+    // #region agent log
+    print('[DEBUG f46abe] syncCities: started');
+    // #endregion
     try {
+      // #region agent log
+      print('[DEBUG f46abe] syncCities: calling API');
+      // #endregion
       final response = await _api.publicCitiesGetWithHttpInfo();
+      // #region agent log
+      print('[DEBUG f46abe] syncCities: response status=${response.statusCode}, body length=${response.body?.length}');
+      // #endregion
       if (response.statusCode == 304) return;
       if (response.statusCode >= 400) return;
 
       final cities = await _api.apiClient.deserializeAsync(response.body, 'List<City>') as List;
+      // #region agent log
+      print('[DEBUG f46abe] syncCities: deserialized ${cities.length} cities');
+      // #endregion
       final companions = cities.cast<api.City>().map((c) => CitiesCompanion(
         id: Value(c.id!),
         slug: Value(c.slug!),
@@ -45,7 +57,13 @@ class OfflineCityRepository implements CityRepository {
       )).toList();
 
       await _db.cityDao.upsertCities(companions);
+      // #region agent log
+      print('[DEBUG f46abe] syncCities: upserted ${companions.length} cities to DB');
+      // #endregion
     } catch (e) {
+      // #region agent log
+      print('[DEBUG f46abe] syncCities ERROR: $e');
+      // #endregion
       final appError = ApiErrorMapper.map(e);
       // ignore: avoid_print
       print('Sync Cities Error: ${appError.message}');

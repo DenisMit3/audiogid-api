@@ -5,7 +5,7 @@
 import 'package:api_client/api.dart';
 ```
 
-All URIs are relative to *https://audiogid-api.vercel.app/v1*
+All URIs are relative to *http://82.202.159.64:8000/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------

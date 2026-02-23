@@ -8,6 +8,8 @@ class SettingsRepository {
   static const _cityKey = 'selected_city_slug';
   static const _bgStartKey = 'bg_location_enabled';
   static const _tourProgressKey = 'tour_progress';
+  static const _onboardingCompletedKey = 'onboarding_completed';
+  static const _locationPermissionAskedKey = 'location_permission_asked';
 
   SettingsRepository(this._prefs);
 
@@ -68,6 +70,24 @@ class SettingsRepository {
   Future<void> clearAll() async {
     await _prefs.clear();
   }
+
+  // Onboarding
+  bool isOnboardingCompleted() {
+    return _prefs.getBool(_onboardingCompletedKey) ?? false;
+  }
+
+  Future<void> setOnboardingCompleted(bool completed) async {
+    await _prefs.setBool(_onboardingCompletedKey, completed);
+  }
+
+  // Location Permission Asked
+  bool isLocationPermissionAsked() {
+    return _prefs.getBool(_locationPermissionAskedKey) ?? false;
+  }
+
+  Future<void> setLocationPermissionAsked(bool asked) async {
+    await _prefs.setBool(_locationPermissionAskedKey, asked);
+  }
 }
 
 @riverpod
@@ -94,5 +114,26 @@ class SelectedCity extends _$SelectedCity {
     final repo = await ref.read(settingsRepositoryProvider.future);
     await repo.clearSelectedCity();
     state = const AsyncData(null);
+  }
+}
+
+@riverpod
+class OnboardingCompleted extends _$OnboardingCompleted {
+  @override
+  Future<bool> build() async {
+    final repo = await ref.watch(settingsRepositoryProvider.future);
+    return repo.isOnboardingCompleted();
+  }
+
+  Future<void> complete() async {
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    await repo.setOnboardingCompleted(true);
+    state = const AsyncData(true);
+  }
+
+  Future<void> reset() async {
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    await repo.setOnboardingCompleted(false);
+    state = const AsyncData(false);
   }
 }

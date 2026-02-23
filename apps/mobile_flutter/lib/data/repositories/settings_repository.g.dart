@@ -88,3 +88,45 @@ abstract class _$SelectedCity extends $AsyncNotifier<String?> {
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(OnboardingCompleted)
+final onboardingCompletedProvider = OnboardingCompletedProvider._();
+
+final class OnboardingCompletedProvider
+    extends $AsyncNotifierProvider<OnboardingCompleted, bool> {
+  OnboardingCompletedProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'onboardingCompletedProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$onboardingCompletedHash();
+
+  @$internal
+  @override
+  OnboardingCompleted create() => OnboardingCompleted();
+}
+
+String _$onboardingCompletedHash() =>
+    r'fabcfbf70063748b1f275ef4a026dec4b89cda4a';
+
+abstract class _$OnboardingCompleted extends $AsyncNotifier<bool> {
+  FutureOr<bool> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<bool>, bool>,
+        AsyncValue<bool>,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

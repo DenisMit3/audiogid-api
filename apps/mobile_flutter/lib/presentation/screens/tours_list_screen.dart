@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/repositories/tour_repository.dart';
+import 'package:mobile_flutter/data/repositories/city_repository.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
+import 'package:mobile_flutter/domain/entities/city.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
 import 'package:mobile_flutter/data/services/purchase_service.dart';
@@ -49,9 +51,30 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
     final selectedIds = ref.watch(selectionProvider);
     final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
-    return Scaffold(
-      appBar: _buildAppBar(context, selectedCity, selectedIds),
-      body: StreamBuilder<List<Tour>>(
+    // Получаем название города
+    final citiesStream = ref.watch(cityRepositoryProvider).watchCities();
+
+    return StreamBuilder<List<City>>(
+      stream: citiesStream,
+      builder: (context, citiesSnapshot) {
+        // Определяем название города
+        String cityName = 'Город';
+        final cities = citiesSnapshot.data ?? [];
+        final currentCity = cities.where((c) => c.slug == selectedCity).firstOrNull;
+        if (currentCity != null) {
+          cityName = currentCity.nameRu;
+        } else {
+          // Fallback для старых slug
+          if (selectedCity == 'kaliningrad_city') {
+            cityName = 'Калининград';
+          } else if (selectedCity == 'kaliningrad_oblast') {
+            cityName = 'Калининградская область';
+          }
+        }
+
+        return Scaffold(
+          appBar: _buildAppBar(context, selectedCity, selectedIds, cityName),
+          body: StreamBuilder<List<Tour>>(
         stream: toursStream,
         builder: (context, snapshot) {
           // Loading state with skeleton
@@ -149,9 +172,11 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
             )
           : null,
     );
+      },
+    );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, String selectedCity, Set<String> selectedIds) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, String selectedCity, Set<String> selectedIds, String cityName) {
     if (selectedIds.isNotEmpty || _isMultiSelectMode) {
        return AppBar(
         title: Text('Выбрано: ${selectedIds.length}'),
@@ -176,7 +201,7 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
     }
   
     return ResponsiveAppBar(
-        title: selectedCity == 'kaliningrad_city' ? 'Туры по Калининграду' : 'Туры по области',
+        title: 'Туры: $cityName',
         actions: [
           AccessibleIconButton(
             icon: Icons.qr_code_scanner,

@@ -3,6 +3,8 @@ import 'package:mobile_flutter/presentation/screens/trusted_contacts_screen.dart
 import 'package:mobile_flutter/presentation/screens/shared_location_screen.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/screens/city_select_screen.dart';
+import 'package:mobile_flutter/presentation/screens/welcome_screen.dart';
+import 'package:mobile_flutter/presentation/screens/onboarding_screen.dart';
 import 'package:mobile_flutter/presentation/screens/nearby_screen.dart';
 import 'package:mobile_flutter/presentation/screens/tours_list_screen.dart';
 import 'package:mobile_flutter/presentation/screens/tour_detail_screen.dart';
@@ -29,6 +31,7 @@ part 'app_router.g.dart';
 @riverpod
 GoRouter router(Ref ref) {
   final selectedCityAsync = ref.watch(selectedCityProvider);
+  final onboardingCompletedAsync = ref.watch(onboardingCompletedProvider);
 
   final analyticsObserver = AnalyticsObserver(ref);
 
@@ -36,22 +39,60 @@ GoRouter router(Ref ref) {
     initialLocation: '/',
     observers: [analyticsObserver],
     redirect: (context, state) {
-      if (selectedCityAsync.isLoading) return null;
+      // Ждем загрузки данных
+      if (selectedCityAsync.isLoading || onboardingCompletedAsync.isLoading) {
+        return null;
+      }
 
       final selectedCity = selectedCityAsync.value;
-      final isSelecting = state.matchedLocation == '/select-city';
+      final onboardingCompleted = onboardingCompletedAsync.value ?? false;
+      final currentPath = state.matchedLocation;
 
-      if (selectedCity == null) {
-        if (!isSelecting) return '/select-city';
-      } else {
-        if (isSelecting) return '/';
+      // Список путей, которые не требуют редиректа
+      final welcomePaths = ['/welcome', '/onboarding', '/city-select'];
+      final isOnWelcomePath = welcomePaths.contains(currentPath);
+
+      // 1. Если onboarding не пройден - показываем welcome
+      if (!onboardingCompleted) {
+        if (currentPath != '/welcome' && currentPath != '/onboarding') {
+          return '/welcome';
+        }
+        return null;
       }
+
+      // 2. Если onboarding пройден, но город не выбран - показываем выбор города
+      if (selectedCity == null) {
+        if (currentPath != '/city-select') {
+          return '/city-select';
+        }
+        return null;
+      }
+
+      // 3. Если все настроено и пользователь на welcome/onboarding/city-select - редирект на главную
+      if (isOnWelcomePath) {
+        return '/';
+      }
+
       return null;
     },
     routes: [
+      // Welcome и Onboarding экраны
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/city-select',
+        builder: (context, state) => const CitySelectScreen(),
+      ),
+      // Legacy route для совместимости
       GoRoute(
         path: '/select-city',
-        builder: (context, state) => const CitySelectScreen(),
+        redirect: (context, state) => '/city-select',
       ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),

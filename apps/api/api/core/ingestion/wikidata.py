@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 # Wikidata User-Agent policy requires a specific User-Agent
-USER_AGENT = "AudioGuide2026/1.0 (https://audiogid-api.vercel.app; denis@audiogid.app)"
+USER_AGENT = "AudioGuide2026/1.0 (https://audiogid.app; denis@audiogid.app)"
 
 async def fetch_wikidata_data(wikidata_id: str) -> Optional[Dict[str, Any]]:
     """

@@ -6,6 +6,11 @@ class AppConfig:
         # Use pooled URL for Neon (unpooled has cold start issues on free tier)
         self.DATABASE_URL = self._get_required("DATABASE_URL")
         
+        # Deploy environment: "production", "staging", "development"
+        # Replaces VERCEL_ENV - works on any hosting (Cloud.ru, VPS, etc.)
+        self.DEPLOY_ENV = os.getenv("DEPLOY_ENV", "development").strip()
+        self.is_production = self.DEPLOY_ENV == "production"
+        
         # Ingestion Env (Strategy A: Readiness-only check, optional at startup)
         self.QSTASH_TOKEN = (os.getenv("QSTASH_TOKEN") or "").strip()
         self.QSTASH_CURRENT_SIGNING_KEY = (os.getenv("QSTASH_CURRENT_SIGNING_KEY") or "").strip()
@@ -15,14 +20,23 @@ class AppConfig:
         
         # ADMIN_API_TOKEN is OPTIONAL at startup (fail-closed check at endpoint level)
         self.ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN")
-        if not self.ADMIN_API_TOKEN and os.getenv("VERCEL_ENV") == "production":
+        if not self.ADMIN_API_TOKEN and self.is_production:
              raise RuntimeError("CRITICAL: ADMIN_API_TOKEN is required in production.")
         
-        # Optional with default - check both BLOB_READ_WRITE_TOKEN and VERCEL_BLOB_READ_WRITE_TOKEN
+        # S3-compatible storage (MinIO, Yandex Object Storage, etc.)
+        # Replaces Vercel Blob
+        self.S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "").strip()  # e.g., http://localhost:9000
+        self.S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "").strip()
+        self.S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "").strip()
+        self.S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME", "audiogid").strip()
+        self.S3_PUBLIC_URL = os.getenv("S3_PUBLIC_URL", "").strip()  # Public URL for accessing files
+        
+        # Legacy: keep for backward compatibility during migration
         self.VERCEL_BLOB_READ_WRITE_TOKEN = (os.getenv("BLOB_READ_WRITE_TOKEN") or os.getenv("VERCEL_BLOB_READ_WRITE_TOKEN") or "").strip()
+        
         self.OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip()
         self.AUDIO_PROVIDER = os.getenv("AUDIO_PROVIDER", "openai").strip()
-        self.VERCEL_URL = (os.getenv("VERCEL_URL") or "").strip()
+        self.PUBLIC_URL = os.getenv("PUBLIC_URL", "").strip()  # Replaces VERCEL_URL
         self.OVERPASS_API_URL = os.getenv("OVERPASS_API_URL")
         
         # Billing (PR-50 Hotfix: Force Optional Config for YooKassa to prevent crash)
@@ -47,7 +61,7 @@ class AppConfig:
         self.JWT_SECRET = (os.getenv("JWT_SECRET") or "").strip()
         if self.JWT_SECRET and len(self.JWT_SECRET) < 32:
             raise RuntimeError("CRITICAL: JWT_SECRET must be at least 32 characters long.")
-        if not self.JWT_SECRET and os.getenv("VERCEL_ENV") == "production":
+        if not self.JWT_SECRET and self.is_production:
             raise RuntimeError("CRITICAL: JWT_SECRET is required in production.") 
         self.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256").strip()
         self.OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))

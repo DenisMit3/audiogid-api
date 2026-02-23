@@ -23,7 +23,7 @@ try:
         print("Error: ADMIN_API_TOKEN not found in environment or .env.prod")
         sys.exit(1)
         
-    url = "https://audiogid-api.vercel.app/v1/admin/ingestion/osm/enqueue"
+    url = "http://82.202.159.64:8000/v1/admin/ingestion/osm/enqueue"
     
     print(f"Triggering ingestion for kaliningrad_city on {url}...")
     

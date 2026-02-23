@@ -7,6 +7,26 @@ from ..models import Poi
 
 logger = logging.getLogger(__name__)
 
+# S3 client singleton
+_s3_client = None
+
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        if not config.S3_ENDPOINT_URL:
+            return None
+        try:
+            import boto3
+            _s3_client = boto3.client(
+                's3',
+                endpoint_url=config.S3_ENDPOINT_URL,
+                aws_access_key_id=config.S3_ACCESS_KEY,
+                aws_secret_access_key=config.S3_SECRET_KEY,
+            )
+        except ImportError:
+            return None
+    return _s3_client
+
 async def generate_preview_content(session: Session, poi_id: str):
     """
     Generates preview bullets (LLM) and preview audio (TTS).
@@ -96,22 +116,23 @@ async def _generate_audio_tts(text_input: str, filename: str) -> str | None:
             response.raise_for_status()
             audio_content = response.content
             
-            # Uplod to Blob
-            if not config.VERCEL_BLOB_READ_WRITE_TOKEN:
-                 return None
+            # Upload to S3-compatible storage
+            s3 = get_s3_client()
+            if not s3:
+                return None
 
-            upload_url = f"https://blob.vercel-storage.com/{filename}"
-            upload_resp = await client.put(
-                upload_url,
-                content=audio_content,
-                headers={
-                    "Authorization": f"Bearer {config.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                    "x-api-version": "1"
-                }
+            s3.put_object(
+                Bucket=config.S3_BUCKET_NAME,
+                Key=filename,
+                Body=audio_content,
+                ContentType='audio/mpeg'
             )
-            upload_resp.raise_for_status()
-            blob_data = upload_resp.json()
-            return blob_data.get("url")
+            
+            # Build public URL
+            if config.S3_PUBLIC_URL:
+                return f"{config.S3_PUBLIC_URL.rstrip('/')}/{filename}"
+            else:
+                return f"{config.S3_ENDPOINT_URL.rstrip('/')}/{config.S3_BUCKET_NAME}/{filename}"
             
     except Exception as e:
         logger.error(f"TTS Failed: {e}")

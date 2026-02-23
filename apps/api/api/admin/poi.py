@@ -473,8 +473,7 @@ def get_presigned_url(
     user: User = Depends(require_permission('media:write'))
 ):
     """
-    Returns a presigned URL for direct upload.
-    Supports Vercel Blob or local fallback.
+    Returns a presigned URL for direct upload to S3-compatible storage.
     """
     
     ALLOWED_TYPES = {
@@ -493,49 +492,48 @@ def get_presigned_url(
     unique_name = f"{uuid.uuid4()}_{req.filename}"
     pathname = f"{req.entity_type}/{req.entity_id}/{unique_name}"
     
-    if not settings.VERCEL_BLOB_READ_WRITE_TOKEN:
-        # Return 503 Service Unavailable with clear message
-        raise HTTPException(503, "Media upload temporarily unavailable. Storage not configured.")
+    # Check S3 configuration
+    if not settings.S3_ENDPOINT_URL:
+        raise HTTPException(503, "Media upload temporarily unavailable. S3 storage not configured.")
 
     try:
-        # Using Vercel Blob upload API
-        # For server-side presigned URL generation
-        res = requests.put(
-            f"https://blob.vercel-storage.com/{pathname}",
-            headers={
-                "Authorization": f"Bearer {settings.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                "x-content-type": req.content_type,
-                "x-add-random-suffix": "false",
-            },
-            data=b"",  # Empty body for presign
-            timeout=10
+        import boto3
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.S3_ACCESS_KEY,
+            aws_secret_access_key=settings.S3_SECRET_KEY,
         )
         
-        if res.status_code == 200:
-            data = res.json()
-            return {
-                "upload_url": data.get("url"),
-                "final_url": data.get("url"),
-                "method": "PUT",
-                "headers": {"Content-Type": req.content_type},
-                "expires_at": datetime.utcnow() + timedelta(minutes=15)
-            }
+        # Generate presigned URL for PUT
+        upload_url = s3.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': settings.S3_BUCKET_NAME,
+                'Key': pathname,
+                'ContentType': req.content_type,
+            },
+            ExpiresIn=900  # 15 minutes
+        )
+        
+        # Public URL for accessing the file
+        if settings.S3_PUBLIC_URL:
+            final_url = f"{settings.S3_PUBLIC_URL.rstrip('/')}/{pathname}"
         else:
-            # Fallback: return direct upload URL pattern
-            # Client will upload directly using @vercel/blob SDK
-            return {
-                "upload_url": f"https://blob.vercel-storage.com/{pathname}",
-                "final_url": f"https://*.public.blob.vercel-storage.com/{pathname}",
-                "method": "PUT",
-                "headers": {
-                    "Authorization": f"Bearer {settings.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                    "Content-Type": req.content_type,
-                },
-                "expires_at": datetime.utcnow() + timedelta(minutes=15)
-            }
+            final_url = f"{settings.S3_ENDPOINT_URL.rstrip('/')}/{settings.S3_BUCKET_NAME}/{pathname}"
+        
+        return {
+            "upload_url": upload_url,
+            "final_url": final_url,
+            "method": "PUT",
+            "headers": {"Content-Type": req.content_type},
+            "expires_at": datetime.utcnow() + timedelta(minutes=15)
+        }
+    except ImportError:
+        raise HTTPException(503, "boto3 not installed. S3 storage unavailable.")
     except Exception as e:
         import logging
-        logging.getLogger(__name__).error(f"Blob Presign Error: {e}")
+        logging.getLogger(__name__).error(f"S3 Presign Error: {e}")
         raise HTTPException(502, f"Failed to generate upload URL: {str(e)}")
 
 @router.get("/admin/pois/{poi_id}/publish_check", response_model=PublishCheckResult)

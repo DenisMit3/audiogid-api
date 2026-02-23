@@ -1,4 +1,4 @@
-$BASE="https://audiogid-api.vercel.app"
+$BASE="http://82.202.159.64:8000"
 $TS=Get-Date -UFormat %s
 Write-Host "Validating Prod Ops... TS=$TS"
 

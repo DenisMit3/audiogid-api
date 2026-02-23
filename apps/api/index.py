@@ -1,5 +1,5 @@
-# Audio Guide 2026 API - Main Entry Point for Vercel (Redeploy Trigger)
-# This file exports 'app' as required by Vercel FastAPI deployment
+# Audio Guide 2026 API - Main Entry Point
+# Supports deployment on any platform: Cloud.ru VM, Docker, etc.
 
 from fastapi import FastAPI, Request, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
@@ -93,7 +93,7 @@ if config.SENTRY_DSN:
         
         sentry_sdk.init(
             dsn=config.SENTRY_DSN,
-            environment=os.getenv("VERCEL_ENV", "development"),
+            environment=config.DEPLOY_ENV,
             traces_sample_rate=0.1, # 10% sampling
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),
@@ -118,21 +118,17 @@ app = FastAPI(
 _default_origins = [
     "https://audiogid.app",
     "https://admin.audiogid.app",
-    "https://*.vercel.app",  # Preview deployments
+    "http://82.202.159.64:3080",  # Cloud.ru Admin
+    "http://82.202.159.64:8000",  # Cloud.ru API
+    "http://localhost:3000",      # Local admin dev
+    "http://localhost:3080",      # Local admin
 ]
 _env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 allowed_origins = list(set(_default_origins + [o.strip() for o in _env_origins if o.strip()]))
 
-
-if os.getenv("VERCEL_ENV") == "preview":
-    vercel_url = os.getenv("VERCEL_URL")
-    if vercel_url:
-        allowed_origins.append(f"https://{vercel_url}")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

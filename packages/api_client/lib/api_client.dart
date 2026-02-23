@@ -11,7 +11,7 @@
 part of openapi.api;
 
 class ApiClient {
-  ApiClient({this.basePath = 'https://audiogid-api.vercel.app/v1', this.authentication,});
+  ApiClient({this.basePath = 'http://82.202.159.64:8000/v1', this.authentication,});
 
   final String basePath;
   final Authentication? authentication;

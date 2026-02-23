@@ -4,7 +4,7 @@ info:
   version: 1.13.0
   description: Canonical API for Audio Guide 2026. Includes fail-closed caching rules.
 servers:
-  - url: https://audiogid-api.vercel.app/v1
+  - url: http://82.202.159.64:8000/v1
     description: Production Server
 
 paths:

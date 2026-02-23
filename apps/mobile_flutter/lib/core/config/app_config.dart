@@ -29,7 +29,8 @@ class AppConfig {
       case AppFlavor.staging:
         return AppConfig(
           flavor: AppFlavor.staging,
-          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'https://audiogid-api-staging.vercel.app/v1',
+          // Cloud.ru VM staging (same server, different port or subdomain if needed)
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://82.202.159.64:8000/v1',
         );
       case AppFlavor.prod:
         return AppConfig(

@@ -46,7 +46,7 @@ except Exception as e:
     print(f"DB Error: {e}")
 
 print("Verifying...")
-url = f"https://audiogid-api.vercel.app/v1/public/tours/{tour_id}/manifest?city={city}&device_anon_id={device}"
+url = f"http://82.202.159.64:8000/v1/public/tours/{tour_id}/manifest?city={city}&device_anon_id={device}"
 r = requests.get(url)
 print(f"Status: {r.status_code}")
 print(f"Cache-Control: {r.headers.get('Cache-Control')}")

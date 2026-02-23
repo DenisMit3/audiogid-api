@@ -42,9 +42,55 @@ jobs:
       - name: Build
         run: cd apps/admin && pnpm build
 
-      # Playwright Tests
-      - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
+  deploy:
+    needs: build-and-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
 
-      - name: Run Playwright tests
-        run: pnpm exec playwright test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Admin
+        run: cd apps/admin && pnpm build
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CLOUDRU_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 82.202.159.64 >> ~/.ssh/known_hosts
+
+      - name: Deploy Admin to Cloud.ru
+        env:
+          SERVER: 82.202.159.64
+          USER: user1
+          APP_DIR: /opt/audiogid
+        run: |
+          # Upload Admin files (including .next build)
+          rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            apps/admin/ ${USER}@${SERVER}:${APP_DIR}/admin/
+          
+          # Install deps and restart on server
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/admin && pnpm install --prod && sudo systemctl restart audiogid-admin"
+          
+          # Wait and check
+          sleep 5
+          curl -f http://${SERVER}:3080 || exit 1
+          
+          echo "Admin deployed successfully!"

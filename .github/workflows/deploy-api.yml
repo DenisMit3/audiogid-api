@@ -1,5 +1,5 @@
 # .github/workflows/deploy-api.yml
-name: Deploy API & Migrate
+name: Deploy API to Cloud.ru
 
 on:
   push:
@@ -11,17 +11,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Backup Database
-        run: |
-          # Neon automatically handles snapshots, but we log the intent here
-          echo "Creating backup before migration..."
 
       - name: Run Migrations
         env:
@@ -31,12 +26,32 @@ jobs:
           pip install -r requirements.txt
           alembic upgrade head
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Deploy to Vercel
+      - name: Setup SSH Key
         run: |
-          cd apps/api
-          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CLOUDRU_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 82.202.159.64 >> ~/.ssh/known_hosts
+
+      - name: Deploy API to Cloud.ru
+        env:
+          SERVER: 82.202.159.64
+          USER: user1
+          APP_DIR: /opt/audiogid
+        run: |
+          # Upload API files
+          rsync -avz --delete \
+            --exclude '__pycache__' \
+            --exclude '*.pyc' \
+            --exclude '.env' \
+            --exclude 'venv' \
+            apps/api/ ${USER}@${SERVER}:${APP_DIR}/api/
+          
+          # Restart API service
+          ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"
+          
+          # Wait and check health
+          sleep 5
+          curl -f http://${SERVER}:8000/v1/ops/health || exit 1
+          
+          echo "API deployed successfully!"

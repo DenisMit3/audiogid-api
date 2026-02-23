@@ -1,7 +1,7 @@
 import './style.css';
 import maplibregl from 'maplibre-gl';
 
-const API_BASE = 'https://audiogid-api.vercel.app/v1';
+const API_BASE = 'http://82.202.159.64:8000/v1';
 const CITY_SLUG = 'kaliningrad_city';
 
 let map;

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+    const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://82.202.159.64:8000';
     const BACKEND_URL = ENV_API_URL.endsWith('/v1') ? ENV_API_URL : `${ENV_API_URL}/v1`;
 
     if (!BACKEND_URL) return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });

@@ -24,13 +24,14 @@ async def enqueue_job(job_type: str, payload: str, session: Session, idempotency
     }
     
     # Callback URL must be the public endpoint of the API.
-    # In Vercel, this changes per deploy. 
-    # For now, we use a configurable base or derive from request if possible.
-    # PROD/PREVIEW duality requires strict handling provided by VERSEL_URL or PUBLIC_APP_URL.
-    base_url = os.getenv("VERCEL_URL") or os.getenv("PUBLIC_APP_BASE_URL") or "audiogid-api.vercel.app"
-    # Note: VERCEL_URL is sometimes missing in runtime.
+    # Use PUBLIC_URL or PUBLIC_APP_BASE_URL for self-hosted deployments.
+    base_url = config.PUBLIC_URL or os.getenv("PUBLIC_APP_BASE_URL") or "http://82.202.159.64:8000"
+    # Ensure no trailing slash and proper protocol
+    base_url = base_url.rstrip('/')
+    if not base_url.startswith('http'):
+        base_url = f"https://{base_url}"
         
-    destination = f"https://{base_url}/api/internal/jobs/callback"
+    destination = f"{base_url}/api/internal/jobs/callback"
     
     # Debug Logging
     import logging

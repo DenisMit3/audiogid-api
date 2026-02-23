@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-import requests
 import uuid
 import logging
 from ..core.config import config
@@ -9,6 +8,27 @@ from ..core.models import User
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# S3-compatible storage client (MinIO, Yandex Object Storage, etc.)
+_s3_client = None
+
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        if not config.S3_ENDPOINT_URL:
+            return None
+        try:
+            import boto3
+            _s3_client = boto3.client(
+                's3',
+                endpoint_url=config.S3_ENDPOINT_URL,
+                aws_access_key_id=config.S3_ACCESS_KEY,
+                aws_secret_access_key=config.S3_SECRET_KEY,
+            )
+        except ImportError:
+            logger.error("boto3 not installed, S3 storage unavailable")
+            return None
+    return _s3_client
 
 class PresignRequest(BaseModel):
     filename: str
@@ -19,7 +39,6 @@ class PresignRequest(BaseModel):
 class PresignResponse(BaseModel):
     upload_url: str
     final_url: str
-    # Optional fields that Vercel might return
     access: str = "public" 
 
 def require_admin(user: User = Depends(get_current_user)):
@@ -33,55 +52,39 @@ async def presign_media_upload(
     user: User = Depends(require_admin)
 ) -> PresignResponse:
     """
-    Generate presigned URL for Vercel Blob upload.
+    Generate presigned URL for S3-compatible storage upload (MinIO, Yandex Object Storage, etc.)
     """
-    if not config.VERCEL_BLOB_READ_WRITE_TOKEN:
-         raise HTTPException(500, "Blob configuration missing")
+    s3 = get_s3_client()
+    if not s3:
+        raise HTTPException(500, "Storage configuration missing. Set S3_ENDPOINT_URL, S3_ACCESS_KEY, S3_SECRET_KEY")
 
     path_prefix = "uploads"
     if req.entity_type:
-         path_prefix = req.entity_type
+        path_prefix = req.entity_type
     
-    unique_path = f"{path_prefix}/{uuid.uuid4()}-{req.filename}"
+    object_key = f"{path_prefix}/{uuid.uuid4()}-{req.filename}"
 
     try:
-        # Using Vercel Blob API (undocumented public endpoint or via plan)
-        # Note: Ideally usage of vercel-blob-python or similar, but following plan.
-        # If this endpoint fails (404), we might need to fallback to SDK or correct URL.
-        # Common Vercel Blob multipart upload uses /mpu or just PUT.
-        # For client-side uploads, we usually implement 'handleUpload' which validates and signs.
-        # But assuming direct presign for PUT here as requested.
-        
-        # Attempting client-upload token generation or similar.
-        # Actually, https://blob.vercel-storage.com does not have a public /presign that takes arbitrary input without SDK wrapper logic usually.
-        # But assuming the USER knows the URL is valid or we are simulating standard S3-like presign.
-        # WARNING: If this URL is wrong, upload will fail.
-        
-        res = requests.post(
-            "https://blob.vercel-storage.com/mpu", # Using MPU which is often used for this
-            headers={
-                "Authorization": f"Bearer {config.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                "x-api-version": "1" # often required
+        # Generate presigned URL for PUT operation
+        upload_url = s3.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': config.S3_BUCKET_NAME,
+                'Key': object_key,
+                'ContentType': req.content_type,
             },
-            json={
-                "pathname": unique_path,
-                "contentType": req.content_type,
-                "access": "public" 
-            }
+            ExpiresIn=3600  # 1 hour
         )
         
-        # If 404/405, we might try simple PUT logic simulation if we can't do it.
-        if res.status_code not in [200, 201]:
-             logger.error(f"Blob Presign Fail: {res.status_code} {res.text}")
-             raise HTTPException(502, f"Blob Provider Error: {res.text}")
-
-        data = res.json()
+        # Public URL for accessing the file after upload
+        if config.S3_PUBLIC_URL:
+            final_url = f"{config.S3_PUBLIC_URL.rstrip('/')}/{object_key}"
+        else:
+            final_url = f"{config.S3_ENDPOINT_URL.rstrip('/')}/{config.S3_BUCKET_NAME}/{object_key}"
         
-        # MPU response usually: { url, uploadId, key... } or { url } for simple put?
-        # If it's a simple PUT (one step):
         return PresignResponse(
-            upload_url=data.get("url"), # URL to PUT to
-            final_url=data.get("url")   # URL to GET from (often same for Vercel Blob public)
+            upload_url=upload_url,
+            final_url=final_url
         )
     except Exception as e:
         logger.error(f"Presign Exception: {e}")

@@ -54,7 +54,7 @@ except Exception as e:
     print(f"DB Error: {e}")
 
 # Verify
-base = "https://audiogid-2nljrobzs-denis-projects-a19daef6.vercel.app"
+base = "http://82.202.159.64:8000"
 
 print("--- 403 CASE ---")
 url_403 = f"{base}/v1/public/tours/{tour_id}/manifest?city={city}&device_anon_id=unauthorized_guy"

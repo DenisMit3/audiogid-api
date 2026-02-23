@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://audiogid-api.vercel.app';
+const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://82.202.159.64:8000';
 const BACKEND_URL = ENV_API_URL.endsWith('/v1') ? ENV_API_URL : `${ENV_API_URL}/v1`;
 
 

@@ -2,7 +2,7 @@ import os
 import requests
 import psycopg2
 
-base = "https://audiogid-2nljrobzs-denis-projects-a19daef6.vercel.app"
+base = "http://82.202.159.64:8000"
 
 print(f"Checking {base}/v1/ops/ready ...")
 try:

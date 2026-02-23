@@ -32,8 +32,9 @@ def get_commit():
     import os
     import datetime
     return {
-        "commit_sha": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown"),
-        "commit_msg": os.getenv("VERCEL_GIT_COMMIT_MESSAGE", "unknown"),
+        "commit_sha": os.getenv("GIT_COMMIT_SHA", "unknown"),
+        "commit_msg": os.getenv("GIT_COMMIT_MESSAGE", "unknown"),
+        "deploy_env": os.getenv("DEPLOY_ENV", "development"),
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
 
@@ -55,7 +56,11 @@ def config_check():
     from .core.config import config
     return {
         "OPENAI_API_KEY": bool(config.OPENAI_API_KEY),
-        "VERCEL_BLOB_READ_WRITE_TOKEN": bool(config.VERCEL_BLOB_READ_WRITE_TOKEN),
+        "S3_STORAGE": {
+            "S3_ENDPOINT_URL": bool(config.S3_ENDPOINT_URL),
+            "S3_ACCESS_KEY": bool(config.S3_ACCESS_KEY),
+            "S3_BUCKET_NAME": config.S3_BUCKET_NAME,
+        },
         "AUDIO_PROVIDER": config.AUDIO_PROVIDER,
         "QSTASH_TOKEN": bool(config.QSTASH_TOKEN),
         "OVERPASS_API_URL": bool(config.OVERPASS_API_URL),
@@ -65,7 +70,8 @@ def config_check():
             "WEBHOOK_SECRET": bool(config.YOOKASSA_WEBHOOK_SECRET),
             "PAYMENT_WEBHOOK_BASE_PATH": bool(config.PAYMENT_WEBHOOK_BASE_PATH)
         },
-        "PUBLIC_APP_BASE_URL": bool(config.PUBLIC_APP_BASE_URL)
+        "PUBLIC_APP_BASE_URL": bool(config.PUBLIC_APP_BASE_URL),
+        "DEPLOY_ENV": config.DEPLOY_ENV
     }
 
 import alembic.config

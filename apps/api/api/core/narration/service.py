@@ -8,9 +8,29 @@ from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 
+# S3 client singleton
+_s3_client = None
+
+def get_s3_client():
+    global _s3_client
+    if _s3_client is None:
+        if not config.S3_ENDPOINT_URL:
+            return None
+        try:
+            import boto3
+            _s3_client = boto3.client(
+                's3',
+                endpoint_url=config.S3_ENDPOINT_URL,
+                aws_access_key_id=config.S3_ACCESS_KEY,
+                aws_secret_access_key=config.S3_SECRET_KEY,
+            )
+        except ImportError:
+            return None
+    return _s3_client
+
 async def generate_narration_for_poi(session: Session, poi_id: uuid.UUID):
     """
-    Generates AI Audio for a POI and saves to Vercel Blob.
+    Generates AI Audio for a POI and saves to S3-compatible storage.
     Current Provider: OpenAI TTS.
     """
     poi = session.get(Poi, poi_id)
@@ -52,34 +72,27 @@ async def generate_narration_for_poi(session: Session, poi_id: uuid.UUID):
             response.raise_for_status()
             audio_content = response.content
             
-            # 2. Upload to Vercel Blob
-            # Note: The raw REST API for Vercel Blob is private/not fully documented for direct PUT.
-            # However, we can use the 'https://blob.vercel-storage.com' endpoint if tokens are set correctly.
-            # In a real Vercel environment, we'd use their SDK, but since we are Python-only,
-            # we rely on the fact that Vercel Blob is often just S3-compatible or has a known API.
-            # For now, we will handle the upload or log it as a pending asset transfer.
-            
-            if not config.VERCEL_BLOB_READ_WRITE_TOKEN:
-                 logger.error("VERCEL_BLOB_READ_WRITE_TOKEN missing")
-                 return {"error": "BLOB_STORAGE_UNAVAILABLE"}
+            # 2. Upload to S3-compatible storage
+            s3 = get_s3_client()
+            if not s3:
+                logger.error("S3 storage not configured")
+                return {"error": "BLOB_STORAGE_UNAVAILABLE"}
 
             filename = f"narrations/{poi_id}.mp3"
             
-            # PUT request to Vercel Blob (using internal protocol or signed upload)
-            # Since Vercel Blob Python SDK is not available, we assume the token is used for direct upload.
-            # If this fails in the actual environment, we will need to adjust the upload logic.
-            upload_url = f"https://blob.vercel-storage.com/{filename}"
-            upload_resp = await client.put(
-                upload_url,
-                content=audio_content,
-                headers={
-                    "Authorization": f"Bearer {config.VERCEL_BLOB_READ_WRITE_TOKEN}",
-                    "x-api-version": "1"
-                }
+            # Upload to S3
+            s3.put_object(
+                Bucket=config.S3_BUCKET_NAME,
+                Key=filename,
+                Body=audio_content,
+                ContentType='audio/mpeg'
             )
-            upload_resp.raise_for_status()
-            blob_data = upload_resp.json()
-            audio_url = blob_data.get("url")
+            
+            # Build public URL
+            if config.S3_PUBLIC_URL:
+                audio_url = f"{config.S3_PUBLIC_URL.rstrip('/')}/{filename}"
+            else:
+                audio_url = f"{config.S3_ENDPOINT_URL.rstrip('/')}/{config.S3_BUCKET_NAME}/{filename}"
             
             # 3. Save Record
             narration = Narration(

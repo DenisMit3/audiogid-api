@@ -29,6 +29,19 @@ def check_access(session: Session, city: str, device_anon_id: Optional[str], tou
     Admin bypass is handled at middleware or auth level if needed, 
     but for public manifest endpoints we check device_anon_id.
     """
+    # 0. Check if tour has a FREE entitlement (price_amount = 0)
+    if tour_id:
+        free_entitlement = session.exec(
+            select(Entitlement).where(
+                Entitlement.scope == "tour",
+                Entitlement.ref == str(tour_id),
+                Entitlement.price_amount == 0,
+                Entitlement.is_active == True
+            )
+        ).first()
+        if free_entitlement:
+            return True
+    
     if not device_anon_id:
         return False
         

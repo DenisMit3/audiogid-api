@@ -1,0 +1,1 @@
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND (table_name LIKE '%purchase%' OR table_name LIKE '%price%' OR table_name LIKE '%payment%' OR table_name LIKE '%sku%' OR table_name LIKE '%product%');

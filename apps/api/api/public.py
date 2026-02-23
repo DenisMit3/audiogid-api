@@ -268,7 +268,7 @@ def get_catalog(
     
     tours = session.exec(query.offset(offset).limit(limit)).all()
     
-    return [t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes'}) for t in tours]
+    return [t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes', 'cover_image', 'distance_km', 'tour_type', 'description_ru'}) for t in tours]
 
 @router.get("/public/map/attribution")
 def get_map_attribution(response: Response):

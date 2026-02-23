@@ -19,24 +19,24 @@ class AppConfig {
 
   factory AppConfig.fromFlavor(AppFlavor flavor) {
     const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
+    // Облачный сервер через nginx на порту 80
+    const cloudUrl = 'http://82.202.159.64/v1';
 
     switch (flavor) {
       case AppFlavor.dev:
         return AppConfig(
           flavor: AppFlavor.dev,
-          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://localhost:8000/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : cloudUrl,
         );
       case AppFlavor.staging:
         return AppConfig(
           flavor: AppFlavor.staging,
-          // Cloud.ru VM staging (same server, different port or subdomain if needed)
-          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://82.202.159.64:8000/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : cloudUrl,
         );
       case AppFlavor.prod:
         return AppConfig(
           flavor: AppFlavor.prod,
-          // Cloud.ru VM - после открытия портов в Security Group
-          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : 'http://82.202.159.64/v1',
+          apiBaseUrl: apiBaseUrl.isNotEmpty ? apiBaseUrl : cloudUrl,
         );
     }
   }

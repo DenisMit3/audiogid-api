@@ -5,9 +5,11 @@ class Tour {
   final String citySlug;
   final String titleRu;
   final String? descriptionRu;
+  final String? coverImage;
   final int? durationMinutes;
   final String? transportType;
   final double? distanceKm;
+  final String? tourType;
   final List<TourItemEntity>? items;
 
   Tour({
@@ -15,9 +17,11 @@ class Tour {
     required this.citySlug,
     required this.titleRu,
     this.descriptionRu,
+    this.coverImage,
     this.durationMinutes,
     this.transportType,
     this.distanceKm,
+    this.tourType,
     this.items,
   });
 }

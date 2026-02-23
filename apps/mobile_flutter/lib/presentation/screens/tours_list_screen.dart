@@ -209,7 +209,12 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
             onPressed: () => context.push('/qr_scanner'),
           ),
           AccessibleIconButton(
-            icon: Icons.settings_outlined,
+            icon: Icons.download_for_offline_outlined,
+            tooltip: 'Оффлайн режим',
+            onPressed: () => context.push('/offline-manager'),
+          ),
+          AccessibleIconButton(
+            icon: Icons.swap_horiz,
             tooltip: 'Сменить город',
             onPressed: () => ref.read(selectedCityProvider.notifier).clear(),
           ),
@@ -466,7 +471,7 @@ class _TourCard extends StatelessWidget {
                   // Image with hero animation
                   HeroImage(
                     tag: 'tour-image-${tour.id}',
-                    imageUrl: null, // TODO: Add tour cover image
+                    imageUrl: tour.coverImage,
                     height: context.responsive(
                       smallPhone: 140.0,
                       phone: 160.0,

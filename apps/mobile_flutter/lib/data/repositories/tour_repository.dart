@@ -27,9 +27,12 @@ class OfflineTourRepository implements TourRepository {
       id: r.id,
       citySlug: r.citySlug,
       titleRu: r.titleRu,
+      descriptionRu: r.descriptionRu,
+      coverImage: r.coverImage,
       durationMinutes: r.durationMinutes,
       transportType: r.transportType,
       distanceKm: r.distanceKm,
+      tourType: r.tourType,
     )).toList());
   }
 
@@ -42,9 +45,12 @@ class OfflineTourRepository implements TourRepository {
         id: details.tour.id,
         citySlug: details.tour.citySlug,
         titleRu: details.tour.titleRu,
+        descriptionRu: details.tour.descriptionRu,
+        coverImage: details.tour.coverImage,
         durationMinutes: details.tour.durationMinutes,
         transportType: details.tour.transportType,
         distanceKm: details.tour.distanceKm,
+        tourType: details.tour.tourType,
         items: details.items.map((i) => domain.TourItemEntity(
           id: i.item.id,
           tourId: i.item.tourId,
@@ -80,10 +86,11 @@ class OfflineTourRepository implements TourRepository {
         id: Value(t.id!),
         citySlug: Value(t.citySlug!),
         titleRu: Value(t.titleRu!),
+        descriptionRu: Value(t.descriptionRu),
+        coverImage: Value(t.coverImage),
         durationMinutes: Value(t.durationMinutes),
-        // Snippet might not have these yet, but we'll try to use them if they are added to the model
-        // transportType: Value(t.transportType), 
-        // distanceKm: Value(t.distanceKm),
+        distanceKm: Value(t.distanceKm),
+        tourType: Value(t.tourType ?? 'walking'),
       )).toList();
 
       await _db.tourDao.upsertTours(companions);

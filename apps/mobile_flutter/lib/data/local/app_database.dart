@@ -29,6 +29,8 @@ class Tours extends Table {
   TextColumn get id => text()();
   TextColumn get citySlug => text()();
   TextColumn get titleRu => text()();
+  TextColumn get descriptionRu => text().nullable()();
+  TextColumn get coverImage => text().nullable()();
   IntColumn get durationMinutes => integer().nullable()();
   TextColumn get transportType => text().nullable()();
   RealColumn get distanceKm => real().nullable()();

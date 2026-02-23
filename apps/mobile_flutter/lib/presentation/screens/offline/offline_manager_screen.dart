@@ -106,6 +106,28 @@ class _CityDownloadTile extends ConsumerWidget {
    final City city;
    const _CityDownloadTile({required this.city});
    
+   // Проверяем, является ли ошибка связанной с отсутствием сервиса
+   bool _isServiceUnavailable(String? error) {
+     if (error == null) return false;
+     return error.contains('503') || 
+            error.contains('Offline service not configured') ||
+            error.contains('QSTASH_TOKEN');
+   }
+   
+   // Форматируем ошибку для пользователя
+   String _formatError(String? error) {
+     if (error == null) return '';
+     if (_isServiceUnavailable(error)) {
+       return 'Сервис временно недоступен';
+     }
+     // Убираем технические детали из ApiException
+     if (error.contains('ApiException')) {
+       final match = RegExp(r'"detail":"([^"]+)"').firstMatch(error);
+       if (match != null) return match.group(1) ?? error;
+     }
+     return error;
+   }
+   
    @override
    Widget build(BuildContext context, WidgetRef ref) {
       final downloadedListAsync = ref.watch(downloadedCitiesProvider);
@@ -115,6 +137,7 @@ class _CityDownloadTile extends ConsumerWidget {
       final status = downloadState[city.slug];
       
       final isDownloaded = downloadedListAsync.value?.contains(city.slug) ?? false;
+      final isServiceError = isActive && _isServiceUnavailable(status?.error);
       
       Widget trailing;
       if (isActive && status != null) {
@@ -122,10 +145,13 @@ class _CityDownloadTile extends ConsumerWidget {
             trailing = Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Failed", style: TextStyle(color: Colors.red)),
+                Text(
+                  isServiceError ? "Failed" : "Failed", 
+                  style: const TextStyle(color: Colors.red)
+                ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () {
+                  onPressed: isServiceError ? null : () {
                     ref.read(downloadServiceProvider.notifier).startDownload(city.slug);
                   },
                 ),
@@ -172,7 +198,9 @@ class _CityDownloadTile extends ConsumerWidget {
       
       return ListTile(
         title: Text(city.nameRu),
-        subtitle: isActive && status?.error != null ? Text(status!.error!, style: const TextStyle(color: Colors.red)) : null,
+        subtitle: isActive && status?.error != null 
+          ? Text(_formatError(status!.error), style: const TextStyle(color: Colors.red)) 
+          : null,
         trailing: trailing,
       );
    }

@@ -1,0 +1,14 @@
+{
+    "slug": "nizhny_novgorod",
+    "name_ru": "Нижний Новгород",
+    "name_en": "Nizhny Novgorod",
+    "description_ru": "Нижний Новгород - пятый по численности населения город России, расположенный на слиянии рек Оки и Волги.",
+    "description_en": "Nizhny Novgorod is the fifth largest city in Russia, located at the confluence of the Oka and Volga rivers.",
+    "bounds_lat_min": 56.20,
+    "bounds_lat_max": 56.40,
+    "bounds_lon_min": 43.80,
+    "bounds_lon_max": 44.10,
+    "default_zoom": 12.0,
+    "timezone": "Europe/Moscow",
+    "is_active": true
+}

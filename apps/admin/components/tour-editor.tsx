@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, MoreVertical, Eye, Share, Map as MapIcon, Image as ImageIcon, Settings as SettingsIcon } from 'lucide-react';
 
@@ -69,6 +69,16 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     const [items, setItems] = useState<any[]>(tour?.items || []);
     const router = useRouter();
     const queryClient = useQueryClient();
+
+    // Загрузка списка городов
+    const { data: citiesData } = useQuery({
+        queryKey: ['cities'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/public/cities`);
+            if (!res.ok) return [];
+            return res.json();
+        }
+    });
 
     const form = useForm<any>({
         resolver: zodResolver(tourSchema),
@@ -292,9 +302,12 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="kaliningrad_city">Калининград</SelectItem>
-                                                                    <SelectItem value="zelenogradsk">Зеленоградск</SelectItem>
-                                                                    <SelectItem value="svetlogorsk">Светлогорск</SelectItem>
+                                                                    {citiesData?.map((city: any) => (
+                                                                        <SelectItem key={city.slug} value={city.slug}>{city.name_ru}</SelectItem>
+                                                                    ))}
+                                                                    {(!citiesData || citiesData.length === 0) && (
+                                                                        <SelectItem value="kaliningrad_city">Калининград</SelectItem>
+                                                                    )}
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -406,6 +419,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                             {tour && (
                                 <RouteBuilder
                                     items={items}
+                                    citySlug={tour.city_slug}
                                     onReorder={handleReorder}
                                     onAddItem={handleAddItem}
                                     onRemoveItem={(id) => removeItemMutation.mutate(id)}

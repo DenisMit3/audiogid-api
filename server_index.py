@@ -263,14 +263,3 @@ def diagnose_admin():
         return {"status": "ok", "poi_module": str(poi)}
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
-
-@app.get("/api/diagnose-routers")
-def diagnose_routers():
-    """Check which routers are loaded"""
-    return {
-        "admin_cities_router": str(admin_cities_router) if admin_cities_router else None,
-        "admin_tours_router": str(admin_tours_router) if admin_tours_router else None,
-        "admin_pois_router": str(admin_pois_router) if admin_pois_router else None,
-        "all_routes_with_cities": [r.path for r in app.routes if "cities" in str(r.path)],
-        "total_routes": len(app.routes)
-    }

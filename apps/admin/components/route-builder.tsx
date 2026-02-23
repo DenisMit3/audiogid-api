@@ -139,6 +139,7 @@ type TourItem = {
 
 type Props = {
     items: TourItem[];
+    citySlug?: string;
     onReorder: (items: TourItem[]) => void;
     onAddItem: (poiId: string, poiTitle: string) => void;
     onRemoveItem: (id: string) => void;
@@ -148,7 +149,7 @@ type Props = {
 const API_URL = '/api/proxy';
 // throw removed for build
 
-export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
+export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -160,9 +161,10 @@ export function RouteBuilder({ items, onReorder, onAddItem, onRemoveItem, onUpda
 
     // Fetch POIs for autocomplete
     const { data: poiOptions } = useQuery({
-        queryKey: ['pois_search'],
+        queryKey: ['pois_search', citySlug],
         queryFn: async () => {
-            const res = await fetch(`${API_URL}/admin/pois?page=1&per_page=100`, {
+            const cityFilter = citySlug ? `&city_slug=${citySlug}` : '';
+            const res = await fetch(`${API_URL}/admin/pois?page=1&per_page=100${cityFilter}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
             });
             if (!res.ok) return { items: [] };

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, MoreVertical, MapPin, Globe, Mic, Image as ImageIcon, BookOpen, Send, Plus } from 'lucide-react';
 
@@ -84,6 +84,16 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
     const [newLink, setNewLink] = useState('');
     const router = useRouter();
     const queryClient = useQueryClient();
+
+    // Загрузка списка городов
+    const { data: citiesData } = useQuery({
+        queryKey: ['cities'],
+        queryFn: async () => {
+            const res = await fetch(`${API_URL}/public/cities`);
+            if (!res.ok) return [];
+            return res.json();
+        }
+    });
 
     const form = useForm<any>({
         resolver: zodResolver(poiSchema),
@@ -248,9 +258,12 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl><SelectTrigger><SelectValue placeholder="Выберите город" /></SelectTrigger></FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="kaliningrad_city">Калининград</SelectItem>
-                                                                    <SelectItem value="zelenogradsk">Зеленоградск</SelectItem>
-                                                                    <SelectItem value="svetlogorsk">Светлогорск</SelectItem>
+                                                                    {citiesData?.map((city: any) => (
+                                                                        <SelectItem key={city.slug} value={city.slug}>{city.name_ru}</SelectItem>
+                                                                    ))}
+                                                                    {(!citiesData || citiesData.length === 0) && (
+                                                                        <SelectItem value="kaliningrad_city">Калининград</SelectItem>
+                                                                    )}
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />

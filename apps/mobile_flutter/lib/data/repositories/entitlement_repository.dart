@@ -38,9 +38,21 @@ class OfflineEntitlementRepository implements EntitlementRepository {
       final deviceId = prefs.getString('device_anon_id');
       if (deviceId == null) return;
 
-      // TODO: API method billingEntitlementsGetWithHttpInfo not available
-      // Stubbed until API client is regenerated
-      print('Sync grants: API method not available');
+      // Вызываем API для получения entitlements
+      final grants = await _api.getEntitlements(deviceId);
+      
+      if (grants != null && grants.isNotEmpty) {
+        // Сохраняем в локальную БД
+        await _db.entitlementDao.replaceAllGrants(grants.map((g) => EntitlementGrantsCompanion.insert(
+          id: g.id ?? '',
+          entitlementSlug: g.entitlementSlug ?? '',
+          scope: g.scope ?? '',
+          ref: Value(g.ref),
+          grantedAt: g.grantedAt ?? DateTime.now(),
+          expiresAt: Value(g.expiresAt),
+          isActive: g.isActive ?? true,
+        )).toList());
+      }
     } catch (e) {
       final appError = ApiErrorMapper.map(e);
       print('Sync Grants Error: ${appError.message}');

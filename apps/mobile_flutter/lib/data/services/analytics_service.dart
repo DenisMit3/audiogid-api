@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_flutter/core/config/app_config.dart';
 import 'package:mobile_flutter/data/local/app_database.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,18 +14,26 @@ part 'analytics_service.g.dart';
 
 @riverpod
 AnalyticsService analyticsService(Ref ref) {
+  final config = ref.watch(appConfigProvider);
   return AnalyticsService(
     ref.watch(appDatabaseProvider),
+    config.apiBaseUrl,
   );
 }
 
 class AnalyticsService {
   final AppDatabase _db;
+  final String _apiBaseUrl;
+  final Dio _dio;
   
   Timer? _timer;
   bool _isFlushing = false;
 
-  AnalyticsService(this._db) {
+  AnalyticsService(this._db, this._apiBaseUrl) : _dio = Dio(BaseOptions(
+    baseUrl: _apiBaseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  )) {
     _init();
   }
 
@@ -71,23 +81,41 @@ class AnalyticsService {
           await prefs.setString('device_anon_id', anonId);
       }
 
-      // TODO: API method for analytics ingest not available
-      // Stubbed until API client is regenerated with analytics endpoints
-      debugPrint('Analytics flush: ${events.length} events (API not available)');
-      
-      // For now, just delete old events to prevent DB bloat
-      final oldEvents = events.where((e) => 
-        DateTime.now().difference(e.createdAt).inDays > 7
-      ).toList();
-      
-      if (oldEvents.isNotEmpty) {
+      // 3. Prepare events payload for API
+      final eventsPayload = events.map((e) => {
+        'event_id': e.id,
+        'event_type': e.eventType,
+        'ts': e.createdAt.toUtc().toIso8601String(),
+        'payload': e.payloadJson != null ? jsonDecode(e.payloadJson!) : null,
+      }).toList();
+
+      // 4. Send to API
+      final response = await _dio.post(
+        '/analytics/events',
+        data: {
+          'anon_id': anonId,
+          'events': eventsPayload,
+        },
+      );
+
+      // 5. If successful, delete sent events
+      if (response.statusCode == 202 || response.statusCode == 200) {
         await (_db.delete(_db.analyticsPendingEvents)
-              ..where((t) => t.id.isIn(oldEvents.map((e) => e.id))))
+              ..where((t) => t.id.isIn(events.map((e) => e.id))))
             .go();
+        debugPrint('Analytics flush: ${events.length} events sent successfully');
       }
 
     } catch (e) {
       debugPrint('Analytics Sync Failed: $e');
+      
+      // Clean up old events to prevent DB bloat (older than 7 days)
+      try {
+        final cutoff = DateTime.now().subtract(const Duration(days: 7));
+        await (_db.delete(_db.analyticsPendingEvents)
+              ..where((t) => t.createdAt.isSmallerThanValue(cutoff)))
+            .go();
+      } catch (_) {}
     } finally {
       _isFlushing = false;
     }

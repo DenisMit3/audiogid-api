@@ -19,7 +19,7 @@
 - Python 3.11+
 - Node.js (для утилит)
 - Android SDK / Android Studio
-- PostgreSQL (или Neon)
+- PostgreSQL + PostGIS (локально на сервере Cloud.ru)
 
 ### Бэкенд
 

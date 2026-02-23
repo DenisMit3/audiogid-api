@@ -144,8 +144,8 @@ cd /opt/audiogid/api
 
 ```bash
 cat > .env << 'EOF'
-# Database (Neon PostgreSQL)
-DATABASE_URL=postgresql://neondb_owner:npg_mRMN7C3ohGHz@ep-restless-pond-af40wky4-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require
+# Database (локальный PostgreSQL)
+DATABASE_URL=postgresql://audiogid:CHANGE_ME_SECURE_PASSWORD@localhost:5432/audiogid
 
 # Environment
 DEPLOY_ENV=production
@@ -403,4 +403,4 @@ sudo systemctl restart audiogid-admin
 - API: http://82.202.159.64:8000
 - Admin: http://82.202.159.64:3080
 - MinIO: http://82.202.159.64:9001
-- База данных: Neon PostgreSQL (облако)
+- База данных: PostgreSQL + PostGIS (локально на сервере)

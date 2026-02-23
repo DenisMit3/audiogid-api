@@ -1,8 +1,8 @@
 # Audio Guide API
 
 Backend for Audio Guide 2026.
-Built with FastAPI, SQLModel, and PostgreSQL (Neon).
+Built with FastAPI, SQLModel, and PostgreSQL + PostGIS.
 
 ## Status
-- **Vercel Deployment**: Active ✅
-- **Database**: Connects to Neon
+- **Cloud.ru Deployment**: Active ✅
+- **Database**: PostgreSQL + PostGIS (локально на сервере)

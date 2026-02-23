@@ -1,7 +1,7 @@
 # Helper script to sync environments from Vercel and run database migrations
-# IMPORTANT: This script requires Vercel CLI installed and 'gh auth login' / 'vercel login' performed.
+# Works with both Neon (cloud) and local PostgreSQL
 
-Write-Host "--- AudioGid Database Sync & Migrate (Neon only) ---" -ForegroundColor Cyan
+Write-Host "--- AudioGid Database Sync & Migrate ---" -ForegroundColor Cyan
 
 # 1. Pull latest production environment variables from Vercel
 Write-Host "1. Pulling Production Environment Variables from Vercel..."
@@ -22,12 +22,8 @@ if (-not $db_url) {
     exit 1
 }
 
-if (-not $db_url.Contains("neon.tech")) {
-    Write-Warning "DATABASE_URL does not seem to be a Neon database. This project is configured for Neon Only."
-}
-
 # 3. Apply Migrations
-Write-Host "2. Applying Migrations to Neon..." -ForegroundColor Yellow
+Write-Host "2. Applying Migrations to Database..." -ForegroundColor Yellow
 $env:DATABASE_URL = $db_url
 
 Push-Location apps/api

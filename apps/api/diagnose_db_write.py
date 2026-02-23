@@ -23,6 +23,7 @@ if not db_url:
     sys.exit(1)
 
 if "sslmode=require" not in db_url and "neon.tech" in db_url:
+    # Для Neon требуется SSL, для локального PostgreSQL - нет
     db_url += "?sslmode=require"
 
 engine = create_engine(db_url)

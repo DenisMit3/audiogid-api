@@ -15,10 +15,10 @@ export default function BackupSettingsPage() {
 
             <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Управляемая инфраструктура</AlertTitle>
+                <AlertTitle>Локальная база данных</AlertTitle>
                 <AlertDescription>
-                    Ваша база данных размещена на <strong>Neon Serverless Postgres</strong>.
-                    Восстановление на момент времени (PITR) включено автоматически с хранением 7 дней.
+                    Ваша база данных размещена на <strong>PostgreSQL + PostGIS</strong> локально на сервере Cloud.ru.
+                    Рекомендуется настроить регулярное резервное копирование через pg_dump.
                 </AlertDescription>
             </Alert>
 
@@ -33,7 +33,7 @@ export default function BackupSettingsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="bg-slate-950 text-slate-50 p-4 rounded-md font-mono text-xs overflow-x-auto">
-                            pg_dump -h ep-plain-frog-123456.us-east-1.aws.neon.tech -U admin audiogid {'>'} backup_$(date +%F).sql
+                            pg_dump -h localhost -U audiogid audiogid {'>'} backup_$(date +%F).sql
                         </div>
                     </CardContent>
                     <CardFooter>

@@ -12,8 +12,8 @@
 | Версия API | 1.15.6 |
 | Архитектура | Monorepo (pnpm workspaces + Turborepo) |
 | Package Manager | pnpm 8.15.4 |
-| Деплой | Vercel (API + Admin), App Stores (Mobile) |
-| База данных | PostgreSQL + PostGIS (Neon) |
+| Деплой | Cloud.ru (API + Admin), App Stores (Mobile) |
+| База данных | PostgreSQL + PostGIS (локально на сервере) |
 | Статус | Release Candidate (RC1) |
 
 ### 1.2 Технологический стек
@@ -48,9 +48,9 @@
 ├─────────────────────────────────────────────────────────────────┤
 │                     INFRASTRUCTURE                               │
 ├─────────────────────────────────────────────────────────────────┤
-│  - Vercel (Hosting: API + Admin)                                │
-│  - Neon (PostgreSQL + PostGIS)                                  │
-│  - Vercel Blob (Media Storage)                                  │
+│  - Cloud.ru (Hosting: API + Admin)                              │
+│  - PostgreSQL + PostGIS (локально на сервере)                   │
+│  - MinIO (Media Storage)                                        │
 │  - Upstash QStash (Job Queue)                                   │
 │  - GitHub Actions (CI/CD)                                       │
 └─────────────────────────────────────────────────────────────────┘
@@ -311,7 +311,7 @@ GET  /ops/cron/cleanup-tokens    - Cleanup expired tokens
 
 ```python
 # Database
-DATABASE_URL                     # PostgreSQL connection string (Neon)
+DATABASE_URL                     # PostgreSQL connection string (localhost)
 
 # Auth
 JWT_SECRET                       # JWT signing key (>=32 chars)
@@ -622,8 +622,8 @@ GOOGLE_SERVICES_JSON
 | Overpass API | OSM данные для импорта |
 | Sentry | Error tracking |
 | Upstash QStash | Background jobs |
-| Vercel Blob | Media storage |
-| Neon | PostgreSQL + PostGIS |
+| MinIO | Media storage |
+| PostgreSQL + PostGIS | Database (локально) |
 
 ---
 

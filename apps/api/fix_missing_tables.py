@@ -18,7 +18,7 @@ if not db_url:
     print("DATABASE_URL not found")
     sys.exit(1)
 
-# Ensure neon driver
+# Ensure SSL for Neon (not needed for local PostgreSQL)
 if "sslmode=require" not in db_url and "neon.tech" in db_url:
     db_url += "?sslmode=require"
 

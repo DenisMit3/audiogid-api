@@ -18,7 +18,9 @@ sudo chown -R $USER:$USER $APP_DIR
 # 2. Setup API environment
 echo "[2/7] Setting up API environment..."
 cat > $API_DIR/.env << 'EOF'
-DATABASE_URL=postgresql://neondb_owner:npg_mRMN7C3ohGHz@ep-restless-pond-af40wky4-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require
+# База данных (локальный PostgreSQL)
+DATABASE_URL=postgresql://audiogid:CHANGE_ME_SECURE_PASSWORD@localhost:5432/audiogid
+
 JWT_SECRET=very-secure-jwt-secret-for-audiogid-2026-gen-by-agent-v1
 JWT_ALGORITHM=HS256
 ADMIN_API_TOKEN=temp-admin-key-2026

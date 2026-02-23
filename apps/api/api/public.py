@@ -322,6 +322,96 @@ def get_city_tours(response: Response, request: Request, slug: str, session: Ses
     tours = session.exec(select(Tour).where(Tour.city_slug == slug, Tour.published_at != None)).all()
     return [t.model_dump(include={'id', 'title_ru', 'description_ru', 'cover_image', 'duration_minutes', 'tour_type'}) for t in tours]
 
+@router.get("/public/cities/{slug}/offline-manifest")
+def get_city_offline_manifest(
+    response: Response, 
+    request: Request, 
+    slug: str, 
+    session: Session = Depends(get_session)
+):
+    """
+    Синхронный эндпоинт для получения оффлайн манифеста города.
+    Возвращает список всех ресурсов (аудио, изображения) для загрузки.
+    Не требует QStash - клиент сам скачивает файлы по URL.
+    """
+    city = session.exec(select(City).where(City.slug == slug)).first()
+    if not city:
+        raise HTTPException(status_code=404, detail="City not found")
+    
+    # Загружаем все опубликованные POI с их медиа и нарациями
+    pois = session.exec(
+        select(Poi)
+        .where(Poi.city_slug == slug, Poi.published_at != None)
+        .options(selectinload(Poi.narrations), selectinload(Poi.media))
+    ).all()
+    
+    # Загружаем все опубликованные туры
+    tours = session.exec(
+        select(Tour)
+        .where(Tour.city_slug == slug, Tour.published_at != None)
+        .options(selectinload(Tour.items), selectinload(Tour.media))
+    ).all()
+    
+    # Формируем список ресурсов для загрузки
+    assets = []
+    pois_data = []
+    tours_data = []
+    
+    for poi in pois:
+        poi_dict = poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon', 'category', 'cover_image'})
+        pois_data.append(poi_dict)
+        
+        # Аудио нарации
+        for n in poi.narrations:
+            if n.url:
+                assets.append({
+                    "id": str(n.id),
+                    "url": sign_asset_url(n.url),
+                    "type": "audio",
+                    "owner_type": "poi",
+                    "owner_id": str(poi.id),
+                    "locale": n.locale,
+                    "duration": n.duration_seconds
+                })
+        
+        # Медиа (изображения)
+        for m in poi.media:
+            if m.url:
+                assets.append({
+                    "id": str(m.id),
+                    "url": sign_asset_url(m.url),
+                    "type": m.media_type or "image",
+                    "owner_type": "poi",
+                    "owner_id": str(poi.id)
+                })
+    
+    for tour in tours:
+        tour_dict = tour.model_dump(include={'id', 'title_ru', 'description_ru', 'duration_minutes', 'tour_type', 'cover_image', 'distance_km'})
+        tour_dict['item_ids'] = [str(item.poi_id) for item in sorted(tour.items, key=lambda i: i.order_index) if item.poi_id]
+        tours_data.append(tour_dict)
+        
+        # Медиа тура
+        for m in tour.media:
+            if m.url:
+                assets.append({
+                    "id": str(m.id),
+                    "url": sign_asset_url(m.url),
+                    "type": m.media_type or "image",
+                    "owner_type": "tour",
+                    "owner_id": str(tour.id)
+                })
+    
+    # Кэшируем на 5 минут
+    response.headers["Cache-Control"] = "public, max-age=300"
+    
+    return {
+        "city": city.model_dump(include={'id', 'slug', 'name_ru', 'name_en'}),
+        "pois": pois_data,
+        "tours": tours_data,
+        "assets": assets,
+        "total_assets": len(assets)
+    }
+
 
 # --- Itineraries ---
 

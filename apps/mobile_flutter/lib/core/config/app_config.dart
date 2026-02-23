@@ -45,10 +45,10 @@ class AppConfig {
 @riverpod
 AppConfig appConfig(Ref ref) {
   // In a real app, you might get this from String.fromEnvironment('FLAVOR')
-  const flavorName = String.fromEnvironment('FLAVOR', defaultValue: 'dev');
+  const flavorName = String.fromEnvironment('FLAVOR', defaultValue: 'staging');
   final flavor = AppFlavor.values.firstWhere(
     (e) => e.name == flavorName,
-    orElse: () => AppFlavor.dev,
+    orElse: () => AppFlavor.staging,
   );
   return AppConfig.fromFlavor(flavor);
 }

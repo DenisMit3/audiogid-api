@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
+import 'package:mobile_flutter/data/repositories/city_repository.dart';
 import 'package:mobile_flutter/data/services/sync_service.dart';
+import 'package:mobile_flutter/domain/entities/city.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 
 class CitySelectScreen extends ConsumerStatefulWidget {
@@ -56,6 +58,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final citiesStream = ref.watch(cityRepositoryProvider).watchCities();
 
     return Scaffold(
       body: Container(
@@ -82,7 +85,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Spacer(flex: 2),
+                      const SizedBox(height: AppSpacing.xl),
                       
                       // App icon with animation
                       AnimatedContent(
@@ -94,14 +97,14 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.headphones_outlined,
+                            Icons.location_city_outlined,
                             size: context.responsive(
-                              smallPhone: 60.0,
-                              phone: 80.0,
-                              tablet: 100.0,
+                              smallPhone: 48.0,
+                              phone: 64.0,
+                              tablet: 80.0,
                             ),
                             color: colorScheme.primary,
-                            semanticLabel: 'Иконка аудиогида',
+                            semanticLabel: 'Выбор города',
                           ),
                         ),
                       ),
@@ -118,7 +121,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                         child: Column(
                           children: [
                             AccessibleHeader(
-                              text: 'Добро пожаловать в\nАудиогид',
+                              text: 'Выберите город',
                               level: 1,
                               style: textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -126,9 +129,9 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                                 height: 1.2,
                               ),
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
-                              'Выберите регион для начала путешествия',
+                              'Для начала путешествия',
                               textAlign: TextAlign.center,
                               style: textTheme.bodyLarge?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
@@ -138,50 +141,114 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                         ),
                       ),
                       
-                      const Spacer(flex: 2),
+                      const SizedBox(height: AppSpacing.xl),
                       
-                      // City selection buttons
-                      AnimatedContent(
-                        delay: const Duration(milliseconds: 300),
-                        child: _CityButton(
-                          title: 'Калининград',
-                          subtitle: 'Городской гид',
-                          slug: 'kaliningrad_city',
-                          icon: Icons.location_city_outlined,
-                          isLoading: _isLoading && _selectedSlug == 'kaliningrad_city',
-                          onTap: () => _selectCity('kaliningrad_city'),
+                      // City list from API
+                      Expanded(
+                        child: StreamBuilder<List<City>>(
+                          stream: citiesStream,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting && 
+                                !snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: colorScheme.error,
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    Text(
+                                      'Ошибка загрузки городов',
+                                      style: textTheme.bodyLarge,
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    TextButton(
+                                      onPressed: () => setState(() {}),
+                                      child: const Text('Повторить'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            final cities = snapshot.data ?? [];
+                            
+                            if (cities.isEmpty) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.location_off_outlined,
+                                      size: 48,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    Text(
+                                      'Нет доступных городов',
+                                      style: textTheme.bodyLarge?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    TextButton(
+                                      onPressed: () => setState(() {}),
+                                      child: const Text('Обновить'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            // Фильтруем только активные города
+                            final activeCities = cities.where((c) => c.isActive).toList();
+
+                            return ListView.separated(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                              itemCount: activeCities.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                              itemBuilder: (context, index) {
+                                final city = activeCities[index];
+                                return AnimatedContent(
+                                  delay: Duration(milliseconds: 300 + (index * 100)),
+                                  child: _CityButton(
+                                    title: city.nameRu,
+                                    subtitle: _getCitySubtitle(city.slug),
+                                    slug: city.slug,
+                                    icon: _getCityIcon(city.slug),
+                                    isLoading: _isLoading && _selectedSlug == city.slug,
+                                    onTap: () => _selectCity(city.slug),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
-                      
-                      const SizedBox(height: AppSpacing.md),
-                      
-                      AnimatedContent(
-                        delay: const Duration(milliseconds: 400),
-                        child: _CityButton(
-                          title: 'Калининградская область',
-                          subtitle: 'Пригородные маршруты',
-                          slug: 'kaliningrad_oblast',
-                          icon: Icons.landscape_outlined,
-                          isLoading: _isLoading && _selectedSlug == 'kaliningrad_oblast',
-                          onTap: () => _selectCity('kaliningrad_oblast'),
-                        ),
-                      ),
-                      
-                      const Spacer(flex: 3),
                       
                       // Terms text
                       AnimatedContent(
                         delay: const Duration(milliseconds: 500),
-                        child: Text(
-                          'Продолжая, вы соглашаетесь с условиями использования и политикой конфиденциальности',
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                          child: Text(
+                            'Продолжая, вы соглашаетесь с условиями использования',
+                            textAlign: TextAlign.center,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            ),
                           ),
                         ),
                       ),
-                      
-                      const SizedBox(height: AppSpacing.lg),
                     ],
                   ),
                 ),
@@ -191,6 +258,32 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
         ),
       ),
     );
+  }
+
+  String _getCitySubtitle(String slug) {
+    switch (slug) {
+      case 'kaliningrad_city':
+        return 'Городской гид';
+      case 'kaliningrad_oblast':
+        return 'Пригородные маршруты';
+      case 'nizhny_novgorod':
+        return 'Волжская жемчужина';
+      default:
+        return 'Аудиогид по городу';
+    }
+  }
+
+  IconData _getCityIcon(String slug) {
+    switch (slug) {
+      case 'kaliningrad_city':
+        return Icons.location_city_outlined;
+      case 'kaliningrad_oblast':
+        return Icons.landscape_outlined;
+      case 'nizhny_novgorod':
+        return Icons.water_outlined;
+      default:
+        return Icons.place_outlined;
+    }
   }
 
   Future<void> _selectCity(String slug) async {
@@ -287,7 +380,7 @@ class _CityButtonState extends State<_CityButton>
     return Semantics(
       button: true,
       label: '${widget.title}, ${widget.subtitle}',
-      hint: 'Нажмите чтобы выбрать этот регион',
+      hint: 'Нажмите чтобы выбрать этот город',
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: GestureDetector(

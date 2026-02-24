@@ -70,7 +70,7 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.CLOUDRU_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "${{ secrets.CLOUDRU_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 82.202.159.64 >> ~/.ssh/known_hosts
 

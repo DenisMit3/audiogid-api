@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Header
 from sqlmodel import Session, text, select
 from .core.database import engine
 
-# Deploy trigger: 2026-02-24T17:35
+# Deploy trigger: 2026-02-24T17:40
 router = APIRouter()
 
 # Минимальные версии приложений для работы

@@ -61,8 +61,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2847,
         "lon": 43.9892,
-        "address": "ул. Ярошенко, д. 7Б, Нижний Новгород",
-        "status": "published"
+        "address": "ул. Ярошенко, д. 7Б, Нижний Новгород"
     },
     {
         "slug": "limpopo_tigers",
@@ -73,8 +72,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2852,
         "lon": 43.9898,
-        "address": "Зоопарк Лимпопо, территория",
-        "status": "published"
+        "address": "Зоопарк Лимпопо, территория"
     },
     {
         "slug": "limpopo_petting",
@@ -85,8 +83,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2855,
         "lon": 43.9885,
-        "address": "Зоопарк Лимпопо, контактная зона",
-        "status": "published"
+        "address": "Зоопарк Лимпопо, контактная зона"
     },
     {
         "slug": "limpopo_amazonia",
@@ -97,8 +94,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2849,
         "lon": 43.9880,
-        "address": "Зоопарк Лимпопо, комплекс Амазония",
-        "status": "published"
+        "address": "Зоопарк Лимпопо, комплекс Амазония"
     },
     {
         "slug": "limpopo_giraffes",
@@ -109,8 +105,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2858,
         "lon": 43.9895,
-        "address": "Зоопарк Лимпопо, африканская зона",
-        "status": "published"
+        "address": "Зоопарк Лимпопо, африканская зона"
     },
     {
         "slug": "limpopo_primates",
@@ -121,8 +116,7 @@ POIS_LIMPOPO = [
         "category": "attraction",
         "lat": 56.2845,
         "lon": 43.9890,
-        "address": "Зоопарк Лимпопо, дом приматов",
-        "status": "published"
+        "address": "Зоопарк Лимпопо, дом приматов"
     }
 ]
 
@@ -133,9 +127,7 @@ TOUR_LIMPOPO = {
     "description_ru": "Увлекательная прогулка по зоопарку Лимпопо в Нижнем Новгороде. Вы увидите бенгальских тигров, жирафов, обезьян и многих других животных. Особенно понравится детям контактная площадка. Продолжительность: около 2 часов.",
     "description_en": "An exciting walk through Limpopo Zoo in Nizhny Novgorod.",
     "duration_minutes": 120,
-    "tour_type": "walking",
-    "difficulty": "easy",
-    "status": "published"
+    "tour_type": "walking"
 }
 
 TOUR_TRANSITIONS = [
@@ -169,6 +161,18 @@ ENTITLEMENTS = [
         "is_active": True
     }
 ]
+
+# Бесплатный entitlement для тура (создается отдельно после создания тура)
+TOUR_FREE_ENTITLEMENT = {
+    "slug": "limpopo_zoo_walk_free",
+    "scope": "tour",
+    # ref будет установлен как tour_id после создания тура
+    "title_ru": "Бесплатный доступ к туру Зоопарк Лимпопо",
+    "title_en": "Free access to Limpopo Zoo tour",
+    "price_amount": 0.0,
+    "price_currency": "RUB",
+    "is_active": True
+}
 
 # =============================================================================
 # Функции
@@ -239,14 +243,23 @@ def seed_pois(session, city_id):
         poi_id = str(uuid.uuid4())
         
         session.execute(text("""
-            INSERT INTO poi (id, city_id, slug, title_ru, title_en, description_ru, description_en,
-                            category, lat, lon, address, status, created_at, updated_at)
-            VALUES (:id, :city_id, :slug, :title_ru, :title_en, :description_ru, :description_en,
-                    :category, :lat, :lon, :address, :status, :created_at, :updated_at)
+            INSERT INTO poi (id, city_slug, slug, title_ru, title_en, description_ru, description_en,
+                            category, lat, lon, address, published_at, created_at, updated_at)
+            VALUES (:id, :city_slug, :slug, :title_ru, :title_en, :description_ru, :description_en,
+                    :category, :lat, :lon, :address, :published_at, :created_at, :updated_at)
         """), {
             "id": poi_id,
-            "city_id": city_id,
-            **poi,
+            "city_slug": CITY_NIZHNY["slug"],
+            "slug": poi["slug"],
+            "title_ru": poi["title_ru"],
+            "title_en": poi["title_en"],
+            "description_ru": poi["description_ru"],
+            "description_en": poi["description_en"],
+            "category": poi["category"],
+            "lat": poi["lat"],
+            "lon": poi["lon"],
+            "address": poi["address"],
+            "published_at": now,
             "created_at": now,
             "updated_at": now
         })
@@ -272,14 +285,21 @@ def seed_tour(session, city_id, poi_ids):
     now = datetime.utcnow()
     
     session.execute(text("""
-        INSERT INTO tour (id, city_id, slug, title_ru, title_en, description_ru, description_en,
-                         duration_minutes, tour_type, difficulty, status, created_at, updated_at)
-        VALUES (:id, :city_id, :slug, :title_ru, :title_en, :description_ru, :description_en,
-                :duration_minutes, :tour_type, :difficulty, :status, :created_at, :updated_at)
+        INSERT INTO tour (id, city_slug, slug, title_ru, title_en, description_ru, description_en,
+                         duration_minutes, tour_type, published_at, created_at, updated_at)
+        VALUES (:id, :city_slug, :slug, :title_ru, :title_en, :description_ru, :description_en,
+                :duration_minutes, :tour_type, :published_at, :created_at, :updated_at)
     """), {
         "id": tour_id,
-        "city_id": city_id,
-        **TOUR_LIMPOPO,
+        "city_slug": CITY_NIZHNY["slug"],
+        "slug": TOUR_LIMPOPO["slug"],
+        "title_ru": TOUR_LIMPOPO["title_ru"],
+        "title_en": TOUR_LIMPOPO["title_en"],
+        "description_ru": TOUR_LIMPOPO["description_ru"],
+        "description_en": TOUR_LIMPOPO["description_en"],
+        "duration_minutes": TOUR_LIMPOPO["duration_minutes"],
+        "tour_type": TOUR_LIMPOPO["tour_type"],
+        "published_at": now,
         "created_at": now,
         "updated_at": now
     })
@@ -339,6 +359,38 @@ def seed_entitlements(session):
         
         print(f"   OK: Entitlement '{ent['slug']}' создан")
 
+def seed_tour_free_entitlement(session, tour_id):
+    """Создать бесплатный entitlement для тура"""
+    print("\n6. Создание бесплатного entitlement для тура...")
+    
+    if check_exists(session, "entitlement", "slug", TOUR_FREE_ENTITLEMENT["slug"]):
+        print(f"   SKIP: Entitlement '{TOUR_FREE_ENTITLEMENT['slug']}' уже существует")
+        return
+    
+    now = datetime.utcnow()
+    ent_id = str(uuid.uuid4())
+    
+    session.execute(text("""
+        INSERT INTO entitlement (id, slug, scope, ref, title_ru, title_en,
+                                price_amount, price_currency, is_active, created_at, updated_at)
+        VALUES (:id, :slug, :scope, :ref, :title_ru, :title_en,
+                :price_amount, :price_currency, :is_active, :created_at, :updated_at)
+    """), {
+        "id": ent_id,
+        "slug": TOUR_FREE_ENTITLEMENT["slug"],
+        "scope": TOUR_FREE_ENTITLEMENT["scope"],
+        "ref": tour_id,
+        "title_ru": TOUR_FREE_ENTITLEMENT["title_ru"],
+        "title_en": TOUR_FREE_ENTITLEMENT["title_en"],
+        "price_amount": TOUR_FREE_ENTITLEMENT["price_amount"],
+        "price_currency": TOUR_FREE_ENTITLEMENT["price_currency"],
+        "is_active": TOUR_FREE_ENTITLEMENT["is_active"],
+        "created_at": now,
+        "updated_at": now
+    })
+    
+    print(f"   OK: Бесплатный entitlement для тура создан")
+
 def main():
     """Основная функция"""
     print("=" * 60)
@@ -355,6 +407,7 @@ def main():
         poi_ids = seed_pois(session, city_id)
         tour_id = seed_tour(session, city_id, poi_ids)
         seed_entitlements(session)
+        seed_tour_free_entitlement(session, tour_id)
         
         # Коммитим транзакцию
         session.commit()
@@ -365,7 +418,7 @@ def main():
         print(f"Город: {CITY_NIZHNY['name_ru']} (ID: {city_id})")
         print(f"POI создано: {len(poi_ids)}")
         print(f"Тур: {TOUR_LIMPOPO['title_ru']} (ID: {tour_id})")
-        print(f"Entitlements: {len(ENTITLEMENTS)}")
+        print(f"Entitlements: {len(ENTITLEMENTS) + 1}")
         print("=" * 60)
         
     except Exception as e:

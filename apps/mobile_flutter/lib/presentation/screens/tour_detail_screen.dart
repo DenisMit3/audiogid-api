@@ -28,6 +28,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
   bool _isMultiSelectMode = false;
   bool _isBuying = false;
   final Set<String> _selectedPoiIds = {};
+  bool _syncTriggered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -39,14 +40,22 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
     return StreamBuilder<Tour?>(
       stream: tourStream,
       builder: (context, snapshot) {
+        // #region agent log
+        print('[DEBUG f46abe] TourDetailScreen: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, tour items=${snapshot.data?.items?.length}');
+        // #endregion
+        
+        // Всегда запускаем syncTourDetail при первом build, чтобы загрузить POI
+        if (!_syncTriggered) {
+          _syncTriggered = true;
+          ref.read(tourRepositoryProvider).syncTourDetail(widget.tourId, selectedCity).ignore();
+        }
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         
         final tour = snapshot.data;
         if (tour == null) {
-          // Trigger sync if not found
-          ref.read(tourRepositoryProvider).syncTourDetail(widget.tourId, selectedCity).ignore();
           return const Scaffold(body: Center(child: Text('Загрузка деталей тура...')));
         }
 

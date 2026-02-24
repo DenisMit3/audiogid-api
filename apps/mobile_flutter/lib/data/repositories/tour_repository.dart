@@ -141,8 +141,14 @@ class OfflineTourRepository implements TourRepository {
 
   @override
   Future<void> syncTourDetail(String id, String citySlug) async {
+    // #region agent log
+    print('[DEBUG f46abe] syncTourDetail: started for tourId=$id, citySlug=$citySlug');
+    // #endregion
     try {
       final deviceId = await _deviceId;
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail: deviceId=$deviceId, calling /public/tours/$id/manifest');
+      // #endregion
       
       // Вызываем GET /public/tours/{tour_id}/manifest
       final response = await _dio.get(
@@ -153,11 +159,29 @@ class OfflineTourRepository implements TourRepository {
         },
       );
 
-      if (response.statusCode != 200) return;
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail: response status=${response.statusCode}');
+      // #endregion
+
+      if (response.statusCode != 200) {
+        // #region agent log
+        print('[DEBUG f46abe] syncTourDetail: non-200 response, returning');
+        // #endregion
+        return;
+      }
 
       final data = response.data as Map<String, dynamic>;
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail: data keys=${data.keys.toList()}');
+      // #endregion
+      
       final tourData = data['tour'] as Map<String, dynamic>;
       final poisData = data['pois'] as List<dynamic>;
+      
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail: tourData=$tourData');
+      print('[DEBUG f46abe] syncTourDetail: poisData count=${poisData.length}');
+      // #endregion
 
       // Обновляем тур
       final tourComp = ToursCompanion(
@@ -174,6 +198,10 @@ class OfflineTourRepository implements TourRepository {
         final poiData = poisData[i] as Map<String, dynamic>;
         final poiId = poiData['id'] as String;
         final orderIndex = poiData['order_index'] as int? ?? i;
+        
+        // #region agent log
+        print('[DEBUG f46abe] syncTourDetail: processing POI $i: id=$poiId, title=${poiData['title_ru']}');
+        // #endregion
 
         // Upsert POI
         final poiComp = PoisCompanion(
@@ -197,8 +225,14 @@ class OfflineTourRepository implements TourRepository {
         await _db.tourDao.upsertTourItem(itemComp);
       }
 
-      print('Sync Tour Detail for $id: success, ${poisData.length} POIs');
-    } catch (e) {
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail: SUCCESS, ${poisData.length} POIs synced');
+      // #endregion
+    } catch (e, stack) {
+      // #region agent log
+      print('[DEBUG f46abe] syncTourDetail ERROR: $e');
+      print('[DEBUG f46abe] syncTourDetail STACK: $stack');
+      // #endregion
       final appError = ApiErrorMapper.map(e);
       print('Sync Tour Detail Error: ${appError.message}');
     }

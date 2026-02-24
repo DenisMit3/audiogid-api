@@ -2,6 +2,11 @@
 const nextConfig = {
     assetPrefix: process.env.CDN_URL || '',
     swcMinify: false,
+    
+    // Force unique build ID to bust browser cache
+    generateBuildId: async () => {
+        return `build-${Date.now()}`;
+    },
 
     images: {
         remotePatterns: [

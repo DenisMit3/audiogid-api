@@ -1,26 +1,16 @@
-I have the following user query that I want you to help me with. Please implement the requested functionality following best practices.
+# PROJECT STATUS - Audio Guide 2026
 
-Добавить Museum Mode для музейных экспонатов:
-
-- Доработать `c:\Users\Denis\Desktop\vse boty\Audiogid\apps\mobile_flutter\lib\presentation\screens\qr_scanner_screen.dart`
-- Интеграция с `mobile_scanner` (уже в dependencies)
-- Реализовать resolve QR кода в POI через API endpoint `/public/qr/resolve`
-- Добавить автоматическое воспроизведение narration после сканирования
-- Поддержка offline режима (если POI скачан в offline bundle)
-- Обработка ошибок: неизвестный QR, нет доступа к POI, нет интернета
-- UI для сканирования с подсказками и feedback# PROJECT STATUS — Audio Guide 2026
-
-**Date:** 2026-01-30  
+**Последнее обновление:** 2026-02-24  
 **Version:** 1.13.0 (API)
 
 ## 1. Обзор проекта
 Проект представляет собой аудиогид нового поколения с оффлайн-режимом (Offline First).
 
 **Архитектура:**
-- **Mobile:** Flutter (iOS/Android) — чистая архитектура, Drift (offline DB), Provider/BloC.
-- **Backend:** FastAPI (Python) — асинхронный, PostgreSQL + PostGIS, Redis.
-- **Admin Panel:** Next.js (Admin Dashboard) — управление контентом, медиа и пользователями.
-- **Infrastructure:** Vercel (Web/API), GitHub Actions (CI/CD).
+- **Mobile:** Flutter (iOS/Android) - чистая архитектура, Drift (offline DB), Riverpod.
+- **Backend:** FastAPI (Python) - асинхронный, PostgreSQL + PostGIS.
+- **Admin Panel:** Next.js (Admin Dashboard) - управление контентом, медиа и пользователями.
+- **Infrastructure:** Cloud.ru (API + Admin), GitHub Actions (CI/CD).
 
 ---
 
@@ -30,9 +20,10 @@ I have the following user query that I want you to help me with. Please implemen
 Покрытие endpoints согласно `openapi.yaml`:
 - **Public:** `GET /public/cities`, `GET /public/catalog`, `GET /public/poi/{id}`, `GET /public/tours`
 - **Auth:** `POST /auth/login/sms/init` & `verify`, `POST /auth/login/telegram`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`
-- **Billing:** `POST /billing/batch-purchase` (new), `POST /billing/apple/verify`, `POST /billing/google/verify`, `GET /billing/entitlements`, `POST /billing/restore`
+- **Billing:** `POST /billing/batch-purchase`, `POST /billing/apple/verify`, `POST /billing/google/verify`, `GET /billing/entitlements`, `POST /billing/restore`
 - **Account:** `POST /public/account/delete/request`, `GET /public/account/delete/status`
 - **Offline:** `POST /offline/bundles:build`, `GET /offline/bundles/{job_id}`
+- **Ops:** `/ops/health`, `/ops/ready`, `/ops/commit`, version check endpoint
 - **Pervasive:** Fail-closed caching (`ETag`, `Cache-Control`), Rate Limiting.
 
 ### ✅ Mobile App
@@ -48,14 +39,16 @@ I have the following user query that I want you to help me with. Please implemen
 - `QrScannerScreen` (Museum mode)
 - `SettingsScreen` (Profile, Deletion)
 - `FavoritesScreen`
+- `TourModeScreen` (Навигация по туру)
+- `OfflineManagerScreen` (Управление offline данными)
 
 ### ✅ Admin Panel
 Функционал (`apps/admin/app/(panel)`):
-- **Content:** POI & Tour Management
+- **Content:** POI & Tour Management, Route Builder с drag-n-drop
 - **Cities:** Tenant management
-- **Media:** Presigned uploads, Gallery
+- **Media:** Presigned uploads, Gallery, Cover image uploader
 - **Users:** User management, Permissions
-- **Jobs:** Background job monitoring
+- **Jobs:** Background job monitoring (WebSocket)
 - **Analytics:** Dashboarding
 - **Audit:** Action logs
 
@@ -70,63 +63,75 @@ I have the following user query that I want you to help me with. Please implemen
 ### ✅ CI/CD
 Workflows (`.github/workflows`):
 - `flutter.yml`: Build & Test Android/iOS
-- `deploy-api.yml`: Deploy to Vercel
+- `deploy-api.yml`: Deploy to Cloud.ru
 - `admin.yml`: Build Admin Panel
 - `api-contract-check.yml`: Ensure OpenAPI compatibility
 - `integration_test.yml`: E2E Testing
 
 ---
 
-## 3. Недостающие функции (Gap Analysis)
-Согласно `docs/prompt/PRODUCT.md`:
+## 3. Статус функций (Gap Analysis)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| **Tour Mode** | ✅ Done | Реализован полный цикл навигации, авто-плей, оффлайн prompt и notifications. |
-| **Free Walking Mode** | ❌ Missing | Режим "hands-free" прогулки с авто-воспроизведением не реализован. |
-| **Museum Mode** | ✅ Done | QR код сканирование, API resolve, offline fallback, авто-плей реализованы. |
-| **Itineraries** | 🚧 Partial | Экран есть, но создание маршрутов и шеринг (Deep Links) требуют полировки (Deep Links v2). |
-| **Kids Mode** | ❌ Missing | Отдельный режим/контент для детей отсутствует. |
-| **SOS / Share** | ❌ Missing | Функция шеринга геолокации не найдена. |
+| **Tour Mode** | ✅ Done | Полный цикл навигации, авто-плей, оффлайн, notifications |
+| **Free Walking Mode** | ❌ Missing | Режим "hands-free" прогулки не реализован |
+| **Museum Mode** | ✅ Done | QR сканирование, API resolve, offline fallback, авто-плей |
+| **Itineraries** | 🚧 Partial | Экран есть, Deep Links v2 требует полировки |
+| **Kids Mode** | ❌ Missing | Отдельный контент для детей отсутствует |
+| **SOS / Share** | ❌ Missing | Функция шеринга геолокации не реализована |
+| **Route Builder** | ✅ Done | Расчет расстояний, drag-n-drop маркеры |
+| **Offline Manifests** | ✅ Done | Endpoint для ресурсов города |
+| **Version Check** | ✅ Done | Endpoint проверки версии приложения |
 
 ---
 
 ## 4. Готовность к релизу
 
 ### Android
-- **Signing:** Ready (`signingConfigs.release` configured with keystore & env vars).
-- **Flavors:** `dev`, `staging`, `prod` configured.
-- **Build:** Gradle build scripts configured properly.
+- **Signing:** Ready (`signingConfigs.release` configured)
+- **Flavors:** `dev`, `staging`, `prod` configured
+- **Build:** Gradle build scripts configured properly
 
 ### iOS
-- **Config:** Требуется проверка наличия `ExportOptions.plist` и сертификатов в секретах CI.
-- **Capabilities:** Background Audio, Location Updates должны быть включены в `Info.plist`.
+- **Config:** `ExportOptions.plist` и сертификаты в секретах CI
+- **Capabilities:** Background Audio, Location Updates в `Info.plist`
 
 ### Store Compliance
-- **Account Deletion:** ✅ Реализовано (API + In-App Request).
-- **Privacy Policy:** ✅ Документ есть (`docs/privacy-policy.md`), ссылка в приложении нужна.
-- **Permissions:** Проверить `permission_handler` и строки объяснений в `Info.plist` / `AndroidManifest.xml`.
+- **Account Deletion:** ✅ Реализовано (API + In-App Request)
+- **Privacy Policy:** ✅ Документ есть (`docs/privacy-policy.md`)
+- **Permissions:** `permission_handler` настроен
 
 ### Тестирование
-- **Unit Tests:** Присутствуют (`tests/`).
-- **Integration Tests:** Настроены (`integration_test.yml`).
+- **Unit Tests:** Присутствуют (`tests/`)
+- **Integration Tests:** Настроены (`integration_test.yml`)
 
 ---
 
-## 5. Roadmap (MVP Completion)
+## 5. Roadmap
 
-**P0: Critical (Release Blockers)**
-1. **Tour Mode Logic:** ✅ Готово.
-2. **Deep Links:** Убедиться, что `dl/city/{slug}` и `dl/tour/{id}` открывают нужные экраны.
-3. **Store Assets:** Сгенерировать финальные иконки и скриншоты (Fastlane/Flutter Launcher Icons).
-4. **Smoke Test:** Пройти полный путь "Install -> Select City -> Buy Tour -> Download Offline -> Walk".
+**P0: Critical (Release Blockers)** - ВСЕ ГОТОВО ✅
+1. ✅ Tour Mode Logic
+2. ✅ Deep Links базовые
+3. ✅ Store Assets
+4. ⏳ Smoke Test на устройствах
 
 **P1: Desirable (Enhancements)**
-1. **Free Walking Mode:** Реализовать базовый алгоритм авто-плея.
-2. **Analytics Polish:** Убедиться, что воронка продаж отображается корректно.
-3. **Kids Mode:** Добавить хотя бы фильтр/тоггл для детского контента.
+1. ❌ Free Walking Mode - базовый алгоритм авто-плея
+2. ✅ Analytics - воронка продаж
+3. ❌ Kids Mode - фильтр детского контента
 
 **P2: Post-MVP**
-1. SOS Features.
-2. Advanced Itinerary Sharing.
-3. Web Payment flow enhancement.
+1. SOS Features
+2. Advanced Itinerary Sharing (Deep Links v2)
+3. Web Payment flow enhancement
+
+---
+
+## 6. Последние изменения (2026-02-24)
+- Route Builder улучшен с расчетом расстояний
+- Миграция на локальный PostgreSQL на Cloud.ru
+- Удалены все API заглушки в мобильном приложении
+- Добавлен endpoint проверки версии приложения
+- Исправлена аутентификация и URL админ-панели
+- Добавлен offline manifest для ресурсов города

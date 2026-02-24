@@ -1,7 +1,12 @@
 # API Contract & Caching Policy
 
+**Последнее обновление:** 2026-02-24
+
 ## Каноническая спецификация
 Файл [openapi.yaml](../apps/api/openapi.yaml) является единственным источником истины.
+
+**Текущая версия API:** 1.13.0  
+**Production Server:** http://82.202.159.64:8000/v1
 
 ## Политика кеширования (Caching Safety)
 Для обеспечения производительности и безопасности в Serverless среде применяются следующие правила:
@@ -28,3 +33,39 @@
 2. Перегенерировать SDK в `packages/api_client`.
 3. Закоммитить изменения.
 4. CI проверит соответствие через `fail-on-diff`.
+
+## Основные Endpoints
+
+### Public API
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/public/cities` | GET | Список активных городов |
+| `/public/catalog` | GET | Каталог туров для города |
+| `/public/poi/{id}` | GET | Детали POI с проверкой доступа |
+| `/public/tours` | GET | Туры для города |
+| `/public/nearby` | GET | Ближайшие POI (PostGIS KNN) |
+
+### Auth API
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/auth/login/sms/init` | POST | Инициация SMS авторизации |
+| `/auth/login/sms/verify` | POST | Верификация SMS кода |
+| `/auth/login/telegram` | POST | Telegram Login Widget |
+| `/auth/refresh` | POST | Обновление токенов |
+| `/auth/logout` | POST | Выход |
+
+### Billing API
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/billing/apple/verify` | POST | Верификация Apple Receipt |
+| `/billing/google/verify` | POST | Верификация Google Purchase |
+| `/billing/entitlements` | GET | Активные права доступа |
+| `/billing/restore` | POST | Восстановление покупок |
+| `/billing/batch-purchase` | POST | Batch проверка SKU |
+
+### Ops API
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/ops/health` | GET | Liveness probe |
+| `/ops/ready` | GET | Readiness probe |
+| `/ops/commit` | GET | Deployed commit info |

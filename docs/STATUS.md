@@ -2,6 +2,8 @@
 
 Living document tracking the implementation status of features defined in `PRODUCT.md` and `FIX_DEPLOY_PLAN.md`.
 
+**Последнее обновление:** 2026-02-24
+
 ## Legend
 - ✅ **Done**: Implemented, tested, and merged.
 - 🚧 **In Progress**: Currently being developed.
@@ -72,3 +74,13 @@ Living document tracking the implementation status of features defined in `PRODU
 1. **Production Deployment**: Deploy API to production env, release mobile app to TestFlight/Closed Testing.
 2. **User Testing**: Validate Tour Mode in real-world conditions.
 3. **Analytics**: Verify data events in Firebase/PostHog.
+
+---
+
+## Recent Changes (2026-02-24)
+- ✅ Route Builder улучшен с расчетом расстояний и drag-n-drop маркерами
+- ✅ Миграция на локальный PostgreSQL на Cloud.ru завершена
+- ✅ Удалены все API заглушки в мобильном приложении
+- ✅ Добавлен endpoint проверки версии приложения
+- ✅ Исправлена аутентификация и URL админ-панели
+- ✅ Добавлен offline manifest для ресурсов города

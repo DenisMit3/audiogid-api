@@ -12,25 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Run Migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          cd apps/api
-          pip install -r requirements.txt
-          alembic upgrade head
 
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.CLOUDRU_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.CLOUDRU_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 82.202.159.64 >> ~/.ssh/known_hosts
 
       - name: Deploy API to Cloud.ru
@@ -46,6 +33,9 @@ jobs:
             --exclude '.env' \
             --exclude 'venv' \
             apps/api/ ${USER}@${SERVER}:${APP_DIR}/api/
+          
+          # Run migrations on server (DB is local on Cloud.ru)
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && alembic upgrade head"
           
           # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"

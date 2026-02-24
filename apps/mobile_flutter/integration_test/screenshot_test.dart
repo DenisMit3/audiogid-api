@@ -16,12 +16,12 @@ void main() {
 
     // Wait for data to load
     await tester.pumpAndSettle();
-    
+
     // Screenshot: City Selection / Home
     if (Platform.isAndroid) {
-        await binding.convertFlutterSurfaceToImage();
-        await tester.pumpAndSettle();
-        await binding.takeScreenshot('01_home_screen');
+      await binding.convertFlutterSurfaceToImage();
+      await tester.pumpAndSettle();
+      await binding.takeScreenshot('01_home_screen');
     }
 
     // 2. Click on a city (assuming 'Kaliningrad' or first item is visible)
@@ -31,22 +31,22 @@ void main() {
     if (cityFinder.evaluate().isNotEmpty) {
       await tester.tap(cityFinder);
       await tester.pumpAndSettle(const Duration(seconds: 2));
-      
+
       // Screenshot: Tours List
       if (Platform.isAndroid) {
-         await binding.takeScreenshot('02_tours_list');
+        await binding.takeScreenshot('02_tours_list');
       }
-      
+
       // 3. Click on a Tour
       final tourFinder = find.byType(Card).first;
       if (tourFinder.evaluate().isNotEmpty) {
         await tester.tap(tourFinder);
         await tester.pumpAndSettle(const Duration(seconds: 2));
-        
+
         // Screenshot: Tour Detail
-          if (Platform.isAndroid) {
-             await binding.takeScreenshot('03_tour_detail');
-          }
+        if (Platform.isAndroid) {
+          await binding.takeScreenshot('03_tour_detail');
+        }
       }
     }
   });

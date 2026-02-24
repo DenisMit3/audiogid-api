@@ -23,11 +23,11 @@ void main() {
     // Verify critical UI elements are present
     // Assuming the first screen allows selecting a city or shows a list
     // or at least doesn't crash.
-    
+
     // Check if we are on CitySelectScreen or HomeScreen
     // Just finding a common widget like a Scaffold or specific text.
     expect(find.byType(MaterialApp), findsOneWidget);
-    
+
     // Example flow from FIX.md
     /*
     // 1. Select City
@@ -45,7 +45,7 @@ void main() {
     // 4. Verify Map
     expect(find.byType(FlutterMap), findsOneWidget);
     */
-    
+
     // Since we can't guarantee data availability in this environment setup,
     // we comment out the specific data dependent steps but keep the structure
     // so the user can uncomment when running on a connected device with data.

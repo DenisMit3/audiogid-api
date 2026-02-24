@@ -35,7 +35,7 @@ jobs:
             apps/api/ ${USER}@${SERVER}:${APP_DIR}/api/
           
           # Run migrations on server (DB is local on Cloud.ru)
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && alembic upgrade head"
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && alembic upgrade head"
           
           # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"

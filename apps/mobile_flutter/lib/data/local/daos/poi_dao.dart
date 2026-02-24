@@ -108,6 +108,11 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
   Future<List<Poi>> getPoisByIds(List<String> ids) {
     return (select(pois)..where((t) => t.id.isIn(ids))).get();
   }
+
+  /// Upsert только базовые поля POI (без narrations/media/sources)
+  Future<void> upsertPoiBasic(PoisCompanion poi) async {
+    await into(pois).insertOnConflictUpdate(poi);
+  }
 }
 
 class PoiWithDetails {

@@ -49,4 +49,4 @@ final class AnalyticsServiceProvider extends $FunctionalProvider<
   }
 }
 
-String _$analyticsServiceHash() => r'5e09a9ed6b1141166bbce190a4bc087ce94fc9bd';
+String _$analyticsServiceHash() => r'6ae7dcaa7b8818ccf87a015a3568a94d45722fbd';

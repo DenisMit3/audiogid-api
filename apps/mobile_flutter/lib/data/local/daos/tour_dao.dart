@@ -56,6 +56,11 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
   Future<void> deleteToursByCity(String citySlug) {
     return (delete(tours)..where((t) => t.citySlug.equals(citySlug))).go();
   }
+
+  /// Upsert одного TourItem (для инкрементального обновления)
+  Future<void> upsertTourItem(TourItemsCompanion item) async {
+    await into(tourItems).insertOnConflictUpdate(item);
+  }
 }
 
 class TourWithItems {

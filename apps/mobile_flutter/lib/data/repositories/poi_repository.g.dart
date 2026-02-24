@@ -48,4 +48,4 @@ final class PoiRepositoryProvider
   }
 }
 
-String _$poiRepositoryHash() => r'6eae529afdee95b161ba4ab274eebdf4dedc5d26';
+String _$poiRepositoryHash() => r'2bf4b27ca791ddc84f368885f4b21d397f667b04';

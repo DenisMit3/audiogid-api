@@ -1,6 +1,8 @@
 import 'package:api_client/api.dart' as api;
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
+import 'package:mobile_flutter/core/config/app_config.dart';
 import 'package:mobile_flutter/core/error/api_error.dart';
 import 'package:mobile_flutter/data/local/app_database.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart' as domain;
@@ -12,8 +14,14 @@ part 'poi_repository.g.dart';
 class OfflinePoiRepository implements PoiRepository {
   final api.PublicApi _api;
   final AppDatabase _db;
+  final Dio _dio;
 
-  OfflinePoiRepository(this._api, this._db);
+  OfflinePoiRepository(this._api, this._db, String apiBaseUrl)
+      : _dio = Dio(BaseOptions(
+          baseUrl: apiBaseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+        ));
 
   @override
   Stream<domain.Poi?> watchPoi(String id) {
@@ -112,9 +120,55 @@ class OfflinePoiRepository implements PoiRepository {
 
   @override
   Future<void> syncPoisForCity(String citySlug) async {
-    // TODO: API method publicPoiGetWithHttpInfo not available in current api_client
-    // Implement when API client is regenerated
-    print('Sync POIs for city $citySlug: API method not available');
+    try {
+      // Вызываем GET /public/cities/{slug}/pois с пагинацией
+      int page = 1;
+      const perPage = 50;
+      int totalFetched = 0;
+
+      while (true) {
+        final response = await _dio.get(
+          '/public/cities/$citySlug/pois',
+          queryParameters: {
+            'page': page,
+            'per_page': perPage,
+          },
+        );
+
+        if (response.statusCode != 200) break;
+
+        final data = response.data as Map<String, dynamic>;
+        final items = data['items'] as List<dynamic>;
+        final total = data['total'] as int? ?? 0;
+
+        if (items.isEmpty) break;
+
+        // Сохраняем POI в локальную БД
+        for (final item in items) {
+          final poiData = item as Map<String, dynamic>;
+          final poiComp = PoisCompanion(
+            id: Value(poiData['id'] as String),
+            citySlug: Value(citySlug),
+            titleRu: Value(poiData['title_ru'] as String? ?? ''),
+            category: Value(poiData['category'] as String?),
+            lat: Value((poiData['lat'] as num?)?.toDouble() ?? 0.0),
+            lon: Value((poiData['lon'] as num?)?.toDouble() ?? 0.0),
+          );
+          await _db.poiDao.upsertPoiBasic(poiComp);
+        }
+
+        totalFetched += items.length;
+        
+        // Проверяем, есть ли еще страницы
+        if (totalFetched >= total || items.length < perPage) break;
+        page++;
+      }
+
+      print('Sync POIs for city $citySlug: success, $totalFetched POIs');
+    } catch (e) {
+      final appError = ApiErrorMapper.map(e);
+      print('Sync POIs for city Error: ${appError.message}');
+    }
   }
 
   @override
@@ -167,8 +221,10 @@ class OfflinePoiRepository implements PoiRepository {
 
 @riverpod
 PoiRepository poiRepository(Ref ref) {
+  final config = ref.watch(appConfigProvider);
   return OfflinePoiRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),
+    config.apiBaseUrl,
   );
 }

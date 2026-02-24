@@ -48,4 +48,4 @@ final class TourRepositoryProvider
   }
 }
 
-String _$tourRepositoryHash() => r'4d41e6bbf10047dd27f5ecc66187f9406ca6f492';
+String _$tourRepositoryHash() => r'c57893594ecb323b590018adc7ae0b8a24dc180f';

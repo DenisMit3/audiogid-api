@@ -1,7 +1,9 @@
 import 'package:api_client/api.dart' as api;
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:mobile_flutter/core/api/device_id_provider.dart';
+import 'package:mobile_flutter/core/config/app_config.dart';
 import 'package:mobile_flutter/core/error/api_error.dart';
 import 'package:mobile_flutter/data/local/app_database.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart' as domain;
@@ -16,8 +18,14 @@ class OfflineTourRepository implements TourRepository {
   final api.PublicApi _api;
   final AppDatabase _db;
   final Future<String> _deviceId;
+  final Dio _dio;
 
-  OfflineTourRepository(this._api, this._db, this._deviceId);
+  OfflineTourRepository(this._api, this._db, this._deviceId, String apiBaseUrl)
+      : _dio = Dio(BaseOptions(
+          baseUrl: apiBaseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+        ));
 
   @override
   Stream<List<domain.Tour>> watchTours(String citySlug) {
@@ -133,17 +141,77 @@ class OfflineTourRepository implements TourRepository {
 
   @override
   Future<void> syncTourDetail(String id, String citySlug) async {
-    // TODO: API method publicToursTourIdManifestGetWithHttpInfo not available
-    // Implement when API client is regenerated
-    print('Sync Tour Detail for $id: API method not available');
+    try {
+      final deviceId = await _deviceId;
+      
+      // Вызываем GET /public/tours/{tour_id}/manifest
+      final response = await _dio.get(
+        '/public/tours/$id/manifest',
+        queryParameters: {
+          'city': citySlug,
+          'device_anon_id': deviceId,
+        },
+      );
+
+      if (response.statusCode != 200) return;
+
+      final data = response.data as Map<String, dynamic>;
+      final tourData = data['tour'] as Map<String, dynamic>;
+      final poisData = data['pois'] as List<dynamic>;
+
+      // Обновляем тур
+      final tourComp = ToursCompanion(
+        id: Value(tourData['id']),
+        citySlug: Value(tourData['city_slug']),
+        titleRu: Value(tourData['title_ru']),
+        descriptionRu: Value(tourData['description_ru']),
+        durationMinutes: Value(tourData['duration_minutes']),
+      );
+      await _db.tourDao.upsertTours([tourComp]);
+
+      // Обновляем POI и TourItems
+      for (int i = 0; i < poisData.length; i++) {
+        final poiData = poisData[i] as Map<String, dynamic>;
+        final poiId = poiData['id'] as String;
+        final orderIndex = poiData['order_index'] as int? ?? i;
+
+        // Upsert POI
+        final poiComp = PoisCompanion(
+          id: Value(poiId),
+          citySlug: Value(citySlug),
+          titleRu: Value(poiData['title_ru'] ?? ''),
+          descriptionRu: Value(poiData['description_ru']),
+          lat: Value((poiData['lat'] as num?)?.toDouble() ?? 0.0),
+          lon: Value((poiData['lon'] as num?)?.toDouble() ?? 0.0),
+        );
+        await _db.poiDao.upsertPoiBasic(poiComp);
+
+        // Upsert TourItem
+        final itemId = const Uuid().v4();
+        final itemComp = TourItemsCompanion(
+          id: Value(itemId),
+          tourId: Value(id),
+          poiId: Value(poiId),
+          orderIndex: Value(orderIndex),
+        );
+        await _db.tourDao.upsertTourItem(itemComp);
+      }
+
+      print('Sync Tour Detail for $id: success, ${poisData.length} POIs');
+    } catch (e) {
+      final appError = ApiErrorMapper.map(e);
+      print('Sync Tour Detail Error: ${appError.message}');
+    }
   }
 }
 
 @riverpod
 TourRepository tourRepository(Ref ref) {
+  final config = ref.watch(appConfigProvider);
   return OfflineTourRepository(
     ref.watch(publicApiProvider),
     ref.watch(appDatabaseProvider),
     ref.watch(deviceIdProvider.future),
+    config.apiBaseUrl,
   );
 }

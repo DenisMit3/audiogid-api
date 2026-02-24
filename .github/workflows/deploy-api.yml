@@ -42,8 +42,8 @@ jobs:
           # Restart API service (migrations run on startup if needed)
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"
           
-          # Wait and check health
+          # Wait and check health (via nginx on port 80)
           sleep 5
-          curl -f http://${SERVER}:8000/v1/ops/health || exit 1
+          curl -f http://${SERVER}/v1/ops/health || exit 1
           
           echo "API deployed successfully!"

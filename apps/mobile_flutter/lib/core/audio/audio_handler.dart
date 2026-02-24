@@ -18,7 +18,8 @@ class AudiogidAudioHandler extends BaseAudioHandler
       avAudioSessionCategory: AVAudioSessionCategory.playback,
       avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
       avAudioSessionMode: AVAudioSessionMode.defaultMode,
-      avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+      avAudioSessionRouteSharingPolicy:
+          AVAudioSessionRouteSharingPolicy.defaultPolicy,
       avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
       androidAudioAttributes: AndroidAudioAttributes(
         contentType: AndroidAudioContentType.music,
@@ -73,10 +74,10 @@ class AudiogidAudioHandler extends BaseAudioHandler
   @override
   Future<void> play() async {
     if (_player.audioSource == null && queue.value.isNotEmpty) {
-       // Fallback to first item if nothing loaded
-       final item = queue.value.first;
-       mediaItem.add(item);
-       await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
+      // Fallback to first item if nothing loaded
+      final item = queue.value.first;
+      mediaItem.add(item);
+      await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
     }
     await _player.play();
   }
@@ -111,7 +112,7 @@ class AudiogidAudioHandler extends BaseAudioHandler
     if (newIndex >= 0 && newIndex < currentQueue.length) {
       final nextItem = currentQueue[newIndex];
       // Update media item immediately for UI responsiveness
-      this.mediaItem.add(nextItem); 
+      this.mediaItem.add(nextItem);
       // Prepare and play
       try {
         await _player.setAudioSource(AudioSource.uri(Uri.parse(nextItem.id)));
@@ -121,8 +122,8 @@ class AudiogidAudioHandler extends BaseAudioHandler
         print('Error playing audio: $e');
       }
     } else {
-        // End of playlist
-        await stop();
+      // End of playlist
+      await stop();
     }
   }
 
@@ -132,10 +133,10 @@ class AudiogidAudioHandler extends BaseAudioHandler
     final item = queue.value[index];
     mediaItem.add(item);
     try {
-        await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
-        await _player.play();
+      await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
+      await _player.play();
     } catch (e) {
-        print("Error playing item at index $index: $e");
+      print("Error playing item at index $index: $e");
     }
   }
 
@@ -145,16 +146,16 @@ class AudiogidAudioHandler extends BaseAudioHandler
     // If queue is updated and we are playing, make sure we sync?
     // For now simple.
   }
-  
+
   // Custom method to start a specific track
   Future<void> playMediaItem(MediaItem item) async {
-      this.mediaItem.add(item);
-      try {
-          await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
-          await _player.play();
-      } catch (e) {
-          print('Error playing media item: $e');
-      }
+    this.mediaItem.add(item);
+    try {
+      await _player.setAudioSource(AudioSource.uri(Uri.parse(item.id)));
+      await _player.play();
+    } catch (e) {
+      print('Error playing media item: $e');
+    }
   }
 
   void _broadcastState(PlaybackEvent event) {
@@ -182,7 +183,8 @@ class AudiogidAudioHandler extends BaseAudioHandler
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
-      queueIndex: queue.value?.indexWhere((item) => item.id == mediaItem.value?.id),
+      queueIndex:
+          queue.value?.indexWhere((item) => item.id == mediaItem.value?.id),
     ));
   }
 }

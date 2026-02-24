@@ -7,7 +7,8 @@ class EtagInterceptor extends Interceptor {
   EtagInterceptor(this.etagDao);
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+      RequestOptions options, RequestInterceptorHandler handler) async {
     if (options.method == 'GET') {
       final etag = await etagDao.getEtag(options.uri.toString());
       if (etag != null) {

@@ -31,7 +31,7 @@ class MiniPlayer extends ConsumerWidget {
             color: Theme.of(context).cardColor,
             child: InkWell(
               onTap: () {
-                 context.push('/player');
+                context.push('/player');
               },
               child: SizedBox(
                 height: 64,
@@ -44,7 +44,8 @@ class MiniPlayer extends ConsumerWidget {
                           imageUrl: mediaItem.artUri!.toString(),
                           fit: BoxFit.cover,
                           memCacheWidth: 200, // Small for mini player
-                          errorWidget: (_, __, ___) => const Icon(Icons.music_note),
+                          errorWidget: (_, __, ___) =>
+                              const Icon(Icons.music_note),
                         ),
                       )
                     else
@@ -80,31 +81,35 @@ class MiniPlayer extends ConsumerWidget {
                         final playbackState = snapshot.data;
                         final processingState = playbackState?.processingState;
                         final playing = playbackState?.playing ?? false;
-                        
+
                         if (processingState == AudioProcessingState.loading ||
                             processingState == AudioProcessingState.buffering) {
                           return const Padding(
                             padding: EdgeInsets.all(16.0),
                             child: SizedBox(
-                                width: 24, height: 24, child: CircularProgressIndicator()),
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator()),
                           );
                         }
 
                         return IconButton(
                           icon: Icon(playing ? Icons.pause : Icons.play_arrow),
                           onPressed: () {
-                             HapticFeedback.selectionClick();
-                             playing ? audioHandler.pause() : audioHandler.play();
+                            HapticFeedback.selectionClick();
+                            playing
+                                ? audioHandler.pause()
+                                : audioHandler.play();
                           },
                         );
                       },
                     ),
                     IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                           HapticFeedback.selectionClick();
-                           audioHandler.stop();
-                        },
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        audioHandler.stop();
+                      },
                     ),
                   ],
                 ),

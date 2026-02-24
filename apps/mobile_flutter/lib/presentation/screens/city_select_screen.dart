@@ -86,7 +86,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: AppSpacing.xl),
-                      
+
                       // App icon with animation
                       AnimatedContent(
                         delay: const Duration(milliseconds: 100),
@@ -108,13 +108,14 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                           ),
                         ),
                       ),
-                      
-                      SizedBox(height: context.responsive(
+
+                      SizedBox(
+                          height: context.responsive(
                         smallPhone: AppSpacing.md,
                         phone: AppSpacing.lg,
                         tablet: AppSpacing.xl,
                       )),
-                      
+
                       // Welcome text
                       AnimatedContent(
                         delay: const Duration(milliseconds: 200),
@@ -140,15 +141,16 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: AppSpacing.xl),
-                      
+
                       // City list from API
                       Expanded(
                         child: StreamBuilder<List<City>>(
                           stream: citiesStream,
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting && 
+                            if (snapshot.connectionState ==
+                                    ConnectionState.waiting &&
                                 !snapshot.hasData) {
                               return const Center(
                                 child: CircularProgressIndicator(),
@@ -181,7 +183,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                             }
 
                             final cities = snapshot.data ?? [];
-                            
+
                             if (cities.isEmpty) {
                               return Center(
                                 child: Column(
@@ -210,22 +212,27 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                             }
 
                             // Фильтруем только активные города
-                            final activeCities = cities.where((c) => c.isActive).toList();
+                            final activeCities =
+                                cities.where((c) => c.isActive).toList();
 
                             return ListView.separated(
-                              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpacing.lg),
                               itemCount: activeCities.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.md),
                               itemBuilder: (context, index) {
                                 final city = activeCities[index];
                                 return AnimatedContent(
-                                  delay: Duration(milliseconds: 300 + (index * 100)),
+                                  delay: Duration(
+                                      milliseconds: 300 + (index * 100)),
                                   child: _CityButton(
                                     title: city.nameRu,
                                     subtitle: _getCitySubtitle(city.slug),
                                     slug: city.slug,
                                     icon: _getCityIcon(city.slug),
-                                    isLoading: _isLoading && _selectedSlug == city.slug,
+                                    isLoading: _isLoading &&
+                                        _selectedSlug == city.slug,
                                     onTap: () => _selectCity(city.slug),
                                   ),
                                 );
@@ -234,7 +241,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                           },
                         ),
                       ),
-                      
+
                       // Terms text
                       AnimatedContent(
                         delay: const Duration(milliseconds: 500),
@@ -244,7 +251,8 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
                             'Продолжая, вы соглашаетесь с условиями использования',
                             textAlign: TextAlign.center,
                             style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.7),
                             ),
                           ),
                         ),
@@ -290,7 +298,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
     if (_isLoading) return;
 
     HapticFeedback.lightImpact();
-    
+
     setState(() {
       _isLoading = true;
       _selectedSlug = slug;
@@ -298,10 +306,10 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
 
     try {
       await ref.read(selectedCityProvider.notifier).set(slug);
-      
+
       // Trigger initial sync
       ref.read(syncServiceProvider).syncAll(slug).ignore();
-      
+
       if (mounted) {
         context.go('/');
       }
@@ -311,7 +319,7 @@ class _CitySelectScreenState extends ConsumerState<CitySelectScreen>
           _isLoading = false;
           _selectedSlug = null;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Ошибка: ${e.toString()}'),
@@ -431,9 +439,9 @@ class _CityButtonState extends State<_CityButton>
                           size: 24,
                         ),
                 ),
-                
+
                 const SizedBox(width: AppSpacing.md),
-                
+
                 // Text content
                 Expanded(
                   child: Column(
@@ -449,7 +457,7 @@ class _CityButtonState extends State<_CityButton>
                     ],
                   ),
                 ),
-                
+
                 // Arrow
                 Icon(
                   Icons.chevron_right,

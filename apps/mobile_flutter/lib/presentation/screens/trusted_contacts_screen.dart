@@ -14,7 +14,8 @@ class TrustedContactsScreen extends ConsumerWidget {
       body: contactsAsync.when(
         data: (contacts) {
           if (contacts.isEmpty) {
-            return const Center(child: Text('Нет контактов. Добавьте номера телефонов.'));
+            return const Center(
+                child: Text('Нет контактов. Добавьте номера телефонов.'));
           }
           return ListView.builder(
             itemCount: contacts.length,
@@ -26,7 +27,9 @@ class TrustedContactsScreen extends ConsumerWidget {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () {
-                    ref.read(trustedContactsProvider.notifier).remove(contact.id);
+                    ref
+                        .read(trustedContactsProvider.notifier)
+                        .remove(contact.id);
                   },
                 ),
               );
@@ -72,11 +75,12 @@ class TrustedContactsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              if (nameController.text.isNotEmpty && phoneController.text.isNotEmpty) {
-                 ref.read(trustedContactsProvider.notifier).add(
-                     nameController.text, phoneController.text
-                 );
-                 Navigator.pop(context);
+              if (nameController.text.isNotEmpty &&
+                  phoneController.text.isNotEmpty) {
+                ref
+                    .read(trustedContactsProvider.notifier)
+                    .add(nameController.text, phoneController.text);
+                Navigator.pop(context);
               }
             },
             child: const Text('Сохранить'),

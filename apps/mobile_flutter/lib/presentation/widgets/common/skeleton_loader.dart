@@ -5,7 +5,7 @@ import 'package:mobile_flutter/core/theme/app_theme.dart';
 class ShimmerEffect extends StatefulWidget {
   final Widget child;
   final bool isLoading;
-  
+
   const ShimmerEffect({
     super.key,
     required this.child,
@@ -28,7 +28,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
@@ -43,14 +43,10 @@ class _ShimmerEffectState extends State<ShimmerEffect>
   @override
   Widget build(BuildContext context) {
     if (!widget.isLoading) return widget.child;
-    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark 
-        ? Colors.grey[800]! 
-        : Colors.grey[300]!;
-    final highlightColor = isDark 
-        ? Colors.grey[700]! 
-        : Colors.grey[100]!;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
 
     return AnimatedBuilder(
       animation: _animation,
@@ -98,7 +94,7 @@ class SkeletonContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: width,
       height: height,
@@ -149,7 +145,7 @@ class SkeletonCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       width: size,
       height: size,
@@ -184,7 +180,8 @@ class SkeletonTourCard extends StatelessWidget {
             // Image placeholder
             SkeletonContainer(
               height: 160,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -430,7 +427,8 @@ class SkeletonNearbyScreen extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Column(
               children: [

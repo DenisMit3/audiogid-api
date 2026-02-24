@@ -21,7 +21,7 @@ class RetryInterceptor extends Interceptor {
       err.requestOptions.extra['retry_attempt'] = attempt;
 
       await Future.delayed(retryInterval * attempt);
-      
+
       try {
         final response = await dio.fetch(err.requestOptions);
         handler.resolve(response);
@@ -35,9 +35,9 @@ class RetryInterceptor extends Interceptor {
 
   bool _shouldRetry(DioException err) {
     return err.type == DioExceptionType.connectionTimeout ||
-           err.type == DioExceptionType.sendTimeout ||
-           err.type == DioExceptionType.receiveTimeout ||
-           err.type == DioExceptionType.unknown && err.error is SocketException ||
-           (err.response?.statusCode != null && err.response!.statusCode! >= 500);
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.unknown && err.error is SocketException ||
+        (err.response?.statusCode != null && err.response!.statusCode! >= 500);
   }
 }

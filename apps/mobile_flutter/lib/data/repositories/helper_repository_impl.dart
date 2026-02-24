@@ -9,7 +9,8 @@ class HelperRepositoryImpl implements HelperRepository {
   HelperRepositoryImpl(this._dio, this._citySlug);
 
   @override
-  Future<List<Helper>> getHelpers(double lat, double lon, double radiusKm) async {
+  Future<List<Helper>> getHelpers(
+      double lat, double lon, double radiusKm) async {
     // Current requirement is to fetch by city (Comment 3)
     // "fetch to /public/helpers using the current city"
     // ignoring lat/lon/radius for the API call if it's city based,
@@ -25,17 +26,14 @@ class HelperRepositoryImpl implements HelperRepository {
     if (_citySlug == null) {
       return [];
     }
-    
+
     try {
-      final response = await _dio.get(
-        '/public/helpers', 
-        queryParameters: {
-          'city': _citySlug, 
-          // 'type': optional category logic handled by caller or here? 
-          // Comment says "optional category". But getHelpers doesn't take category.
-          // We fetch all for city and filter in UI/Provider (as seen in nearby_screen).
-        }
-      );
+      final response = await _dio.get('/public/helpers', queryParameters: {
+        'city': _citySlug,
+        // 'type': optional category logic handled by caller or here?
+        // Comment says "optional category". But getHelpers doesn't take category.
+        // We fetch all for city and filter in UI/Provider (as seen in nearby_screen).
+      });
 
       if (response.statusCode == 200) {
         final List data = response.data as List;
@@ -65,11 +63,15 @@ class HelperRepositoryImpl implements HelperRepository {
 
   HelperType _parseType(String? type) {
     switch (type) {
-      case 'toilet': return HelperType.toilet;
-      case 'cafe': return HelperType.cafe;
-      case 'drinking_water': 
-      case 'water': return HelperType.drinkingWater;
-      default: return HelperType.other;
+      case 'toilet':
+        return HelperType.toilet;
+      case 'cafe':
+        return HelperType.cafe;
+      case 'drinking_water':
+      case 'water':
+        return HelperType.drinkingWater;
+      default:
+        return HelperType.other;
     }
   }
 }

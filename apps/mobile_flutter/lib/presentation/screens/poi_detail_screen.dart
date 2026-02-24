@@ -40,7 +40,9 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
     try {
       final selectedCity = ref.read(selectedCityProvider).value;
       if (selectedCity != null) {
-        await ref.read(poiRepositoryProvider).syncPoi(widget.poiId, selectedCity);
+        await ref
+            .read(poiRepositoryProvider)
+            .syncPoi(widget.poiId, selectedCity);
       }
     } finally {
       // trace.stop() removed
@@ -76,7 +78,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
         }
 
         final poi = snapshot.data;
-        
+
         // Not found state
         if (poi == null) {
           return Scaffold(
@@ -86,13 +88,14 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
         }
 
         final grants = grantsAsync.value ?? [];
-        final hasAccess = poi.hasAccess || grants.any((g) => 
-          g.isActive && g.scope == 'city' && g.ref == poi.citySlug
-        );
+        final hasAccess = poi.hasAccess ||
+            grants.any((g) =>
+                g.isActive && g.scope == 'city' && g.ref == poi.citySlug);
 
         // Auto-play handling
         if (!_autoPlayProcessed) {
-          final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+          final extra =
+              GoRouterState.of(context).extra as Map<String, dynamic>?;
           if (extra != null && extra['autoplay'] == true) {
             if (hasAccess && poi.narrations.isNotEmpty) {
               _autoPlayProcessed = true;
@@ -131,7 +134,9 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                           const SizedBox(height: AppSpacing.lg),
                           _buildMediaAndSources(context, poi),
                           // Bottom safe area padding
-                          SizedBox(height: context.safeAreaPadding.bottom + AppSpacing.xl),
+                          SizedBox(
+                              height: context.safeAreaPadding.bottom +
+                                  AppSpacing.xl),
                         ],
                       ),
                     ),
@@ -194,7 +199,8 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                           memCacheWidth: 800,
                           placeholder: (context, url) => Container(
                             color: colorScheme.surfaceVariant,
-                            child: const Center(child: CircularProgressIndicator()),
+                            child: const Center(
+                                child: CircularProgressIndicator()),
                           ),
                           errorWidget: (context, url, error) => Container(
                             color: colorScheme.surfaceVariant,
@@ -237,7 +243,8 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
       actions: [
         AccessibleIconButton(
           icon: poi.isFavorite ? Icons.bookmark : Icons.bookmark_border,
-          tooltip: poi.isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
+          tooltip:
+              poi.isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
           onPressed: () {
             HapticFeedback.lightImpact();
             ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
@@ -250,9 +257,8 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           onPressed: () {
             HapticFeedback.lightImpact();
             Share.share(
-              'Посмотри ${poi.titleRu} в приложении Аудиогид!\nhttps://audiogid.app/dl/poi/${poi.id}', 
-              subject: poi.titleRu
-            );
+                'Посмотри ${poi.titleRu} в приложении Аудиогид!\nhttps://audiogid.app/dl/poi/${poi.id}',
+                subject: poi.titleRu);
           },
         ),
       ],
@@ -301,7 +307,9 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
               Expanded(
                 child: Semantics(
                   button: true,
-                  label: hasAccess ? 'Слушать аудиогид' : 'Слушать (требуется покупка)',
+                  label: hasAccess
+                      ? 'Слушать аудиогид'
+                      : 'Слушать (требуется покупка)',
                   child: ElevatedButton.icon(
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -374,44 +382,52 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                 ),
               ),
               Expanded(
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    final itineraryIdsAsync = ref.watch(itineraryIdsProvider);
-                    final ids = itineraryIdsAsync.value ?? [];
-                    final isInItinerary = ids.contains(poi.id);
+                child: Consumer(builder: (context, ref, _) {
+                  final itineraryIdsAsync = ref.watch(itineraryIdsProvider);
+                  final ids = itineraryIdsAsync.value ?? [];
+                  final isInItinerary = ids.contains(poi.id);
 
-                    return Semantics(
-                      button: true,
-                      label: isInItinerary ? 'Удалить из маршрута' : 'Добавить в маршрут',
-                      child: TextButton.icon(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          if (isInItinerary) {
-                            ref.read(itineraryIdsProvider.notifier).remove(poi.id);
-                            ref.read(analyticsServiceProvider).logEvent('remove_from_itinerary', {'poi_id': poi.id});
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Удалено из маршрута')),
-                            );
-                          } else {
-                            ref.read(itineraryIdsProvider.notifier).add(poi.id);
-                            ref.read(analyticsServiceProvider).logEvent('add_to_itinerary', {'poi_id': poi.id});
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Добавлено в маршрут'),
-                                action: SnackBarAction(
-                                  label: 'Открыть',
-                                  onPressed: () => context.push('/itinerary'),
-                                ),
+                  return Semantics(
+                    button: true,
+                    label: isInItinerary
+                        ? 'Удалить из маршрута'
+                        : 'Добавить в маршрут',
+                    child: TextButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        if (isInItinerary) {
+                          ref
+                              .read(itineraryIdsProvider.notifier)
+                              .remove(poi.id);
+                          ref.read(analyticsServiceProvider).logEvent(
+                              'remove_from_itinerary', {'poi_id': poi.id});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Удалено из маршрута')),
+                          );
+                        } else {
+                          ref.read(itineraryIdsProvider.notifier).add(poi.id);
+                          ref
+                              .read(analyticsServiceProvider)
+                              .logEvent('add_to_itinerary', {'poi_id': poi.id});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Добавлено в маршрут'),
+                              action: SnackBarAction(
+                                label: 'Открыть',
+                                onPressed: () => context.push('/itinerary'),
                               ),
-                            );
-                          }
-                        },
-                        icon: Icon(isInItinerary ? Icons.playlist_add_check : Icons.playlist_add_outlined),
-                        label: Text(isInItinerary ? 'В маршруте' : 'В маршрут'),
-                      ),
-                    );
-                  }
-                ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: Icon(isInItinerary
+                          ? Icons.playlist_add_check
+                          : Icons.playlist_add_outlined),
+                      label: Text(isInItinerary ? 'В маршруте' : 'В маршрут'),
+                    ),
+                  );
+                }),
               ),
             ],
           ),
@@ -445,7 +461,7 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final narration = poi.narrations.isNotEmpty ? poi.narrations.first : null;
-    
+
     if (narration?.transcript == null) return const SizedBox.shrink();
 
     return Column(
@@ -492,23 +508,23 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           ...poi.media.map((m) => Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.copyright_outlined,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant,
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.copyright_outlined,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: LabelText(
+                        '${m.author ?? 'Неизвестно'} (${m.licenseType ?? 'CC BY-SA'})',
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: LabelText(
-                    '${m.author ?? 'Неизвестно'} (${m.licenseType ?? 'CC BY-SA'})',
-                  ),
-                ),
-              ],
-            ),
-          )),
+              )),
         ],
         if (poi.sources.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
@@ -521,47 +537,50 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.xs,
-            children: poi.sources.map((s) => Semantics(
-              link: true,
-              label: 'Источник: ${s.name}',
-              child: InkWell(
-                onTap: () {
-                  // Open URL
-                  HapticFeedback.lightImpact();
-                  if (s.url != null) {
-                     launchUrl(Uri.parse(s.url!), mode: LaunchMode.externalApplication);
-                  }
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.link,
-                        size: 14,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        s.name,
-                        style: textTheme.labelMedium?.copyWith(
-                          color: colorScheme.primary,
+            children: poi.sources
+                .map((s) => Semantics(
+                      link: true,
+                      label: 'Источник: ${s.name}',
+                      child: InkWell(
+                        onTap: () {
+                          // Open URL
+                          HapticFeedback.lightImpact();
+                          if (s.url != null) {
+                            launchUrl(Uri.parse(s.url!),
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: colorScheme.outline),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.link,
+                                size: 14,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                s.name,
+                                style: textTheme.labelMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            )).toList(),
+                    ))
+                .toList(),
           ),
         ],
       ],
@@ -583,11 +602,14 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
   }
 
   void _playAudio(Poi poi) {
-    ref.read(audioPlayerServiceProvider).loadPlaylist(
-      tourId: 'single_poi',
-      pois: [poi],
-      initialIndex: 0,
-    ).then((_) {
+    ref
+        .read(audioPlayerServiceProvider)
+        .loadPlaylist(
+          tourId: 'single_poi',
+          pois: [poi],
+          initialIndex: 0,
+        )
+        .then((_) {
       ref.read(audioPlayerServiceProvider).play();
     });
   }

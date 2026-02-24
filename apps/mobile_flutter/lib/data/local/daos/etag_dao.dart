@@ -8,7 +8,8 @@ class EtagDao extends DatabaseAccessor<AppDatabase> with _$EtagDaoMixin {
   EtagDao(AppDatabase db) : super(db);
 
   Future<String?> getEtag(String url) async {
-    final result = await (select(etags)..where((t) => t.url.equals(url))).getSingleOrNull();
+    final result = await (select(etags)..where((t) => t.url.equals(url)))
+        .getSingleOrNull();
     return result?.etag;
   }
 

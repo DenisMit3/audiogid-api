@@ -11,7 +11,6 @@ import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/data/services/purchase_service.dart';
 
 class CatalogScreen extends ConsumerStatefulWidget {
-
   const CatalogScreen({super.key});
 
   @override
@@ -29,7 +28,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   static const List<_CategoryItem> _categories = [
     _CategoryItem(id: null, label: 'Все', icon: Icons.apps),
     _CategoryItem(id: 'museum', label: 'Музеи', icon: Icons.museum),
-    _CategoryItem(id: 'monument', label: 'Памятники', icon: Icons.account_balance),
+    _CategoryItem(
+        id: 'monument', label: 'Памятники', icon: Icons.account_balance),
     _CategoryItem(id: 'park', label: 'Парки', icon: Icons.park),
     _CategoryItem(id: 'church', label: 'Церкви', icon: Icons.church),
     _CategoryItem(id: 'food', label: 'Еда', icon: Icons.restaurant),
@@ -66,7 +66,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final poisStream = ref.watch(poiRepositoryProvider).watchPoisForCity(selectedCity);
+    final poisStream =
+        ref.watch(poiRepositoryProvider).watchPoisForCity(selectedCity);
     final selectedIds = ref.watch(selectionProvider);
     final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
 
@@ -92,9 +93,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
           final pois = snapshot.data ?? [];
           final filteredPois = pois.where((p) {
-            final matchesSearch = _searchQuery.isEmpty || 
+            final matchesSearch = _searchQuery.isEmpty ||
                 p.titleRu.toLowerCase().contains(_searchQuery.toLowerCase());
-            final matchesCategory = _selectedCategory == null || 
+            final matchesCategory = _selectedCategory == null ||
                 p.category?.toLowerCase() == _selectedCategory?.toLowerCase();
             return matchesSearch && matchesCategory;
           }).toList();
@@ -108,13 +109,17 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         ? EmptyStateWidget.searchResults(query: _searchQuery)
                         : EmptyStateWidget.pois(
                             onRefresh: () {
-                              ref.read(poiRepositoryProvider).syncPoisForCity(selectedCity);
+                              ref
+                                  .read(poiRepositoryProvider)
+                                  .syncPoisForCity(selectedCity);
                             },
                           )
                     : RefreshableContent(
                         onRefresh: () async {
                           HapticFeedback.lightImpact();
-                          await ref.read(poiRepositoryProvider).syncPoisForCity(selectedCity);
+                          await ref
+                              .read(poiRepositoryProvider)
+                              .syncPoisForCity(selectedCity);
                         },
                         child: StaggeredListBuilder(
                           itemCount: filteredPois.length,
@@ -125,7 +130,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                             bottom: isMultiSelectMode ? 100 : AppSpacing.xl,
                           ),
                           itemBuilder: (context, index) {
-                            return _buildPoiItem(context, filteredPois[index], selectedIds);
+                            return _buildPoiItem(
+                                context, filteredPois[index], selectedIds);
                           },
                         ),
                       ),
@@ -134,7 +140,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           );
         },
       ),
-      bottomNavigationBar: isMultiSelectMode ? _buildBottomBar(context, selectedIds) : null,
+      bottomNavigationBar:
+          isMultiSelectMode ? _buildBottomBar(context, selectedIds) : null,
       floatingActionButton: !isMultiSelectMode
           ? SafeFloatingActionButton(
               onPressed: () {
@@ -162,7 +169,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, Set<String> selectedIds) {
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context, Set<String> selectedIds) {
     if (selectedIds.isNotEmpty || _isMultiSelectMode) {
       return AppBar(
         title: Semantics(
@@ -186,7 +194,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               HapticFeedback.lightImpact();
               // Logic to select visible would go here, for now manual
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Для выбора воспользуйтесь долгим нажатием')),
+                const SnackBar(
+                    content: Text('Для выбора воспользуйтесь долгим нажатием')),
               );
             },
           ),
@@ -291,7 +300,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       selected: isSelected,
       label: '${poi.titleRu}, категория ${_translateCategory(poi.category)}',
       hint: (selectedIds.isNotEmpty || _isMultiSelectMode)
-          ? (isSelected ? 'Нажмите чтобы убрать из выбора' : 'Нажмите чтобы выбрать')
+          ? (isSelected
+              ? 'Нажмите чтобы убрать из выбора'
+              : 'Нажмите чтобы выбрать')
           : 'Нажмите для просмотра',
       child: Card(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -318,7 +329,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               children: [
                 HeroImage(
                   tag: 'poi-image-${poi.id}',
-                  imageUrl: null, 
+                  imageUrl: null,
                   width: 64,
                   height: 64,
                   borderRadius: BorderRadius.circular(12),
@@ -340,9 +351,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: AppSpacing.md),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,18 +366,22 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         TextBadge(
                           _translateCategory(poi.category),
                           fontSize: 11,
-                          backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
+                          backgroundColor:
+                              colorScheme.primaryContainer.withOpacity(0.5),
                         ),
                     ],
                   ),
                 ),
-
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AccessibleIconButton(
-                      icon: poi.isFavorite ? Icons.bookmark : Icons.bookmark_border,
-                      tooltip: poi.isFavorite ? 'Удалить из избранного' : 'Добавить в избранное',
+                      icon: poi.isFavorite
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      tooltip: poi.isFavorite
+                          ? 'Удалить из избранного'
+                          : 'Добавить в избранное',
                       color: poi.isFavorite ? colorScheme.primary : null,
                       onPressed: () {
                         HapticFeedback.lightImpact();
@@ -420,7 +433,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
       ),
       child: Row(
         children: [
-           Expanded(
+          Expanded(
             child: Semantics(
               button: true,
               enabled: selectedIds.isNotEmpty && !isBuying,
@@ -430,27 +443,41 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                     ? null
                     : () async {
                         HapticFeedback.lightImpact();
-                        await ref.read(purchaseServiceProvider.notifier).buyBatch(selectedIds.toList(), []);
-                        
+                        await ref
+                            .read(purchaseServiceProvider.notifier)
+                            .buyBatch(selectedIds.toList(), []);
+
                         // Check result
                         if (context.mounted) {
-                           final state = ref.read(purchaseServiceProvider);
-                           if (state.status == PurchaseStatusState.restored || state.status == PurchaseStatusState.success) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Покупка успешна!')));
-                                ref.read(selectionProvider.notifier).clear();
-                                setState(() => _isMultiSelectMode = false);
-                           } else if (state.status == PurchaseStatusState.error) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error ?? 'Не удалось купить')));
-                           }
+                          final state = ref.read(purchaseServiceProvider);
+                          if (state.status == PurchaseStatusState.restored ||
+                              state.status == PurchaseStatusState.success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Покупка успешна!')));
+                            ref.read(selectionProvider.notifier).clear();
+                            setState(() => _isMultiSelectMode = false);
+                          } else if (state.status ==
+                              PurchaseStatusState.error) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content:
+                                    Text(state.error ?? 'Не удалось купить')));
+                          }
                         }
                       },
-                icon: isBuying 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
+                icon: isBuying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.shopping_cart_checkout),
-                label: Text(isBuying ? 'Обработка...' : 'Купить (${selectedIds.length})'),
+                label: Text(isBuying
+                    ? 'Обработка...'
+                    : 'Купить (${selectedIds.length})'),
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: colorScheme.primary,
-                   foregroundColor: colorScheme.onPrimary,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                 ),
               ),
             ),
@@ -461,14 +488,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 ? null
                 : () {
                     HapticFeedback.lightImpact();
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Добавлено ${selectedIds.length} мест в маршрут')),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Добавлено ${selectedIds.length} мест в маршрут')),
                     );
                     ref.read(selectionProvider.notifier).clear();
                     setState(() => _isMultiSelectMode = false);
                   },
-              icon: const Icon(Icons.playlist_add),
-              tooltip: 'В маршрут',
+            icon: const Icon(Icons.playlist_add),
+            tooltip: 'В маршрут',
           ),
         ],
       ),
@@ -503,4 +532,3 @@ class _CategoryItem {
     required this.icon,
   });
 }
-

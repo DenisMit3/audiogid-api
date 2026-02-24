@@ -28,7 +28,7 @@ class TourModeState {
     if (currentStepIndex >= activeTour!.items!.length) return null;
     return activeTour!.items![currentStepIndex].poi;
   }
-  
+
   Poi? get nextPoi {
     if (activeTour == null || activeTour!.items == null) return null;
     if (currentStepIndex + 1 >= activeTour!.items!.length) return null;
@@ -71,14 +71,14 @@ class TourModeService extends _$TourModeService {
   StreamSubscription<Position>? _positionSubscription;
   StreamSubscription<PlaybackState>? _playbackSubscription;
   StreamSubscription<MediaItem?>? _mediaItemSubscription;
-  
+
   static const double GEOFENCE_RADIUS_METERS = 30.0;
-  static const double OFF_ROUTE_THRESHOLD_METERS = 100.0; 
+  static const double OFF_ROUTE_THRESHOLD_METERS = 100.0;
   static const double PREF_WALKING_SPEED_M_S = 1.4; // approx 5km/h
 
   final Map<int, int> _itemToQueueIndex = {};
   int _queueLength = 0;
-  
+
   // Internal state tracking
   String? _lastAutoPlayPoiId;
   DateTime? _lastOffRouteNotificationTime;
@@ -95,7 +95,7 @@ class TourModeService extends _$TourModeService {
     // Build mapping
     _itemToQueueIndex.clear();
     final validPois = <Poi>[];
-    
+
     if (tour.items != null) {
       int queueIdx = 0;
       for (int i = 0; i < tour.items!.length; i++) {
@@ -108,7 +108,7 @@ class TourModeService extends _$TourModeService {
       }
     }
     _queueLength = validPois.length;
-    _lastAutoPlayPoiId = null; 
+    _lastAutoPlayPoiId = null;
     _lastOffRouteNotificationTime = null;
 
     state = TourModeState(
@@ -120,18 +120,18 @@ class TourModeService extends _$TourModeService {
 
     _listenToLocation();
     _listenToPlayback();
-    
+
     if (validPois.isNotEmpty) {
       // Find initial queue index
       final initialQueueIndex = _itemToQueueIndex[startIndex] ?? 0;
-      
+
       ref.read(audioPlayerServiceProvider).loadPlaylist(
-        tourId: tour.id,
-        pois: validPois,
-        initialIndex: initialQueueIndex,
-      );
+            tourId: tour.id,
+            pois: validPois,
+            initialIndex: initialQueueIndex,
+          );
     }
-    
+
     _saveProgress();
   }
 
@@ -141,7 +141,7 @@ class TourModeService extends _$TourModeService {
     ref.read(audioPlayerServiceProvider).stop();
     ref.read(settingsRepositoryProvider).value?.clearTourProgress();
   }
-  
+
   void _cancelSubscriptions() {
     _positionSubscription?.cancel();
     _playbackSubscription?.cancel();
@@ -152,11 +152,12 @@ class TourModeService extends _$TourModeService {
     bool enabled = !state.isAutoPlayEnabled;
     state = state.copyWith(isAutoPlayEnabled: enabled);
     _saveProgress();
-    
+
     // If enabling while inside geo-fence, try playing immediately
     if (enabled && state.activeTour != null) {
-      if (state.distanceToNextPoi != null && state.distanceToNextPoi! <= GEOFENCE_RADIUS_METERS) {
-         _triggerAutoPlayIfNeeded();
+      if (state.distanceToNextPoi != null &&
+          state.distanceToNextPoi! <= GEOFENCE_RADIUS_METERS) {
+        _triggerAutoPlayIfNeeded();
       }
     }
   }
@@ -186,7 +187,7 @@ class TourModeService extends _$TourModeService {
       _skipToCorrectQueueItem(newIndex);
     }
   }
-  
+
   void _skipToCorrectQueueItem(int stepIndex) {
     if (_itemToQueueIndex.containsKey(stepIndex)) {
       final queueIndex = _itemToQueueIndex[stepIndex]!;
@@ -209,13 +210,13 @@ class TourModeService extends _$TourModeService {
         target.lat,
         target.lon,
       );
-      
+
       // ETA Calculation
       // Use current speed if valid (and moving), else fallback to walking speed
-      final speed = (position.speedAccuracy > 0 || position.speed > 0.5) 
+      final speed = (position.speedAccuracy > 0 || position.speed > 0.5)
           ? (position.speed > 0.1 ? position.speed : PREF_WALKING_SPEED_M_S)
           : PREF_WALKING_SPEED_M_S;
-      
+
       // Apply Urban Tortuosity Factor (approx 1.3)
       final adjustedDistance = distance * 1.3;
       final eta = adjustedDistance / speed;
@@ -226,7 +227,7 @@ class TourModeService extends _$TourModeService {
         // Just transitioned to off-route
         _handleOffRoute();
       }
-      
+
       state = state.copyWith(
         distanceToNextPoi: distance,
         etaSeconds: eta.round(),
@@ -234,53 +235,54 @@ class TourModeService extends _$TourModeService {
       );
 
       if (state.isAutoPlayEnabled && distance <= GEOFENCE_RADIUS_METERS) {
-         _triggerAutoPlayIfNeeded();
+        _triggerAutoPlayIfNeeded();
       }
     });
   }
 
   void _handleOffRoute() {
     final now = DateTime.now();
-    if (_lastOffRouteNotificationTime == null || 
-        now.difference(_lastOffRouteNotificationTime!) > const Duration(minutes: 5)) {
-        
-        _lastOffRouteNotificationTime = now;
-        ref.read(notificationServiceProvider).showNotification(
-          id: 12345, // Fixed ID to avoid spamming multiple notifications
-          title: 'Вы отклонились от маршрута',
-          body: 'Вернитесь к точке ${state.currentPoi?.titleRu ?? "маршрута"}',
-          channelId: NotificationChannels.tourReminders,
-          payload: 'tour:${state.activeTour?.id}',
-        );
+    if (_lastOffRouteNotificationTime == null ||
+        now.difference(_lastOffRouteNotificationTime!) >
+            const Duration(minutes: 5)) {
+      _lastOffRouteNotificationTime = now;
+      ref.read(notificationServiceProvider).showNotification(
+            id: 12345, // Fixed ID to avoid spamming multiple notifications
+            title: 'Вы отклонились от маршрута',
+            body:
+                'Вернитесь к точке ${state.currentPoi?.titleRu ?? "маршрута"}',
+            channelId: NotificationChannels.tourReminders,
+            payload: 'tour:${state.activeTour?.id}',
+          );
     }
   }
 
   void _triggerAutoPlayIfNeeded() {
     if (state.currentPoi == null) return;
-    
+
     // Prevent re-triggering for the same POI
     if (_lastAutoPlayPoiId == state.currentPoi!.id) return;
 
     final audioHandler = ref.read(audioHandlerProvider);
     final playbackState = audioHandler.playbackState.value;
-    
+
     // Only play if not already playing or processing
-    final notPlaying = !playbackState.playing && 
-      playbackState.processingState != AudioProcessingState.buffering;
+    final notPlaying = !playbackState.playing &&
+        playbackState.processingState != AudioProcessingState.buffering;
 
     if (notPlaying) {
-        audioHandler.play();
-        _lastAutoPlayPoiId = state.currentPoi!.id;
+      audioHandler.play();
+      _lastAutoPlayPoiId = state.currentPoi!.id;
     }
   }
 
   void _listenToPlayback() {
     final audioHandler = ref.read(audioHandlerProvider);
-    
+
     _mediaItemSubscription?.cancel();
     _mediaItemSubscription = audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem == null || state.activeTour == null) return;
-      
+
       final poiId = mediaItem.extras?['poiId'];
       if (poiId != null) {
         final items = state.activeTour!.items;
@@ -308,16 +310,13 @@ class TourModeService extends _$TourModeService {
       }
     });
   }
-  
+
   Future<void> _saveProgress() async {
     if (state.activeTour == null) return;
     final settings = ref.read(settingsRepositoryProvider).value;
     if (settings != null) {
-      await settings.saveTourProgress(
-        state.activeTour!.id, 
-        state.currentStepIndex, 
-        state.isAutoPlayEnabled
-      );
+      await settings.saveTourProgress(state.activeTour!.id,
+          state.currentStepIndex, state.isAutoPlayEnabled);
     }
   }
 }

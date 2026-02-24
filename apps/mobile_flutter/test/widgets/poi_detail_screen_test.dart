@@ -15,15 +15,18 @@ import 'package:mocktail_image_network/mocktail_image_network.dart';
 
 // Mocks
 class MockPoiRepository extends Mock implements PoiRepository {}
+
 class MockEntitlementRepository extends Mock implements EntitlementRepository {}
+
 class MockAudioPlayerService extends Mock implements AudioPlayerService {}
+
 class MockSettingsRepository extends Mock implements SettingsRepository {}
 
 void main() {
   late MockPoiRepository mockPoiRepository;
   late MockEntitlementRepository mockEntitlementRepository;
   late MockAudioPlayerService mockAudioPlayerService;
-  
+
   setUp(() {
     mockPoiRepository = MockPoiRepository();
     mockEntitlementRepository = MockEntitlementRepository();
@@ -37,9 +40,12 @@ void main() {
         // entitlementRepositoryProvider only provides methods, entitlementGrantsProvider provides state
         entitlementGrantsProvider.overrideWith((ref) => Stream.value([])),
         audioPlayerServiceProvider.overrideWithValue(mockAudioPlayerService),
-        selectedCityProvider.overrideWith((ref) => Stream.value(
-             City(id: '1', slug: 'kaliningrad', nameRu: 'Kgd', isActive: true, updatedAt: DateTime.now())
-        )),
+        selectedCityProvider.overrideWith((ref) => Stream.value(City(
+            id: '1',
+            slug: 'kaliningrad',
+            nameRu: 'Kgd',
+            isActive: true,
+            updatedAt: DateTime.now()))),
       ],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
@@ -64,7 +70,7 @@ void main() {
 
     when(() => mockPoiRepository.watchPoi('test_poi'))
         .thenAnswer((_) => Stream.value(poi));
-        
+
     when(() => mockPoiRepository.syncPoi(any(), any()))
         .thenAnswer((_) async {});
 
@@ -76,17 +82,17 @@ void main() {
       expect(find.text('Test Description'), findsOneWidget);
     });
   });
-  
+
   testWidgets('PoiDetailScreen handles error state', (tester) async {
-     when(() => mockPoiRepository.watchPoi('test_poi'))
+    when(() => mockPoiRepository.watchPoi('test_poi'))
         .thenAnswer((_) => Stream.error('Network Error'));
-        
-     when(() => mockPoiRepository.syncPoi(any(), any()))
+
+    when(() => mockPoiRepository.syncPoi(any(), any()))
         .thenAnswer((_) async {});
 
-      await tester.pumpWidget(createSubject());
-      await tester.pumpAndSettle();
-      
-      expect(find.textContaining('Network Error'), findsOneWidget);
+    await tester.pumpWidget(createSubject());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Network Error'), findsOneWidget);
   });
 }

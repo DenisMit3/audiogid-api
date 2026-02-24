@@ -15,7 +15,8 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
     final query = select(tours).join([
       leftOuterJoin(tourItems, tourItems.tourId.equalsExp(tours.id)),
       leftOuterJoin(pois, pois.id.equalsExp(tourItems.poiId)),
-    ])..where(tours.id.equals(tourId));
+    ])
+      ..where(tours.id.equals(tourId));
 
     return query.watch().map((rows) {
       if (rows.isEmpty) return null;
@@ -30,7 +31,7 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
           })
           .whereType<TourItemWithPoi>()
           .toList();
-      
+
       items.sort((a, b) => a.item.orderIndex.compareTo(b.item.orderIndex));
 
       return TourWithItems(tour, items);
@@ -43,10 +44,12 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
     });
   }
 
-  Future<void> upsertTourWithItems(ToursCompanion tour, List<TourItemsCompanion> items) async {
+  Future<void> upsertTourWithItems(
+      ToursCompanion tour, List<TourItemsCompanion> items) async {
     await transaction(() async {
       await into(tours).insertOnConflictUpdate(tour);
-      await (delete(tourItems)..where((t) => t.tourId.equals(tour.id.value))).go();
+      await (delete(tourItems)..where((t) => t.tourId.equals(tour.id.value)))
+          .go();
       for (var item in items) {
         await into(tourItems).insert(item);
       }

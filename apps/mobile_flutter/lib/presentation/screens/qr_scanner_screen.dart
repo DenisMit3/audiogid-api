@@ -12,7 +12,7 @@ class QrScannerScreen extends ConsumerStatefulWidget {
   ConsumerState<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends ConsumerState<QrScannerScreen> 
+class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
     with RouteAware, WidgetsBindingObserver {
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
@@ -58,14 +58,14 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
         title: const Text('Сканировать QR'),
         actions: [
           IconButton(
-            icon: Icon(controller.torchEnabled ? Icons.flash_on : Icons.flash_off),
+            icon: Icon(
+                controller.torchEnabled ? Icons.flash_on : Icons.flash_off),
             onPressed: () => controller.toggleTorch(),
           ),
         ],
       ),
       body: Stack(
         children: [
-
           MobileScanner(
             controller: controller,
             onDetect: (capture) {
@@ -81,8 +81,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
           ),
           // Scanner Overlay Map
           CustomPaint(
-             painter: ScannerOverlayPainter(borderColor: Theme.of(context).primaryColor),
-             child: Container(),
+            painter: ScannerOverlayPainter(
+                borderColor: Theme.of(context).primaryColor),
+            child: Container(),
           ),
           if (_isProcessing)
             Container(
@@ -95,7 +96,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
                     SizedBox(height: 16),
                     Text(
                       'Поиск экспоната...',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -107,7 +111,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
             right: 20,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(20),
@@ -128,23 +133,25 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
   Future<void> _processCode(String code) async {
     await HapticFeedback.mediumImpact();
     setState(() => _isProcessing = true);
-    
+
     try {
       // Step 1: Try to extract POI/Tour ID from URL patterns (Deep Link parsing)
       String? targetType;
       String? targetId;
-      
+
       try {
         final uri = Uri.parse(code);
         if (uri.host.contains('audiogid') || uri.scheme == 'audiogid') {
-           final segments = uri.pathSegments;
-           if (segments.contains('poi') && segments.length > segments.indexOf('poi') + 1) {
-             targetType = 'poi';
-             targetId = segments[segments.indexOf('poi') + 1];
-           } else if (segments.contains('tour') && segments.length > segments.indexOf('tour') + 1) {
-             targetType = 'tour';
-             targetId = segments[segments.indexOf('tour') + 1];
-           }
+          final segments = uri.pathSegments;
+          if (segments.contains('poi') &&
+              segments.length > segments.indexOf('poi') + 1) {
+            targetType = 'poi';
+            targetId = segments[segments.indexOf('poi') + 1];
+          } else if (segments.contains('tour') &&
+              segments.length > segments.indexOf('tour') + 1) {
+            targetType = 'tour';
+            targetId = segments[segments.indexOf('tour') + 1];
+          }
         }
       } catch (_) {}
 
@@ -153,7 +160,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
         final qrRepo = ref.read(qrMappingRepositoryProvider);
         // This now handles API -> Cache -> Local POI Table
         final mapping = await qrRepo.resolveCode(code);
-        
+
         if (mapping != null) {
           targetType = mapping.targetType;
           targetId = mapping.targetId;
@@ -163,10 +170,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
       // Step 3: Navigate based on resolved target
       if (targetType != null && targetId != null) {
         if (mounted) {
-           // Success feedback
-           await HapticFeedback.heavyImpact();
-           
-           if (targetType == 'poi') {
+          // Success feedback
+          await HapticFeedback.heavyImpact();
+
+          if (targetType == 'poi') {
             context.push('/poi/$targetId', extra: {'autoplay': true});
           } else if (targetType == 'tour') {
             context.push('/tour/$targetId');
@@ -178,11 +185,13 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen>
           await HapticFeedback.vibrate();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Код не найден: $code\nПроверьте подключение к интернету.'),
+              content: Text(
+                  'Код не найден: $code\nПроверьте подключение к интернету.'),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
-              action: SnackBarAction(label: 'ОК', textColor: Colors.white, onPressed: () {}),
+              action: SnackBarAction(
+                  label: 'ОК', textColor: Colors.white, onPressed: () {}),
             ),
           );
           await Future.delayed(const Duration(seconds: 2)); // cooldown
@@ -224,9 +233,8 @@ class ScannerOverlayPainter extends CustomPainter {
     final left = (size.width - cutoutSize) / 2;
     final top = (size.height - cutoutSize) / 2;
     final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left, top, cutoutSize, cutoutSize), 
-      const Radius.circular(20)
-    );
+        Rect.fromLTWH(left, top, cutoutSize, cutoutSize),
+        const Radius.circular(20));
 
     canvas.drawPath(
       Path.combine(
@@ -246,7 +254,7 @@ class ScannerOverlayPainter extends CustomPainter {
 
     final cornerSize = 30.0;
     final path = Path();
-    
+
     // Top Left
     path.moveTo(left, top + cornerSize);
     path.lineTo(left, top);

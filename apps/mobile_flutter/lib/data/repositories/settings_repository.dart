@@ -45,8 +45,10 @@ class SettingsRepository {
   }
 
   // Tour Progress
-  Future<void> saveTourProgress(String tourId, int stepIndex, bool autoPlay) async {
-    final jsonString = '$tourId|$stepIndex|$autoPlay|${DateTime.now().millisecondsSinceEpoch}';
+  Future<void> saveTourProgress(
+      String tourId, int stepIndex, bool autoPlay) async {
+    final jsonString =
+        '$tourId|$stepIndex|$autoPlay|${DateTime.now().millisecondsSinceEpoch}';
     await _prefs.setString(_tourProgressKey, jsonString);
   }
 

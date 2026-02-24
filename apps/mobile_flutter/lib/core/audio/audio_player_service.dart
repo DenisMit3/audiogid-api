@@ -26,16 +26,18 @@ class AudioPlayerService {
     final grants = grantsStream.value ?? <EntitlementGrant>[];
     final hasAccess = grants.any((g) =>
         g.isActive &&
-        ((g.scope == 'tour' && g.ref == tourId) || 
-         (pois.isNotEmpty && g.scope == 'city' && g.ref == pois.first.citySlug) ||
-         g.scope == 'all_access'));
+        ((g.scope == 'tour' && g.ref == tourId) ||
+            (pois.isNotEmpty &&
+                g.scope == 'city' &&
+                g.ref == pois.first.citySlug) ||
+            g.scope == 'all_access'));
 
     // Check Kids Mode
     final settingsAsync = _ref.read(settingsRepositoryProvider);
     final kidsMode = settingsAsync.value?.getKidsModeEnabled() ?? false;
 
     final queue = <MediaItem>[];
-    
+
     // 2. Build Queue
     for (final poi in pois) {
       final narration = poi.narrations.isNotEmpty ? poi.narrations.first : null;
@@ -46,9 +48,10 @@ class AudioPlayerService {
         // Full access: prioritize local file
         if (narration != null) {
           if (kidsMode && narration.kidsUrl != null) {
-             // Kids mode enabled and available
-             audioUrl = narration.kidsUrl;
-          } else if (narration.localPath != null && File(narration.localPath!).existsSync()) {
+            // Kids mode enabled and available
+            audioUrl = narration.kidsUrl;
+          } else if (narration.localPath != null &&
+              File(narration.localPath!).existsSync()) {
             audioUrl = Uri.file(narration.localPath!).toString();
           } else {
             audioUrl = narration.url;
@@ -67,7 +70,8 @@ class AudioPlayerService {
           album: 'Tour',
           title: kidsMode ? '${poi.titleRu} (Для детей)' : poi.titleRu,
           artist: 'Audiogid',
-          artUri: poi.media.isNotEmpty ? Uri.tryParse(poi.media.first.url) : null,
+          artUri:
+              poi.media.isNotEmpty ? Uri.tryParse(poi.media.first.url) : null,
           extras: {
             'poiId': poi.id,
             'tourId': tourId,
@@ -85,8 +89,9 @@ class AudioPlayerService {
     // 3. Find correct start index
     if (initialIndex >= 0 && initialIndex < pois.length) {
       final startPoiId = pois[initialIndex].id;
-      final indexInQueue = queue.indexWhere((item) => item.extras?['poiId'] == startPoiId);
-      
+      final indexInQueue =
+          queue.indexWhere((item) => item.extras?['poiId'] == startPoiId);
+
       if (indexInQueue != -1) {
         await _handler.skipToQueueItem(indexInQueue);
       } else {
@@ -110,7 +115,7 @@ class AudioPlayerService {
       if (item != null && item.extras != null) {
         final poiId = item.extras!['poiId'];
         final isPreview = item.extras!['isPreview'] == true;
-        
+
         if (poiId != null) {
           _ref.read(analyticsServiceProvider).logEvent('poi_played', {
             'poi_id': poiId,
@@ -121,7 +126,7 @@ class AudioPlayerService {
         }
       }
     });
-    
+
     _handler.playbackState.listen((state) {
       if (state.processingState == AudioProcessingState.completed) {
         final item = _handler.mediaItem.value;

@@ -25,7 +25,7 @@ class PoiRepositoryImpl implements PoiRepository {
     if (response != null) {
       // Map API DTO to Drift Companions
       final p = response;
-      
+
       final mainComp = PoisCompanion(
         id: Value(p.id ?? id),
         citySlug: Value(citySlug),
@@ -36,8 +36,8 @@ class PoiRepositoryImpl implements PoiRepository {
         previewAudioUrl: Value(p.previewAudioUrl),
         hasAccess: Value(p.hasAccess ?? false),
         category: Value(p.category),
-        // isFavorite preserved? Upsert usually overwrites. 
-        // We should check existing and preserve. 
+        // isFavorite preserved? Upsert usually overwrites.
+        // We should check existing and preserve.
         // actually insertOnConflictUpdate might overwrite isFavorite if we don't set it?
         // Drift default is insert. On conflict update replacing...
         // We better read existing isFavorite.
@@ -45,35 +45,41 @@ class PoiRepositoryImpl implements PoiRepository {
 
       // Simple implementation: Use DAO upsert
       // Need to map children
-      final nars = p.narrations.map((n) => NarrationsCompanion(
-        id: Value(n.id ?? ''),
-        poiId: Value(p.id ?? id),
-        url: Value(n.url ?? ''),
-        locale: Value(n.locale ?? 'ru'),
-        durationSeconds: Value(n.durationSeconds?.toDouble()),
-        transcript: Value(n.transcript),
-        // kidsUrl might not be present in generated client yet if not regenerated
-        // Using dynamic cast for safety during transition if needed, 
-        // but ideally client is updated. Assuming updated client:
-        kidsUrl: Value((n as dynamic).kidsUrl as String?), 
-      )).toList();
+      final nars = p.narrations
+          .map((n) => NarrationsCompanion(
+                id: Value(n.id ?? ''),
+                poiId: Value(p.id ?? id),
+                url: Value(n.url ?? ''),
+                locale: Value(n.locale ?? 'ru'),
+                durationSeconds: Value(n.durationSeconds?.toDouble()),
+                transcript: Value(n.transcript),
+                // kidsUrl might not be present in generated client yet if not regenerated
+                // Using dynamic cast for safety during transition if needed,
+                // but ideally client is updated. Assuming updated client:
+                kidsUrl: Value((n as dynamic).kidsUrl as String?),
+              ))
+          .toList();
 
-      final meds = p.media.map((m) => MediaCompanion(
-        id: Value(m.id ?? ''),
-        poiId: Value(p.id ?? id),
-        url: Value(m.url ?? ''),
-        mediaType: Value(m.mediaType ?? 'image'),
-        author: Value(m.author),
-        sourcePageUrl: Value(m.sourcePageUrl),
-        licenseType: Value(m.licenseType),
-      )).toList();
+      final meds = p.media
+          .map((m) => MediaCompanion(
+                id: Value(m.id ?? ''),
+                poiId: Value(p.id ?? id),
+                url: Value(m.url ?? ''),
+                mediaType: Value(m.mediaType ?? 'image'),
+                author: Value(m.author),
+                sourcePageUrl: Value(m.sourcePageUrl),
+                licenseType: Value(m.licenseType),
+              ))
+          .toList();
 
-      final srcs = p.sources.map((s) => PoiSourcesCompanion(
-        id: Value(s.id ?? ''),
-        poiId: Value(p.id ?? id),
-        name: Value(s.name ?? ''),
-        url: Value(s.url),
-      )).toList();
+      final srcs = p.sources
+          .map((s) => PoiSourcesCompanion(
+                id: Value(s.id ?? ''),
+                poiId: Value(p.id ?? id),
+                name: Value(s.name ?? ''),
+                url: Value(s.url),
+              ))
+          .toList();
 
       await db.poiDao.upsertPoi(mainComp, nars, meds, srcs);
     }
@@ -85,7 +91,7 @@ class PoiRepositoryImpl implements PoiRepository {
       // TODO: Regenerate OpenApi client (npm run generate in packages/api_client)
       // Once generated, uncomment the following line:
       // final response = await api.publicCitiesSlugPoisGet(citySlug);
-      
+
       // Example implementation after generation:
       /*
       if (response != null) {
@@ -96,7 +102,7 @@ class PoiRepositoryImpl implements PoiRepository {
         }
       }
       */
-      
+
       print("Syncing POIs for $citySlug: Client update pending.");
     } catch (e) {
       print("Sync city POIs failed: $e");
@@ -113,7 +119,7 @@ class PoiRepositoryImpl implements PoiRepository {
     return db.poiDao.watchFavorites().map((list) {
       // watchFavorites returns List<Poi> (Drift class). Need to fetch details?
       // For now assuming list view doesn't need full details
-       return list.map((p) => _mapRowToDomain(p)).toList();
+      return list.map((p) => _mapRowToDomain(p)).toList();
     });
   }
 
@@ -137,28 +143,34 @@ class PoiRepositoryImpl implements PoiRepository {
       hasAccess: p.hasAccess,
       isFavorite: p.isFavorite,
       category: p.category,
-      narrations: details.narrations.map((n) => domain.Narration(
-        id: n.id,
-        url: n.url,
-        locale: n.locale,
-        durationSeconds: n.durationSeconds,
-        transcript: n.transcript,
-        localPath: n.localPath,
-        kidsUrl: n.kidsUrl,
-      )).toList(),
-      media: details.media.map((m) => domain.Media(
-        id: m.id,
-        url: m.url,
-        mediaType: m.mediaType,
-        author: m.author,
-        sourcePageUrl: m.sourcePageUrl,
-        licenseType: m.licenseType,
-      )).toList(),
-      sources: details.sources.map((s) => domain.PoiSource(
-        id: s.id,
-        name: s.name,
-        url: s.url,
-      )).toList(),
+      narrations: details.narrations
+          .map((n) => domain.Narration(
+                id: n.id,
+                url: n.url,
+                locale: n.locale,
+                durationSeconds: n.durationSeconds,
+                transcript: n.transcript,
+                localPath: n.localPath,
+                kidsUrl: n.kidsUrl,
+              ))
+          .toList(),
+      media: details.media
+          .map((m) => domain.Media(
+                id: m.id,
+                url: m.url,
+                mediaType: m.mediaType,
+                author: m.author,
+                sourcePageUrl: m.sourcePageUrl,
+                licenseType: m.licenseType,
+              ))
+          .toList(),
+      sources: details.sources
+          .map((s) => domain.PoiSource(
+                id: s.id,
+                name: s.name,
+                url: s.url,
+              ))
+          .toList(),
     );
   }
 
@@ -180,8 +192,10 @@ class PoiRepositoryImpl implements PoiRepository {
       sources: [],
     );
   }
+
   @override
-  Future<List<domain.Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
+  Future<List<domain.Poi>> getNearbyCandidates(
+      double lat, double lon, double radiusMeters) async {
     final rows = await db.poiDao.getNearbyCandidates(lat, lon, radiusMeters);
     return rows.map((p) => _mapRowToDomain(p)).toList();
   }

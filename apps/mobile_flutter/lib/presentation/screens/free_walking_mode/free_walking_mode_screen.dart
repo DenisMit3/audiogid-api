@@ -34,11 +34,16 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                   _buildRadar(state.isActive, colorScheme),
                   const SizedBox(height: AppSpacing.xl),
                   Text(
-                    state.statusMessage ?? (state.isActive ? 'Ищем интересные места...' : 'Готов к прогулке'),
+                    state.statusMessage ??
+                        (state.isActive
+                            ? 'Ищем интересные места...'
+                            : 'Готов к прогулке'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: state.isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                    ),
+                          color: state.isActive
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
@@ -50,8 +55,9 @@ class FreeWalkingModeScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Align(
-                alignment: Alignment.centerLeft, 
-                child: Text('Недавние находки', style: Theme.of(context).textTheme.titleSmall),
+                alignment: Alignment.centerLeft,
+                child: Text('Недавние находки',
+                    style: Theme.of(context).textTheme.titleSmall),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -61,7 +67,8 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 scrollDirection: Axis.horizontal,
                 itemCount: state.recentActivity.length,
-                separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final poi = state.recentActivity[index];
                   return _buildHistoryItem(context, poi);
@@ -69,7 +76,7 @@ class FreeWalkingModeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-          ] else 
+          ] else
             const Spacer(flex: 1),
 
           // 3. Settings Panel
@@ -77,7 +84,8 @@ class FreeWalkingModeScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: colorScheme.surfaceVariant.withOpacity(0.3),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,8 +98,8 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                   max: 200,
                   divisions: 9,
                   unit: 'м',
-                  onChanged: state.isActive 
-                      ? null 
+                  onChanged: state.isActive
+                      ? null
                       : (v) => controller.updateSettings(radius: v),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -103,12 +111,12 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                   max: 60,
                   divisions: 59,
                   unit: 'мин',
-                  onChanged: state.isActive 
-                      ? null 
+                  onChanged: state.isActive
+                      ? null
                       : (v) => controller.updateSettings(cooldown: v.toInt()),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                
+
                 // Start/Stop Button
                 SizedBox(
                   height: 56,
@@ -122,15 +130,25 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: state.isActive ? colorScheme.error : colorScheme.primary,
-                      foregroundColor: state.isActive ? colorScheme.onError : colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: state.isActive
+                          ? colorScheme.error
+                          : colorScheme.primary,
+                      foregroundColor: state.isActive
+                          ? colorScheme.onError
+                          : colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       elevation: 4,
                     ),
-                    icon: Icon(state.isActive ? Icons.stop_rounded : Icons.play_arrow_rounded),
+                    icon: Icon(state.isActive
+                        ? Icons.stop_rounded
+                        : Icons.play_arrow_rounded),
                     label: Text(
-                      state.isActive ? 'Остановить прогулку' : 'Начать прогулку',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      state.isActive
+                          ? 'Остановить прогулку'
+                          : 'Начать прогулку',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -150,18 +168,22 @@ class FreeWalkingModeScreen extends ConsumerWidget {
       height: 160,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isActive ? colors.primaryContainer.withOpacity(0.2) : colors.surfaceVariant,
+        color: isActive
+            ? colors.primaryContainer.withOpacity(0.2)
+            : colors.surfaceVariant,
         border: Border.all(
           color: isActive ? colors.primary : colors.outline.withOpacity(0.5),
           width: isActive ? 4 : 2,
         ),
-        boxShadow: isActive ? [
-          BoxShadow(
-            color: colors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 5,
-          ) 
-        ] : [],
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: colors.primary.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                )
+              ]
+            : [],
       ),
       child: Center(
         child: Icon(
@@ -189,7 +211,11 @@ class FreeWalkingModeScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: Theme.of(context).textTheme.bodyMedium),
-            Text('${value.toInt()} $unit', style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('${value.toInt()} $unit',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
           ],
         ),
         Slider(
@@ -233,7 +259,7 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                 width: 80,
                 height: double.infinity,
                 color: colorScheme.surfaceVariant,
-                child: poi.previewAudioUrl != null 
+                child: poi.previewAudioUrl != null
                     ? Icon(Icons.music_note, color: colorScheme.primary)
                     : Icon(Icons.place, color: colorScheme.onSurfaceVariant),
               ),
@@ -249,12 +275,18 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                       poi.titleRu,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Только что',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.secondary),
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: colorScheme.secondary),
                     ),
                   ],
                 ),

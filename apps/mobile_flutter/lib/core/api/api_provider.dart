@@ -14,7 +14,7 @@ part 'api_provider.g.dart';
 Dio dio(Ref ref) {
   final config = ref.watch(appConfigProvider);
   final db = ref.watch(appDatabaseProvider);
-  
+
   final dio = Dio(BaseOptions(
     baseUrl: config.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),

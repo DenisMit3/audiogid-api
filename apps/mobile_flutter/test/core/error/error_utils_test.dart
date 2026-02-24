@@ -10,7 +10,8 @@ void main() {
         requestOptions: RequestOptions(path: '/'),
         type: DioExceptionType.connectionTimeout,
       );
-      expect(ErrorUtils.getErrorMessage(error), 'Превышено время ожидания. Проверьте интернет.');
+      expect(ErrorUtils.getErrorMessage(error),
+          'Превышено время ожидания. Проверьте интернет.');
     });
 
     test('should return friendly message for 401', () {
@@ -22,7 +23,8 @@ void main() {
           statusCode: 401,
         ),
       );
-      expect(ErrorUtils.getErrorMessage(error), 'Ошибка авторизации. Попробуйте войти снова.');
+      expect(ErrorUtils.getErrorMessage(error),
+          'Ошибка авторизации. Попробуйте войти снова.');
     });
 
     test('should return friendly message for SocketException', () {

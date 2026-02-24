@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,7 +17,8 @@ class TourModeScreen extends ConsumerStatefulWidget {
   ConsumerState<TourModeScreen> createState() => _TourModeScreenState();
 }
 
-class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProviderStateMixin {
+class _TourModeScreenState extends ConsumerState<TourModeScreen>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   bool _shouldFollowUser = true;
 
@@ -32,14 +32,14 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     final tourState = ref.watch(tourModeServiceProvider);
-    
+
     // Redirect if no tour is active (safety check)
     if (!tourState.isActive || tourState.activeTour == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.canPop()) {
-           context.pop();
+          context.pop();
         } else {
-           context.go('/');
+          context.go('/');
         }
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -47,7 +47,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
 
     final activeTour = tourState.activeTour!;
     final items = activeTour.items ?? [];
-    
+
     // Filter only valid POIs for the map
     final validPois = items.map((i) => i.poi).whereType<Poi>().toList();
     final points = validPois.map((p) => LatLng(p.lat, p.lon)).toList();
@@ -56,17 +56,16 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
 
     // Auto-center Logic
     if (_shouldFollowUser && userPosition != null) {
-        _mapController.move(
-          LatLng(userPosition.latitude, userPosition.longitude), 
-          _mapController.camera.zoom
-        );
+      _mapController.move(LatLng(userPosition.latitude, userPosition.longitude),
+          _mapController.camera.zoom);
     }
 
     // Path to next point
     final List<LatLng> nextPointPath = [];
     if (userPosition != null && tourState.currentPoi != null) {
       nextPointPath.add(LatLng(userPosition.latitude, userPosition.longitude));
-      nextPointPath.add(LatLng(tourState.currentPoi!.lat, tourState.currentPoi!.lon));
+      nextPointPath
+          .add(LatLng(tourState.currentPoi!.lat, tourState.currentPoi!.lon));
     }
 
     return Scaffold(
@@ -75,7 +74,8 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: points.isNotEmpty ? points.first : const LatLng(59.93, 30.33),
+              initialCenter:
+                  points.isNotEmpty ? points.first : const LatLng(59.93, 30.33),
               initialZoom: 16.0,
               onPositionChanged: (pos, hasGesture) {
                 if (hasGesture) {
@@ -102,7 +102,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                       points: nextPointPath,
                       color: Colors.orange,
                       strokeWidth: 3.0,
-                      pattern: const StrokePattern.dotted(), 
+                      pattern: const StrokePattern.dotted(),
                     ),
                 ],
               ),
@@ -111,19 +111,20 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                   // User Marker
                   if (userPosition != null)
                     Marker(
-                      point: LatLng(userPosition.latitude, userPosition.longitude),
+                      point:
+                          LatLng(userPosition.latitude, userPosition.longitude),
                       width: 50,
                       height: 50,
                       child: _UserMarker(heading: userPosition.heading),
                     ),
-                  
+
                   // POI Markers
                   ...validPois.asMap().entries.map((entry) {
                     final index = entry.key;
                     final poi = entry.value;
                     final isCurrent = index == tourState.currentStepIndex;
                     final isPassed = index < tourState.currentStepIndex;
-                    
+
                     return Marker(
                       point: LatLng(poi.lat, poi.lon),
                       width: 60,
@@ -134,19 +135,22 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                           Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                               color: Colors.white,
-                               borderRadius: BorderRadius.circular(4),
-                               boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)]
-                            ),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: Colors.black26, blurRadius: 2)
+                                ]),
                             child: Text(
-                              (index + 1).toString(), 
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                              (index + 1).toString(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 10),
                             ),
                           ),
                           Icon(
                             Icons.location_on,
-                            color: isCurrent 
-                                ? Colors.redAccent 
+                            color: isCurrent
+                                ? Colors.redAccent
                                 : (isPassed ? Colors.grey : Colors.blue),
                             size: isCurrent ? 40 : 30,
                           ),
@@ -158,7 +162,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
               ),
             ],
           ),
-          
+
           // Re-center button
           if (!_shouldFollowUser)
             Positioned(
@@ -170,7 +174,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                 child: const Icon(Icons.my_location),
               ),
             ),
-            
+
           // Top Info Card
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
@@ -178,7 +182,8 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
             right: 16,
             child: Card(
               elevation: 8,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               color: Theme.of(context).colorScheme.surface,
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -199,36 +204,45 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
                         children: [
                           Text(
                             tourState.currentPoi?.titleRu ?? 'Конец маршрута',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           if (tourState.distanceToNextPoi != null)
-                             Row(
-                               children: [
-                                 Text(
-                                   '${tourState.distanceToNextPoi!.toInt()} м',
-                                   style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
-                                 ),
-                                 if (tourState.etaSeconds != null)
-                                    Text(
-                                     ' • ${_formatDuration(tourState.etaSeconds!)}',
-                                     style: const TextStyle(color: Colors.grey),
-                                    ),
-                               ],
-                             ),
+                            Row(
+                              children: [
+                                Text(
+                                  '${tourState.distanceToNextPoi!.toInt()} м',
+                                  style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                if (tourState.etaSeconds != null)
+                                  Text(
+                                    ' • ${_formatDuration(tourState.etaSeconds!)}',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
-                     
+
                     // AutoPlay Toggle
                     IconButton(
                       icon: Icon(
-                        tourState.isAutoPlayEnabled ? Icons.volume_up : Icons.volume_off,
-                        color: tourState.isAutoPlayEnabled ? Colors.green : Colors.grey,
+                        tourState.isAutoPlayEnabled
+                            ? Icons.volume_up
+                            : Icons.volume_off,
+                        color: tourState.isAutoPlayEnabled
+                            ? Colors.green
+                            : Colors.grey,
                       ),
-                      onPressed: () => ref.read(tourModeServiceProvider.notifier).toggleAutoPlay(),
+                      onPressed: () => ref
+                          .read(tourModeServiceProvider.notifier)
+                          .toggleAutoPlay(),
                       tooltip: 'Автовоспроизведение',
                     ),
                   ],
@@ -246,20 +260,25 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
               child: Card(
                 color: Colors.redAccent.shade700,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Colors.white),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           "Вы ушли с маршрута",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                       TextButton(
-                        onPressed: () => setState(() => _shouldFollowUser = true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.white),
+                        onPressed: () =>
+                            setState(() => _shouldFollowUser = true),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.white),
                         child: const Text("ПОКАЗАТЬ"),
                       ),
                     ],
@@ -280,7 +299,7 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen> with TickerProv
       ),
     );
   }
-  
+
   String _formatDuration(int seconds) {
     if (seconds < 60) return '< 1 мин';
     final minutes = (seconds / 60).round();
@@ -295,7 +314,7 @@ class _UserMarker extends StatelessWidget {
   final double heading;
 
   const _UserMarker({this.heading = 0});
-  
+
   @override
   Widget build(BuildContext context) {
     return Transform.rotate(
@@ -310,7 +329,7 @@ class _UserMarker extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-               Container(
+              Container(
                 width: 16,
                 height: 16,
                 decoration: const BoxDecoration(
@@ -326,7 +345,7 @@ class _UserMarker extends StatelessWidget {
       ),
     );
   }
-  
+
   double _degreesToRadians(double degrees) {
     return degrees * (3.14159 / 180.0);
   }
@@ -341,79 +360,94 @@ class _TourControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final audioHandler = ref.watch(audioHandlerProvider);
-    
-    return StreamBuilder<PlaybackState>(
-      stream: audioHandler.playbackState,
-      builder: (context, snapshot) {
-        final playbackState = snapshot.data;
-        final isPlaying = playbackState?.playing ?? false;
-        final processingState = playbackState?.processingState;
-        final isBuffering = processingState == AudioProcessingState.buffering;
 
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [BoxShadow(blurRadius: 20, color: Colors.black26)],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Progress Bar
-              LinearProgressIndicator(
-                value: totalSteps > 0 ? ((state.currentStepIndex + 1) / totalSteps) : 0,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Локация ${state.currentStepIndex + 1} из $totalSteps',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
-              ),
-              
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    onPressed: state.currentStepIndex > 0 
-                        ? () => ref.read(tourModeServiceProvider.notifier).prevStep() 
-                        : null,
-                    icon: const Icon(Icons.skip_previous_rounded, size: 32),
-                  ),
-                  FloatingActionButton(
-                    onPressed: () {
-                       if (isPlaying) {
-                         audioHandler.pause();
-                       } else {
-                         audioHandler.play();
-                       }
-                    },
-                    elevation: 2,
-                    child: isBuffering 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 36),
-                  ),
-                  IconButton(
-                    onPressed: state.currentStepIndex < totalSteps - 1
-                        ? () => ref.read(tourModeServiceProvider.notifier).nextStep()
-                        : null,
-                    icon: const Icon(Icons.skip_next_rounded, size: 32),
-                  ),
-                ],
-              ),
-              TextButton(
-                 onPressed: () {
-                   ref.read(tourModeServiceProvider.notifier).stopTour();
-                   if (context.canPop()) context.pop();
-                 },
-                 child: const Text('Завершить прогулку', style: TextStyle(color: Colors.redAccent)),
-              ),
-            ],
-          ),
-        );
-      }
-    );
+    return StreamBuilder<PlaybackState>(
+        stream: audioHandler.playbackState,
+        builder: (context, snapshot) {
+          final playbackState = snapshot.data;
+          final isPlaying = playbackState?.playing ?? false;
+          final processingState = playbackState?.processingState;
+          final isBuffering = processingState == AudioProcessingState.buffering;
+
+          return Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(blurRadius: 20, color: Colors.black26)
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Progress Bar
+                LinearProgressIndicator(
+                  value: totalSteps > 0
+                      ? ((state.currentStepIndex + 1) / totalSteps)
+                      : 0,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Локация ${state.currentStepIndex + 1} из $totalSteps',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey),
+                ),
+
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      onPressed: state.currentStepIndex > 0
+                          ? () => ref
+                              .read(tourModeServiceProvider.notifier)
+                              .prevStep()
+                          : null,
+                      icon: const Icon(Icons.skip_previous_rounded, size: 32),
+                    ),
+                    FloatingActionButton(
+                      onPressed: () {
+                        if (isPlaying) {
+                          audioHandler.pause();
+                        } else {
+                          audioHandler.play();
+                        }
+                      },
+                      elevation: 2,
+                      child: isBuffering
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Icon(
+                              isPlaying
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 36),
+                    ),
+                    IconButton(
+                      onPressed: state.currentStepIndex < totalSteps - 1
+                          ? () => ref
+                              .read(tourModeServiceProvider.notifier)
+                              .nextStep()
+                          : null,
+                      icon: const Icon(Icons.skip_next_rounded, size: 32),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {
+                    ref.read(tourModeServiceProvider.notifier).stopTour();
+                    if (context.canPop()) context.pop();
+                  },
+                  child: const Text('Завершить прогулку',
+                      style: TextStyle(color: Colors.redAccent)),
+                ),
+              ],
+            ),
+          );
+        });
   }
 }

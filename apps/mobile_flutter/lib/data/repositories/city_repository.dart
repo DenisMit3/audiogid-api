@@ -17,15 +17,17 @@ class OfflineCityRepository implements CityRepository {
 
   @override
   Stream<List<domain.City>> watchCities() {
-    syncCities().ignore(); 
-    
-    return _db.cityDao.watchAllCities().map((rows) => rows.map((r) => domain.City(
-      id: r.id,
-      slug: r.slug,
-      nameRu: r.nameRu,
-      isActive: r.isActive,
-      updatedAt: r.updatedAt,
-    )).toList());
+    syncCities().ignore();
+
+    return _db.cityDao.watchAllCities().map((rows) => rows
+        .map((r) => domain.City(
+              id: r.id,
+              slug: r.slug,
+              nameRu: r.nameRu,
+              isActive: r.isActive,
+              updatedAt: r.updatedAt,
+            ))
+        .toList());
   }
 
   @override
@@ -39,26 +41,32 @@ class OfflineCityRepository implements CityRepository {
       // #endregion
       final response = await _api.publicCitiesGetWithHttpInfo();
       // #region agent log
-      print('[DEBUG f46abe] syncCities: response status=${response.statusCode}, body length=${response.body?.length}');
+      print(
+          '[DEBUG f46abe] syncCities: response status=${response.statusCode}, body length=${response.body?.length}');
       // #endregion
       if (response.statusCode == 304) return;
       if (response.statusCode >= 400) return;
 
-      final cities = await _api.apiClient.deserializeAsync(response.body, 'List<City>') as List;
+      final cities = await _api.apiClient
+          .deserializeAsync(response.body, 'List<City>') as List;
       // #region agent log
       print('[DEBUG f46abe] syncCities: deserialized ${cities.length} cities');
       // #endregion
-      final companions = cities.cast<api.City>().map((c) => CitiesCompanion(
-        id: Value(c.id!),
-        slug: Value(c.slug!),
-        nameRu: Value(c.nameRu!),
-        isActive: Value(c.isActive!),
-        updatedAt: Value(c.updatedAt),
-      )).toList();
+      final companions = cities
+          .cast<api.City>()
+          .map((c) => CitiesCompanion(
+                id: Value(c.id!),
+                slug: Value(c.slug!),
+                nameRu: Value(c.nameRu!),
+                isActive: Value(c.isActive!),
+                updatedAt: Value(c.updatedAt),
+              ))
+          .toList();
 
       await _db.cityDao.upsertCities(companions);
       // #region agent log
-      print('[DEBUG f46abe] syncCities: upserted ${companions.length} cities to DB');
+      print(
+          '[DEBUG f46abe] syncCities: upserted ${companions.length} cities to DB');
       // #endregion
     } catch (e) {
       // #region agent log

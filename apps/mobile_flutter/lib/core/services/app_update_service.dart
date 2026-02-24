@@ -62,11 +62,12 @@ class AppUpdateService {
   final String _baseUrl;
   final Dio _dio;
 
-  AppUpdateService(this._baseUrl) : _dio = Dio(BaseOptions(
-    baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  ));
+  AppUpdateService(this._baseUrl)
+      : _dio = Dio(BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ));
 
   Future<AppUpdateInfo> checkForUpdate() async {
     try {
@@ -85,7 +86,7 @@ class AppUpdateService {
       if (response.statusCode == 200) {
         return AppUpdateInfo.fromJson(response.data);
       }
-      
+
       return AppUpdateInfo.upToDate();
     } catch (e) {
       // При ошибке сети не блокируем приложение

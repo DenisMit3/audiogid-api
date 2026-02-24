@@ -17,7 +17,7 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
 
     return poiQuery.watch().map((rows) {
       if (rows.isEmpty) return null;
-      
+
       final poi = rows.first.readTable(pois);
       final allNarrations = rows
           .map((row) => row.readTableOrNull(narrations))
@@ -49,13 +49,19 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
       await into(pois).insertOnConflictUpdate(poi);
 
       // Preserve local paths from existing narrations
-      final existingNarrations = await (select(narrations)..where((t) => t.poiId.equals(poi.id.value))).get();
-      final localPaths = {for (final n in existingNarrations) n.id: n.localPath};
+      final existingNarrations = await (select(narrations)
+            ..where((t) => t.poiId.equals(poi.id.value)))
+          .get();
+      final localPaths = {
+        for (final n in existingNarrations) n.id: n.localPath
+      };
 
-      await (delete(narrations)..where((t) => t.poiId.equals(poi.id.value))).go();
+      await (delete(narrations)..where((t) => t.poiId.equals(poi.id.value)))
+          .go();
       await (delete(media)..where((t) => t.poiId.equals(poi.id.value))).go();
-      await (delete(poiSources)..where((t) => t.poiId.equals(poi.id.value))).go();
-      
+      await (delete(poiSources)..where((t) => t.poiId.equals(poi.id.value)))
+          .go();
+
       for (var n in nars) {
         var nToInsert = n;
         // Restore localPath if it existed
@@ -75,11 +81,11 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
   }
 
   Future<void> toggleFavorite(String id) async {
-    final poi = await (select(pois)..where((t) => t.id.equals(id))).getSingleOrNull();
+    final poi =
+        await (select(pois)..where((t) => t.id.equals(id))).getSingleOrNull();
     if (poi != null) {
-      await (update(pois)..where((t) => t.id.equals(id))).write(
-        PoisCompanion(isFavorite: Value(!poi.isFavorite))
-      );
+      await (update(pois)..where((t) => t.id.equals(id)))
+          .write(PoisCompanion(isFavorite: Value(!poi.isFavorite)));
     }
   }
 
@@ -87,22 +93,24 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
     return (select(pois)..where((t) => t.isFavorite.equals(true))).watch();
   }
 
-  Future<List<Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
-    // 1 deg ~ 111km. 
+  Future<List<Poi>> getNearbyCandidates(
+      double lat, double lon, double radiusMeters) async {
+    // 1 deg ~ 111km.
     const degreesPerMeterLat = 1 / 111320.0;
     // Approximating longitude factor (max 2.0 at 60deg lat, infinite at poles but we limit app to cities)
     // We use a safe upper bound factor for longitude to catch candidates.
-    const safeLonFactor = 2.0; 
-    
+    const safeLonFactor = 2.0;
+
     final latDelta = radiusMeters * degreesPerMeterLat;
     final lonDelta = latDelta * safeLonFactor;
 
     return (select(pois)
-      ..where((t) => 
-        t.lat.isBetween(Variable(lat - latDelta), Variable(lat + latDelta)) & 
-        t.lon.isBetween(Variable(lon - lonDelta), Variable(lon + lonDelta))
-      )
-    ).get();
+          ..where((t) =>
+              t.lat.isBetween(
+                  Variable(lat - latDelta), Variable(lat + latDelta)) &
+              t.lon.isBetween(
+                  Variable(lon - lonDelta), Variable(lon + lonDelta))))
+        .get();
   }
 
   Future<List<Poi>> getPoisByIds(List<String> ids) {

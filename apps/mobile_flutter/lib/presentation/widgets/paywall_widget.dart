@@ -25,7 +25,9 @@ class _PaywallWidgetState extends ConsumerState<PaywallWidget> {
   Future<void> _loadProducts() async {
     try {
       // Load available products - using fullCityAccess as default
-      final products = await ref.read(purchaseServiceProvider.notifier).fetchProducts({IAPIds.fullCityAccess});
+      final products = await ref
+          .read(purchaseServiceProvider.notifier)
+          .fetchProducts({IAPIds.fullCityAccess});
       if (mounted) {
         setState(() {
           _products = products;
@@ -48,7 +50,8 @@ class _PaywallWidgetState extends ConsumerState<PaywallWidget> {
 
     // Listen to success state to close the paywall
     ref.listen(purchaseServiceProvider, (previous, next) {
-      if (next.status == PurchaseStatusState.success || next.status == PurchaseStatusState.restored) {
+      if (next.status == PurchaseStatusState.success ||
+          next.status == PurchaseStatusState.restored) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Access Granted!')),
@@ -65,7 +68,10 @@ class _PaywallWidgetState extends ConsumerState<PaywallWidget> {
         children: [
           Text(
             'Unlock All Features',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -74,23 +80,27 @@ class _PaywallWidgetState extends ConsumerState<PaywallWidget> {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_error != null)
-            Text('Error: $_error', style: const TextStyle(color: Colors.red), textAlign: TextAlign.center)
-          else 
+            Text('Error: $_error',
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center)
+          else
             ..._buildProductButtons(context, purchaseState),
-          
           const SizedBox(height: 16),
           TextButton(
-            onPressed: purchaseState.status == PurchaseStatusState.pending 
-                ? null 
-                : () => ref.read(purchaseServiceProvider.notifier).restorePurchases(),
+            onPressed: purchaseState.status == PurchaseStatusState.pending
+                ? null
+                : () => ref
+                    .read(purchaseServiceProvider.notifier)
+                    .restorePurchases(),
             child: const Text('Restore Purchases'),
           ),
-          if (purchaseState.status == PurchaseStatusState.error && purchaseState.error != null)
-             Text(
-               purchaseState.error!,
-               style: const TextStyle(color: Colors.red),
-               textAlign: TextAlign.center,
-             ),
+          if (purchaseState.status == PurchaseStatusState.error &&
+              purchaseState.error != null)
+            Text(
+              purchaseState.error!,
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
         ],
       ),
     );

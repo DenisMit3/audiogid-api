@@ -31,9 +31,9 @@ void main() async {
   //   });
   // }
   await FlutterDownloader.initialize(debug: true);
-  
+
   // Firebase initialization removed
-  
+
   final audioHandler = await AudioService.init(
     builder: () => AudiogidAudioHandler(),
     config: const AudioServiceConfig(
@@ -59,8 +59,10 @@ void main() async {
   // Check for app updates (force update check)
   AppUpdateInfo? updateInfo;
   try {
-    updateInfo = await container.read(appUpdateServiceProvider).checkForUpdate();
-    debugPrint('App update check: required=${updateInfo.updateRequired}, force=${updateInfo.forceUpdate}');
+    updateInfo =
+        await container.read(appUpdateServiceProvider).checkForUpdate();
+    debugPrint(
+        'App update check: required=${updateInfo.updateRequired}, force=${updateInfo.forceUpdate}');
   } catch (e) {
     debugPrint('App update check failed: $e');
   }
@@ -72,7 +74,8 @@ void main() async {
         debugShowCheckedModeBanner: false,
         home: ForceUpdateScreen(
           storeUrl: updateInfo.storeUrl,
-          message: updateInfo.messageRu ?? 'Пожалуйста, обновите приложение для продолжения работы.',
+          message: updateInfo.messageRu ??
+              'Пожалуйста, обновите приложение для продолжения работы.',
           currentVersion: updateInfo.currentVersion,
           minVersion: updateInfo.minVersion,
         ),
@@ -83,7 +86,8 @@ void main() async {
 
   // API Connectivity Check
   try {
-    final isHealthy = await container.read(apiHealthServiceProvider).checkHealth();
+    final isHealthy =
+        await container.read(apiHealthServiceProvider).checkHealth();
     if (!isHealthy) {
       debugPrint('API health check failed');
       // Potential UI feedback could go here

@@ -1,5 +1,5 @@
 /// Common widgets barrel exports
-/// 
+///
 /// This file exports all common UI components for easy importing:
 /// ```dart
 /// import 'package:mobile_flutter/presentation/widgets/common/common.dart';
@@ -17,7 +17,7 @@ export 'accessibility_widgets.dart';
 // Responsive text components
 export 'responsive_text.dart';
 
-// Responsive layout components  
+// Responsive layout components
 export 'responsive_layout.dart';
 
 // Page transition animations

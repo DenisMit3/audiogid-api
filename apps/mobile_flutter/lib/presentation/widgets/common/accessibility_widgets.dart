@@ -108,9 +108,7 @@ class AccessibleCard extends StatelessWidget {
     Widget cardContent = Card(
       margin: margin,
       color: backgroundColor,
-      child: padding != null 
-          ? Padding(padding: padding!, child: child) 
-          : child,
+      child: padding != null ? Padding(padding: padding!, child: child) : child,
     );
 
     if (onTap != null) {
@@ -291,7 +289,7 @@ class AccessibleHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    
+
     final defaultStyle = switch (level) {
       1 => textTheme.headlineLarge,
       2 => textTheme.headlineMedium,
@@ -332,7 +330,7 @@ class SkipToContentButton extends StatelessWidget {
           builder: (context) {
             final hasFocus = Focus.of(context).hasFocus;
             if (!hasFocus) return const SizedBox.shrink();
-            
+
             return Positioned(
               top: 0,
               left: 0,
@@ -360,7 +358,8 @@ class SkipToContentButton extends StatelessWidget {
 
 /// Announcer for dynamic content changes
 class AccessibilityAnnouncer {
-  static void announce(BuildContext context, String message, {bool isPolite = true}) {
+  static void announce(BuildContext context, String message,
+      {bool isPolite = true}) {
     SemanticsService.announce(
       message,
       isPolite ? TextDirection.ltr : TextDirection.ltr,

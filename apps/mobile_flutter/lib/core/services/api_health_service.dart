@@ -19,8 +19,8 @@ class ApiHealthService {
 
   Future<bool> checkHealth() async {
     try {
-      final response = await _dio.get('/ops/health')
-          .timeout(const Duration(seconds: 5));
+      final response =
+          await _dio.get('/ops/health').timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (e) {
       return false;

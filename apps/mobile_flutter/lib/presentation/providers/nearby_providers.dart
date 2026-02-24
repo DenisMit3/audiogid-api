@@ -39,7 +39,7 @@ Future<List<Helper>> nearbyHelpers(Ref ref) async {
 String mapStyleUrl(Ref ref) {
   // Configurable via provider. Could verify with SettingsRepository if needed.
   // Using a demo vector style URL compliant with MapLibre
-  return 'https://demotiles.maplibre.org/style.json'; 
+  return 'https://demotiles.maplibre.org/style.json';
 }
 
 @riverpod
@@ -55,7 +55,7 @@ Stream<Position> userLocationStream(Ref ref) {
 @riverpod
 class SelectedHelperType extends _$SelectedHelperType {
   @override
-  HelperType? build() => null; 
+  HelperType? build() => null;
 
   void select(HelperType? type) {
     state = type;

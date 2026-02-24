@@ -17,7 +17,7 @@ class DeepLinkService {
   // Callback to be set by the UI/Router layer to handle navigation if needed,
   // or we can rely on GoRouter's declarative routing if the OS passes the intent.
   // But for Attribution, we need to inspect.
-  
+
   Future<void> init() async {
     // Check initial link
     try {
@@ -50,16 +50,17 @@ class DeepLinkService {
     final token = uri.queryParameters['token'];
     final timestamp = uri.queryParameters['timestamp'];
     final signature = uri.queryParameters['signature'];
-    
+
     // If no signature is present, we assume it's a public link and allow it.
     // Adjust this logic if ALL links must be signed.
     if (token == null || signature == null) return true;
 
-    const secretKey = String.fromEnvironment('DEEP_LINK_SECRET', defaultValue: 'CHANGE_ME_IN_PROD');
-    
+    const secretKey = String.fromEnvironment('DEEP_LINK_SECRET',
+        defaultValue: 'CHANGE_ME_IN_PROD');
+
     final hmac = Hmac(sha256, utf8.encode(secretKey));
     final digest = hmac.convert(utf8.encode('$token:$timestamp'));
-    
+
     return digest.toString() == signature;
   }
 
@@ -68,17 +69,25 @@ class DeepLinkService {
     final utmCampaign = uri.queryParameters['utm_campaign'];
 
     // Whitelist validation
-    const allowedSources = {'qr', 'telegram', 'partner_a', 'website', 'email_campaign'};
+    const allowedSources = {
+      'qr',
+      'telegram',
+      'partner_a',
+      'website',
+      'email_campaign'
+    };
     final validPattern = RegExp(r'^[a-zA-Z0-9_]+$');
 
-    if (utmSource != null && (allowedSources.contains(utmSource) || validPattern.hasMatch(utmSource))) {
+    if (utmSource != null &&
+        (allowedSources.contains(utmSource) ||
+            validPattern.hasMatch(utmSource))) {
       debugPrint('Attribution Tracked: $utmSource');
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('attribution_source', utmSource);
-        
+
         if (utmCampaign != null && validPattern.hasMatch(utmCampaign)) {
-           await prefs.setString('attribution_campaign', utmCampaign);
+          await prefs.setString('attribution_campaign', utmCampaign);
         }
       } catch (e) {
         debugPrint('Error saving attribution: $e');
@@ -87,7 +96,7 @@ class DeepLinkService {
       debugPrint('Attribution source rejected: $utmSource');
     }
   }
-  
+
   void dispose() {
     _sub?.cancel();
   }
@@ -96,7 +105,7 @@ class DeepLinkService {
   void handleDeepLink(Map<String, dynamic> data) {
     final type = data['type'] as String?;
     final id = data['id'] as String?;
-    
+
     if (type != null && id != null) {
       debugPrint('Handling deep link: type=$type, id=$id');
       // Navigation will be handled by GoRouter based on the current route

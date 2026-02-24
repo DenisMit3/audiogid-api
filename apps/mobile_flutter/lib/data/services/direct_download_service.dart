@@ -64,7 +64,7 @@ class DirectDownloadService extends _$DirectDownloadService {
 
   Future<void> startDownload(String citySlug) async {
     _cancelToken = CancelToken();
-    
+
     state = {
       ...state,
       citySlug: DirectDownloadStatus(
@@ -76,15 +76,16 @@ class DirectDownloadService extends _$DirectDownloadService {
     try {
       final dio = ref.read(dioProvider);
       final config = ref.read(appConfigProvider);
-      
+
       // 1. Получаем манифест города
-      final manifestUrl = '${config.apiBaseUrl}/public/cities/$citySlug/offline-manifest';
+      final manifestUrl =
+          '${config.apiBaseUrl}/public/cities/$citySlug/offline-manifest';
       final manifestRes = await dio.get(manifestUrl, cancelToken: _cancelToken);
       final manifest = manifestRes.data as Map<String, dynamic>;
-      
+
       final assets = (manifest['assets'] as List?) ?? [];
       final totalAssets = assets.length;
-      
+
       if (totalAssets == 0) {
         state = {
           ...state,
@@ -106,7 +107,8 @@ class DirectDownloadService extends _$DirectDownloadService {
 
       // 2. Создаём директорию для загрузки
       final appDocDir = await getApplicationDocumentsDirectory();
-      final cityDir = Directory(p.join(appDocDir.path, OfflineConstants.offlineDir, citySlug));
+      final cityDir = Directory(
+          p.join(appDocDir.path, OfflineConstants.offlineDir, citySlug));
       if (!cityDir.existsSync()) {
         cityDir.createSync(recursive: true);
       }
@@ -117,26 +119,26 @@ class DirectDownloadService extends _$DirectDownloadService {
 
       for (final asset in assets) {
         if (_cancelToken?.isCancelled ?? false) break;
-        
+
         try {
           final url = asset['url'] as String?;
           final id = asset['id'] as String?;
           final type = asset['type'] as String? ?? 'file';
-          
+
           if (url == null || id == null) continue;
-          
+
           // Определяем расширение файла
           String ext = _getExtension(url, type);
           final filename = '$id$ext';
           final filePath = p.join(cityDir.path, filename);
-          
+
           // Пропускаем если файл уже существует
           if (File(filePath).existsSync()) {
             downloaded++;
             _updateProgress(citySlug, downloaded, totalAssets);
             continue;
           }
-          
+
           // Загружаем файл
           await dio.download(
             url,
@@ -146,10 +148,9 @@ class DirectDownloadService extends _$DirectDownloadService {
               receiveTimeout: const Duration(seconds: 60),
             ),
           );
-          
+
           downloaded++;
           _updateProgress(citySlug, downloaded, totalAssets);
-          
         } catch (e) {
           errors.add(e.toString());
           // Продолжаем загрузку остальных файлов
@@ -175,7 +176,8 @@ class DirectDownloadService extends _$DirectDownloadService {
           ...state,
           citySlug: state[citySlug]!.copyWith(
             stage: DirectDownloadStage.failed,
-            error: 'Не удалось загрузить ${errors.length} из $totalAssets файлов',
+            error:
+                'Не удалось загрузить ${errors.length} из $totalAssets файлов',
           )
         };
       } else {
@@ -187,11 +189,10 @@ class DirectDownloadService extends _$DirectDownloadService {
             downloadedAssets: downloaded,
           )
         };
-        
+
         // Обновляем список загруженных городов
         ref.invalidate(directDownloadedCitiesProvider);
       }
-
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) {
         state = {
@@ -231,7 +232,7 @@ class DirectDownloadService extends _$DirectDownloadService {
       final pathExt = p.extension(uri.path);
       if (pathExt.isNotEmpty) return pathExt;
     }
-    
+
     // Fallback по типу
     switch (type) {
       case 'audio':
@@ -259,17 +260,18 @@ class DirectDownloadService extends _$DirectDownloadService {
   Future<void> deleteBundle(String citySlug) async {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
-      final cityDir = Directory(p.join(appDocDir.path, OfflineConstants.offlineDir, citySlug));
-      
+      final cityDir = Directory(
+          p.join(appDocDir.path, OfflineConstants.offlineDir, citySlug));
+
       if (await cityDir.exists()) {
         await cityDir.delete(recursive: true);
       }
-      
+
       // Убираем из состояния
       final newState = Map<String, DirectDownloadStatus>.from(state);
       newState.remove(citySlug);
       state = newState;
-      
+
       ref.invalidate(directDownloadedCitiesProvider);
     } catch (e) {
       // Игнорируем ошибки удаления
@@ -281,12 +283,13 @@ class DirectDownloadService extends _$DirectDownloadService {
 Future<List<String>> directDownloadedCities(Ref ref) async {
   // Следим за изменениями в сервисе загрузки
   ref.watch(directDownloadServiceProvider);
-  
+
   final appDocDir = await getApplicationDocumentsDirectory();
-  final offlineDir = Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
-  
+  final offlineDir =
+      Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
+
   if (!await offlineDir.exists()) return [];
-  
+
   final list = <String>[];
   await for (final entity in offlineDir.list()) {
     if (entity is Directory) {

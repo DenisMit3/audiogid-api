@@ -25,15 +25,16 @@ class AnalyticsService {
   final AppDatabase _db;
   final String _apiBaseUrl;
   final Dio _dio;
-  
+
   Timer? _timer;
   bool _isFlushing = false;
 
-  AnalyticsService(this._db, this._apiBaseUrl) : _dio = Dio(BaseOptions(
-    baseUrl: _apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  )) {
+  AnalyticsService(this._db, this._apiBaseUrl)
+      : _dio = Dio(BaseOptions(
+          baseUrl: _apiBaseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        )) {
     _init();
   }
 
@@ -43,18 +44,19 @@ class AnalyticsService {
     _scheduleFlush();
   }
 
-  Future<void> logEvent(String eventType, [Map<String, dynamic>? payload]) async {
+  Future<void> logEvent(String eventType,
+      [Map<String, dynamic>? payload]) async {
     // Persist to DB for Backend
     try {
       final id = const Uuid().v4();
       await _db.into(_db.analyticsPendingEvents).insert(
-        AnalyticsPendingEventsCompanion.insert(
-          id: id,
-          eventType: eventType,
-          payloadJson: Value(payload != null ? jsonEncode(payload) : null),
-          createdAt: Value(DateTime.now()),
-        ),
-      );
+            AnalyticsPendingEventsCompanion.insert(
+              id: id,
+              eventType: eventType,
+              payloadJson: Value(payload != null ? jsonEncode(payload) : null),
+              createdAt: Value(DateTime.now()),
+            ),
+          );
     } catch (e) {
       debugPrint('Failed to persist analytics event: $e');
     }
@@ -77,17 +79,20 @@ class AnalyticsService {
       final prefs = await SharedPreferences.getInstance();
       var anonId = prefs.getString('device_anon_id');
       if (anonId == null) {
-          anonId = const Uuid().v4();
-          await prefs.setString('device_anon_id', anonId);
+        anonId = const Uuid().v4();
+        await prefs.setString('device_anon_id', anonId);
       }
 
       // 3. Prepare events payload for API
-      final eventsPayload = events.map((e) => {
-        'event_id': e.id,
-        'event_type': e.eventType,
-        'ts': e.createdAt.toUtc().toIso8601String(),
-        'payload': e.payloadJson != null ? jsonDecode(e.payloadJson!) : null,
-      }).toList();
+      final eventsPayload = events
+          .map((e) => {
+                'event_id': e.id,
+                'event_type': e.eventType,
+                'ts': e.createdAt.toUtc().toIso8601String(),
+                'payload':
+                    e.payloadJson != null ? jsonDecode(e.payloadJson!) : null,
+              })
+          .toList();
 
       // 4. Send to API
       final response = await _dio.post(
@@ -103,12 +108,12 @@ class AnalyticsService {
         await (_db.delete(_db.analyticsPendingEvents)
               ..where((t) => t.id.isIn(events.map((e) => e.id))))
             .go();
-        debugPrint('Analytics flush: ${events.length} events sent successfully');
+        debugPrint(
+            'Analytics flush: ${events.length} events sent successfully');
       }
-
     } catch (e) {
       debugPrint('Analytics Sync Failed: $e');
-      
+
       // Clean up old events to prevent DB bloat (older than 7 days)
       try {
         final cutoff = DateTime.now().subtract(const Duration(days: 7));
@@ -150,7 +155,8 @@ class AnalyticsService {
   }
 
   Future<void> logAudioPlay(String poiId, String narrationId) async {
-    await logEvent('audio_play', {'poi_id': poiId, 'narration_id': narrationId});
+    await logEvent(
+        'audio_play', {'poi_id': poiId, 'narration_id': narrationId});
   }
 
   Future<void> logPurchase(String productId, double price) async {

@@ -1,9 +1,4 @@
-enum HelperType {
-  toilet,
-  cafe,
-  drinkingWater,
-  other
-}
+enum HelperType { toilet, cafe, drinkingWater, other }
 
 class Helper {
   final String id;

@@ -94,7 +94,8 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                 children: [
                   // Map tiles - using OSM
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.audiogid.app',
                   ),
 
@@ -103,23 +104,26 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                     data: (helpers) {
                       final filteredHelpers = selectedType == null
                           ? helpers
-                          : helpers.where((h) => h.type == selectedType).toList();
+                          : helpers
+                              .where((h) => h.type == selectedType)
+                              .toList();
 
                       final helperMarkers = filteredHelpers.map((h) => Marker(
-                        point: LatLng(h.lat, h.lon),
-                        width: 44,
-                        height: 44,
-                        child: _buildHelperMarker(h),
-                      ));
+                            point: LatLng(h.lat, h.lon),
+                            width: 44,
+                            height: 44,
+                            child: _buildHelperMarker(h),
+                          ));
 
                       final poiMarkers = pois.map((p) => Marker(
-                        point: LatLng(p.lat, p.lon),
-                        width: 48,
-                        height: 48,
-                        child: _buildPoiMarker(p),
-                      ));
+                            point: LatLng(p.lat, p.lon),
+                            width: 48,
+                            height: 48,
+                            child: _buildPoiMarker(p),
+                          ));
 
-                      final allMarkers = [...helperMarkers, ...poiMarkers].toList();
+                      final allMarkers =
+                          [...helperMarkers, ...poiMarkers].toList();
 
                       return MarkerClusterLayerWidget(
                         options: MarkerClusterLayerOptions(
@@ -138,7 +142,8 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colorScheme.primary.withOpacity(0.3),
+                                      color:
+                                          colorScheme.primary.withOpacity(0.3),
                                       blurRadius: 8,
                                     ),
                                   ],
@@ -177,10 +182,12 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                                 decoration: BoxDecoration(
                                   color: colorScheme.primary,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border:
+                                      Border.all(color: Colors.white, width: 3),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colorScheme.primary.withOpacity(0.4),
+                                      color:
+                                          colorScheme.primary.withOpacity(0.4),
                                       blurRadius: 8,
                                     ),
                                   ],
@@ -199,11 +206,13 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                     attributions: [
                       TextSourceAttribution(
                         'OpenStreetMap contributors',
-                        onTap: () => launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
+                        onTap: () => launchUrl(
+                            Uri.parse('https://openstreetmap.org/copyright')),
                       ),
                       TextSourceAttribution(
                         'MapLibre',
-                        onTap: () => launchUrl(Uri.parse('https://maplibre.org')),
+                        onTap: () =>
+                            launchUrl(Uri.parse('https://maplibre.org')),
                       ),
                     ],
                   ),
@@ -230,7 +239,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                           child: const Icon(Icons.sos),
                         ),
                       ),
-                      
+
                       const SizedBox(height: AppSpacing.sm),
 
                       // Share Location
@@ -242,14 +251,18 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                           backgroundColor: colorScheme.surface,
                           foregroundColor: colorScheme.onSurface,
                           onPressed: () {
-                             final pos = ref.read(userLocationStreamProvider).value;
-                             if (pos != null) {
-                               Share.share('Я здесь! https://maps.google.com/?q=${pos.latitude},${pos.longitude}');
-                             } else {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(content: Text('Местоположение не определено')),
-                               );
-                             }
+                            final pos =
+                                ref.read(userLocationStreamProvider).value;
+                            if (pos != null) {
+                              Share.share(
+                                  'Я здесь! https://maps.google.com/?q=${pos.latitude},${pos.longitude}');
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Местоположение не определено')),
+                              );
+                            }
                           },
                           child: const Icon(Icons.share),
                         ),
@@ -265,9 +278,11 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                           heroTag: 'my_loc',
                           onPressed: () {
                             HapticFeedback.lightImpact();
-                            final pos = ref.read(userLocationStreamProvider).value;
+                            final pos =
+                                ref.read(userLocationStreamProvider).value;
                             if (pos != null) {
-                              _mapController.move(LatLng(pos.latitude, pos.longitude), 15);
+                              _mapController.move(
+                                  LatLng(pos.latitude, pos.longitude), 15);
                             } else {
                               _checkPermission();
                             }
@@ -277,30 +292,46 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                       ),
 
                       const SizedBox(height: AppSpacing.md),
-                      
+
                       // Free Walking Toggle
                       Semantics(
                         button: true,
-                        label: freeWalkState.isActive ? 'Выключить прогулку' : 'Включить свободную прогулку',
+                        label: freeWalkState.isActive
+                            ? 'Выключить прогулку'
+                            : 'Включить свободную прогулку',
                         child: FloatingActionButton.extended(
                           heroTag: 'free_walk',
                           isExtended: true,
                           elevation: 4,
-                          backgroundColor: freeWalkState.isActive ? colorScheme.primary : colorScheme.surface,
-                          foregroundColor: freeWalkState.isActive ? colorScheme.onPrimary : colorScheme.primary,
+                          backgroundColor: freeWalkState.isActive
+                              ? colorScheme.primary
+                              : colorScheme.surface,
+                          foregroundColor: freeWalkState.isActive
+                              ? colorScheme.onPrimary
+                              : colorScheme.primary,
                           onPressed: () {
-                             HapticFeedback.mediumImpact();
-                             if (freeWalkState.isActive) {
-                               ref.read(freeWalkingServiceProvider.notifier).stop();
-                             } else {
-                               ref.read(freeWalkingServiceProvider.notifier).start();
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(content: Text('Свободная прогулка включена. Мы расскажем о местах рядом!')),
-                               );
-                             }
+                            HapticFeedback.mediumImpact();
+                            if (freeWalkState.isActive) {
+                              ref
+                                  .read(freeWalkingServiceProvider.notifier)
+                                  .stop();
+                            } else {
+                              ref
+                                  .read(freeWalkingServiceProvider.notifier)
+                                  .start();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Свободная прогулка включена. Мы расскажем о местах рядом!')),
+                              );
+                            }
                           },
-                          icon: Icon(freeWalkState.isActive ? Icons.hearing : Icons.directions_walk),
-                          label: Text(freeWalkState.isActive ? 'Слушаем...' : 'Прогулка'),
+                          icon: Icon(freeWalkState.isActive
+                              ? Icons.hearing
+                              : Icons.directions_walk),
+                          label: Text(freeWalkState.isActive
+                              ? 'Слушаем...'
+                              : 'Прогулка'),
                         ),
                       ),
 
@@ -319,7 +350,9 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                                 isSelected: selectedType == null,
                                 onTap: () {
                                   HapticFeedback.selectionClick();
-                                  ref.read(selectedHelperTypeProvider.notifier).select(null);
+                                  ref
+                                      .read(selectedHelperTypeProvider.notifier)
+                                      .select(null);
                                 },
                               ),
                               const SizedBox(width: AppSpacing.sm),
@@ -329,7 +362,9 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                                 isSelected: selectedType == HelperType.toilet,
                                 onTap: () {
                                   HapticFeedback.selectionClick();
-                                  ref.read(selectedHelperTypeProvider.notifier).select(HelperType.toilet);
+                                  ref
+                                      .read(selectedHelperTypeProvider.notifier)
+                                      .select(HelperType.toilet);
                                 },
                               ),
                               const SizedBox(width: AppSpacing.sm),
@@ -339,17 +374,22 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                                 isSelected: selectedType == HelperType.cafe,
                                 onTap: () {
                                   HapticFeedback.selectionClick();
-                                  ref.read(selectedHelperTypeProvider.notifier).select(HelperType.cafe);
+                                  ref
+                                      .read(selectedHelperTypeProvider.notifier)
+                                      .select(HelperType.cafe);
                                 },
                               ),
                               const SizedBox(width: AppSpacing.sm),
                               _FilterChip(
                                 label: 'Питьевая вода',
                                 icon: Icons.water_drop,
-                                isSelected: selectedType == HelperType.drinkingWater,
+                                isSelected:
+                                    selectedType == HelperType.drinkingWater,
                                 onTap: () {
                                   HapticFeedback.selectionClick();
-                                  ref.read(selectedHelperTypeProvider.notifier).select(HelperType.drinkingWater);
+                                  ref
+                                      .read(selectedHelperTypeProvider.notifier)
+                                      .select(HelperType.drinkingWater);
                                 },
                               ),
                             ],
@@ -370,7 +410,8 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                   return Container(
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(20)),
                       boxShadow: [
                         BoxShadow(
                           blurRadius: 16,
@@ -382,7 +423,9 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                       data: (helpers) {
                         final filteredHelpers = selectedType == null
                             ? helpers
-                            : helpers.where((h) => h.type == selectedType).toList();
+                            : helpers
+                                .where((h) => h.type == selectedType)
+                                .toList();
 
                         final allItems = [...pois, ...filteredHelpers];
 
@@ -400,7 +443,8 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                         return ListView.builder(
                           controller: scrollController,
                           padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+                            bottom: MediaQuery.of(context).padding.bottom +
+                                AppSpacing.lg,
                           ),
                           itemCount: allItems.length + 1,
                           itemBuilder: (context, index) {
@@ -575,7 +619,9 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
           subtitle: LabelText(poi.category ?? 'Место'),
           trailing: AccessibleIconButton(
             icon: poi.isFavorite ? Icons.bookmark : Icons.bookmark_border,
-            tooltip: poi.isFavorite ? 'Убрать из избранного' : 'Добавить в избранное',
+            tooltip: poi.isFavorite
+                ? 'Убрать из избранного'
+                : 'Добавить в избранное',
             color: poi.isFavorite ? colorScheme.primary : null,
             onPressed: () {
               HapticFeedback.lightImpact();
@@ -702,13 +748,17 @@ class _FilterChip extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                    color: isSelected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),

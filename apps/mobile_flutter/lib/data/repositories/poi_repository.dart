@@ -27,7 +27,7 @@ class OfflinePoiRepository implements PoiRepository {
   Stream<domain.Poi?> watchPoi(String id) {
     return _db.poiDao.watchPoi(id).map((details) {
       if (details == null) return null;
-      
+
       return domain.Poi(
         id: details.poi.id,
         citySlug: details.poi.citySlug,
@@ -39,26 +39,32 @@ class OfflinePoiRepository implements PoiRepository {
         hasAccess: details.poi.hasAccess,
         isFavorite: details.poi.isFavorite,
         category: details.poi.category,
-        narrations: details.narrations.map((n) => domain.Narration(
-          id: n.id,
-          url: n.url,
-          locale: n.locale,
-          durationSeconds: n.durationSeconds,
-          transcript: n.transcript,
-        )).toList(),
-        media: details.media.map((m) => domain.Media(
-          id: m.id,
-          url: m.url,
-          mediaType: m.mediaType,
-          author: m.author,
-          sourcePageUrl: m.sourcePageUrl,
-          licenseType: m.licenseType,
-        )).toList(),
-        sources: details.sources.map((s) => domain.PoiSource(
-          id: s.id,
-          name: s.name,
-          url: s.url,
-        )).toList(),
+        narrations: details.narrations
+            .map((n) => domain.Narration(
+                  id: n.id,
+                  url: n.url,
+                  locale: n.locale,
+                  durationSeconds: n.durationSeconds,
+                  transcript: n.transcript,
+                ))
+            .toList(),
+        media: details.media
+            .map((m) => domain.Media(
+                  id: m.id,
+                  url: m.url,
+                  mediaType: m.mediaType,
+                  author: m.author,
+                  sourcePageUrl: m.sourcePageUrl,
+                  licenseType: m.licenseType,
+                ))
+            .toList(),
+        sources: details.sources
+            .map((s) => domain.PoiSource(
+                  id: s.id,
+                  name: s.name,
+                  url: s.url,
+                ))
+            .toList(),
       );
     });
   }
@@ -70,7 +76,8 @@ class OfflinePoiRepository implements PoiRepository {
       if (response.statusCode == 304) return;
       if (response.statusCode >= 400) return;
 
-      final data = await _api.apiClient.deserializeAsync(response.body, 'PoiDetail') as api.PoiDetail;
+      final data = await _api.apiClient
+          .deserializeAsync(response.body, 'PoiDetail') as api.PoiDetail;
 
       final poiComp = PoisCompanion(
         id: Value(data.id!),
@@ -84,31 +91,39 @@ class OfflinePoiRepository implements PoiRepository {
         category: Value(data.category),
       );
 
-      final nars = data.narrations.map((n) => NarrationsCompanion(
-        id: Value(n.id!),
-        poiId: Value(data.id!),
-        url: Value(n.url!),
-        locale: Value(n.locale!),
-        durationSeconds: Value(n.durationSeconds?.toDouble()),
-        transcript: Value((n as dynamic).transcript as String?),
-      )).toList();
+      final nars = data.narrations
+          .map((n) => NarrationsCompanion(
+                id: Value(n.id!),
+                poiId: Value(data.id!),
+                url: Value(n.url!),
+                locale: Value(n.locale!),
+                durationSeconds: Value(n.durationSeconds?.toDouble()),
+                transcript: Value((n as dynamic).transcript as String?),
+              ))
+          .toList();
 
-      final meds = data.media.map((m) => MediaCompanion(
-        id: Value(m.id!),
-        poiId: Value(data.id!),
-        url: Value(m.url!),
-        mediaType: Value(m.mediaType!),
-        author: Value(m.author),
-        sourcePageUrl: Value(m.sourcePageUrl),
-        licenseType: Value((m as dynamic).licenseType as String?),
-      )).toList();
+      final meds = data.media
+          .map((m) => MediaCompanion(
+                id: Value(m.id!),
+                poiId: Value(data.id!),
+                url: Value(m.url!),
+                mediaType: Value(m.mediaType!),
+                author: Value(m.author),
+                sourcePageUrl: Value(m.sourcePageUrl),
+                licenseType: Value((m as dynamic).licenseType as String?),
+              ))
+          .toList();
 
-      final srcs = (data as dynamic).sources?.map((s) => PoiSourcesCompanion(
-        id: Value(s.id!),
-        poiId: Value(data.id!),
-        name: Value(s.name!),
-        url: Value(s.url),
-      )).toList() ?? <PoiSourcesCompanion>[];
+      final srcs = (data as dynamic)
+              .sources
+              ?.map((s) => PoiSourcesCompanion(
+                    id: Value(s.id!),
+                    poiId: Value(data.id!),
+                    name: Value(s.name!),
+                    url: Value(s.url),
+                  ))
+              .toList() ??
+          <PoiSourcesCompanion>[];
 
       await _db.poiDao.upsertPoi(poiComp, nars, meds, srcs);
     } catch (e) {
@@ -158,7 +173,7 @@ class OfflinePoiRepository implements PoiRepository {
         }
 
         totalFetched += items.length;
-        
+
         // Проверяем, есть ли еще страницы
         if (totalFetched >= total || items.length < perPage) break;
         page++;
@@ -178,18 +193,21 @@ class OfflinePoiRepository implements PoiRepository {
 
   @override
   Stream<List<domain.Poi>> watchFavorites() {
-    return _db.poiDao.watchFavorites().map((list) => list.map(_mapTablePoiToDomain).toList());
+    return _db.poiDao
+        .watchFavorites()
+        .map((list) => list.map(_mapTablePoiToDomain).toList());
   }
 
   @override
   Stream<List<domain.Poi>> watchPoisForCity(String citySlug) {
-    return (_db.select(_db.pois)..where((t) => t.citySlug.equals(citySlug))).watch().map(
-      (list) => list.map(_mapTablePoiToDomain).toList()
-    );
+    return (_db.select(_db.pois)..where((t) => t.citySlug.equals(citySlug)))
+        .watch()
+        .map((list) => list.map(_mapTablePoiToDomain).toList());
   }
 
   @override
-  Future<List<domain.Poi>> getNearbyCandidates(double lat, double lon, double radiusMeters) async {
+  Future<List<domain.Poi>> getNearbyCandidates(
+      double lat, double lon, double radiusMeters) async {
     final list = await _db.poiDao.getNearbyCandidates(lat, lon, radiusMeters);
     return list.map(_mapTablePoiToDomain).toList();
   }

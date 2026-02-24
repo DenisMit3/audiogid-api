@@ -43,8 +43,10 @@ class Tours extends Table {
 
 class TourItems extends Table {
   TextColumn get id => text()();
-  TextColumn get tourId => text().references(Tours, #id, onDelete: KeyAction.cascade)();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tourId =>
+      text().references(Tours, #id, onDelete: KeyAction.cascade)();
+  TextColumn get poiId =>
+      text().references(Pois, #id, onDelete: KeyAction.cascade)();
   IntColumn get orderIndex => integer()();
 
   @override
@@ -73,14 +75,15 @@ class Pois extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {citySlug, osmId}, // Composite unique
-    {citySlug, category}, // Index hint
-  ];
+        {citySlug, osmId}, // Composite unique
+        {citySlug, category}, // Index hint
+      ];
 }
 
 class Narrations extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
+  TextColumn get poiId =>
+      text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get url => text()();
   TextColumn get locale => text()();
   RealColumn get durationSeconds => real().nullable()();
@@ -96,7 +99,8 @@ class Narrations extends Table {
 
 class Media extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
+  TextColumn get poiId =>
+      text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get url => text()();
   TextColumn get mediaType => text()();
   TextColumn get author => text().nullable()();
@@ -110,7 +114,8 @@ class Media extends Table {
 
 class PoiSources extends Table {
   TextColumn get id => text()();
-  TextColumn get poiId => text().references(Pois, #id, onDelete: KeyAction.cascade)();
+  TextColumn get poiId =>
+      text().references(Pois, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
   TextColumn get url => text().nullable()();
 
@@ -195,7 +200,7 @@ class AppDatabase extends _$AppDatabase {
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
-            // tables are created by onCreate for new installs, 
+            // tables are created by onCreate for new installs,
             // but for older versions we might need this if they somehow bypassed onCreate
             for (final table in allTables) {
               await m.createTable(table);
@@ -203,11 +208,11 @@ class AppDatabase extends _$AppDatabase {
           }
 
           if (from < 4) {
-             await m.addColumn(tours, tours.transportType);
-             await m.addColumn(tours, tours.distanceKm);
-           }
-           // ... (existing migrations) ...
-           if (from < 5) {
+            await m.addColumn(tours, tours.transportType);
+            await m.addColumn(tours, tours.distanceKm);
+          }
+          // ... (existing migrations) ...
+          if (from < 5) {
             await m.addColumn(pois, pois.isFavorite);
             await m.addColumn(pois, pois.category);
             await m.addColumn(media, media.licenseType);
@@ -234,22 +239,24 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(narrations, narrations.voiceId);
             await m.addColumn(narrations, narrations.filesizeBytes);
           }
-           if (from < 10) {
+          if (from < 10) {
             await m.createTable(analyticsPendingEvents);
           }
           if (from < 11) {
-            await m.createIndex(Index('idx_pois_city_category', 'CREATE INDEX idx_pois_city_category ON pois(city_slug, category)'));
+            await m.createIndex(Index('idx_pois_city_category',
+                'CREATE INDEX idx_pois_city_category ON pois(city_slug, category)'));
           }
-           if (from < 12) {
-             await m.createIndex(Index('idx_tour_items_tour_order', 'CREATE INDEX idx_tour_items_tour_order ON tour_items(tour_id, order_index)'));
-           }
-           if (from < 13) {
-             await m.addColumn(narrations, narrations.kidsUrl);
-           }
-           if (from < 14) {
-             await m.addColumn(tours, tours.descriptionRu);
-             await m.addColumn(tours, tours.coverImage);
-           }
+          if (from < 12) {
+            await m.createIndex(Index('idx_tour_items_tour_order',
+                'CREATE INDEX idx_tour_items_tour_order ON tour_items(tour_id, order_index)'));
+          }
+          if (from < 13) {
+            await m.addColumn(narrations, narrations.kidsUrl);
+          }
+          if (from < 14) {
+            await m.addColumn(tours, tours.descriptionRu);
+            await m.addColumn(tours, tours.coverImage);
+          }
         },
       );
 }

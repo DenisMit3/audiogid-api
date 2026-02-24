@@ -14,7 +14,7 @@ class OfflineManagerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cityDao = ref.watch(appDatabaseProvider).cityDao;
-    
+
     return Scaffold(
       appBar: AppBar(title: const Text('Оффлайн режим')),
       body: StreamBuilder<List<City>>(
@@ -23,9 +23,9 @@ class OfflineManagerScreen extends ConsumerWidget {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final cities = snapshot.data!;
-          
+
           if (cities.isEmpty) {
             return const Center(
               child: Padding(
@@ -37,7 +37,7 @@ class OfflineManagerScreen extends ConsumerWidget {
               ),
             );
           }
-          
+
           return CustomScrollView(
             slivers: [
               const SliverToBoxAdapter(child: _StorageHeader()),
@@ -96,7 +96,8 @@ class _StorageHeader extends ConsumerWidget {
     final free = await manager.getFreeDiskSpace();
 
     final appDocDir = await getApplicationDocumentsDirectory();
-    final offlineDir = Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
+    final offlineDir =
+        Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
     final used = await manager.getDirectorySize(offlineDir);
 
     return {'free': free, 'used': used};
@@ -105,7 +106,8 @@ class _StorageHeader extends ConsumerWidget {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -125,12 +127,14 @@ class _StorageHeader extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Хранилище', style: Theme.of(context).textTheme.titleMedium),
+                Text('Хранилище',
+                    style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Использовано: ${hasData ? _formatBytes(used) : '...'}'),
+                    Text(
+                        'Использовано: ${hasData ? _formatBytes(used) : '...'}'),
                     Text('Свободно: ${hasData ? _formatBytes(free) : '...'}'),
                   ],
                 ),
@@ -161,16 +165,17 @@ class _CityDownloadTile extends ConsumerWidget {
     final downloadState = ref.watch(directDownloadServiceProvider);
 
     final status = downloadState[city.slug];
-    final isActive = status != null && 
+    final isActive = status != null &&
         status.stage != DirectDownloadStage.idle &&
         status.stage != DirectDownloadStage.completed &&
         status.stage != DirectDownloadStage.failed;
-    
-    final isDownloaded = downloadedListAsync.value?.contains(city.slug) ?? false;
+
+    final isDownloaded =
+        downloadedListAsync.value?.contains(city.slug) ?? false;
     final hasFailed = status?.stage == DirectDownloadStage.failed;
 
     Widget trailing;
-    
+
     if (isActive) {
       // Загрузка в процессе
       trailing = SizedBox(
@@ -182,7 +187,8 @@ class _CityDownloadTile extends ConsumerWidget {
             LinearProgressIndicator(value: status!.progress),
             const SizedBox(height: 4),
             Text(
-              _getStageText(status.stage, status.downloadedAssets, status.totalAssets),
+              _getStageText(
+                  status.stage, status.downloadedAssets, status.totalAssets),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -199,7 +205,9 @@ class _CityDownloadTile extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             tooltip: 'Повторить',
             onPressed: () {
-              ref.read(directDownloadServiceProvider.notifier).startDownload(city.slug);
+              ref
+                  .read(directDownloadServiceProvider.notifier)
+                  .startDownload(city.slug);
             },
           ),
         ],
@@ -223,30 +231,32 @@ class _CityDownloadTile extends ConsumerWidget {
         icon: const Icon(Icons.download_for_offline),
         tooltip: 'Загрузить',
         onPressed: () {
-          ref.read(directDownloadServiceProvider.notifier).startDownload(city.slug);
+          ref
+              .read(directDownloadServiceProvider.notifier)
+              .startDownload(city.slug);
         },
       );
     }
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: isDownloaded 
-            ? Colors.green.withOpacity(0.1) 
+        backgroundColor: isDownloaded
+            ? Colors.green.withOpacity(0.1)
             : Theme.of(context).colorScheme.primaryContainer,
         child: Icon(
           isDownloaded ? Icons.offline_pin : Icons.location_city,
-          color: isDownloaded 
-              ? Colors.green 
+          color: isDownloaded
+              ? Colors.green
               : Theme.of(context).colorScheme.primary,
         ),
       ),
       title: Text(city.nameRu),
-      subtitle: hasFailed 
+      subtitle: hasFailed
           ? Text(
               _formatError(status?.error),
               style: const TextStyle(color: Colors.red, fontSize: 12),
             )
-          : isDownloaded 
+          : isDownloaded
               ? const Text('Загружено', style: TextStyle(color: Colors.green))
               : null,
       trailing: trailing,
@@ -296,7 +306,9 @@ class _CityDownloadTile extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(c);
-              ref.read(directDownloadServiceProvider.notifier).deleteBundle(city.slug);
+              ref
+                  .read(directDownloadServiceProvider.notifier)
+                  .deleteBundle(city.slug);
             },
             child: const Text('Удалить'),
           ),

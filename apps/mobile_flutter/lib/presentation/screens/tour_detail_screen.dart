@@ -35,28 +35,35 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
     final selectedCity = ref.watch(selectedCityProvider).value;
     if (selectedCity == null) return const Scaffold();
 
-    final tourStream = ref.watch(tourRepositoryProvider).watchTour(widget.tourId);
+    final tourStream =
+        ref.watch(tourRepositoryProvider).watchTour(widget.tourId);
 
     return StreamBuilder<Tour?>(
       stream: tourStream,
       builder: (context, snapshot) {
         // #region agent log
-        print('[DEBUG f46abe] TourDetailScreen: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, tour items=${snapshot.data?.items?.length}');
+        print(
+            '[DEBUG f46abe] TourDetailScreen: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, tour items=${snapshot.data?.items?.length}');
         // #endregion
-        
+
         // Всегда запускаем syncTourDetail при первом build, чтобы загрузить POI
         if (!_syncTriggered) {
           _syncTriggered = true;
-          ref.read(tourRepositoryProvider).syncTourDetail(widget.tourId, selectedCity).ignore();
+          ref
+              .read(tourRepositoryProvider)
+              .syncTourDetail(widget.tourId, selectedCity)
+              .ignore();
         }
-        
+
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
-        
+
         final tour = snapshot.data;
         if (tour == null) {
-          return const Scaffold(body: Center(child: Text('Загрузка деталей тура...')));
+          return const Scaffold(
+              body: Center(child: Text('Загрузка деталей тура...')));
         }
 
         final items = tour.items ?? [];
@@ -74,8 +81,6 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
       },
     );
   }
-
-
 
   Widget _buildAppBar(BuildContext context, Tour tour) {
     return SliverAppBar(
@@ -168,7 +173,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
       options: MapOptions(
         initialCenter: center,
         initialZoom: 13, // TODO: Calculate fit bounds
-        interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+        interactionOptions:
+            const InteractionOptions(flags: InteractiveFlag.none),
       ),
       children: [
         TileLayer(
@@ -177,33 +183,34 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         ),
         PolylineLayer(
           polylines: [
-             Polyline(
-               points: points,
-               color: Theme.of(context).colorScheme.primary,
-               strokeWidth: 4,
-             ),
+            Polyline(
+              points: points,
+              color: Theme.of(context).colorScheme.primary,
+              strokeWidth: 4,
+            ),
           ],
         ),
         MarkerLayer(
           markers: points.asMap().entries.map((entry) {
-             return Marker(
-               point: entry.value,
-               width: 30,
-               height: 30,
-               child: Container(
-                 decoration: BoxDecoration(
-                   color: Theme.of(context).colorScheme.primary,
-                   shape: BoxShape.circle,
-                   border: Border.all(color: Colors.white, width: 2),
-                 ),
-                 child: Center(
-                    child: Text(
-                      '${entry.key + 1}', 
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)
-                    ),
-                 ),
-               ),
-             );
+            return Marker(
+              point: entry.value,
+              width: 30,
+              height: 30,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Center(
+                  child: Text('${entry.key + 1}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+            );
           }).toList(),
         ),
       ],
@@ -212,7 +219,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
 
   Future<void> _showReminderDialog(BuildContext context, Tour tour) async {
     final notificationService = ref.read(notificationServiceProvider);
-    
+
     // Check permission first
     final hasPermission = await notificationService.hasNotificationPermission();
     if (!hasPermission) {
@@ -231,7 +238,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final result = await notificationService.requestPermissionWithExplanation();
+                final result = await notificationService
+                    .requestPermissionWithExplanation();
                 if (ctx.mounted) Navigator.pop(ctx, result);
               },
               child: const Text('Разрешить'),
@@ -239,13 +247,13 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
           ],
         ),
       );
-      
+
       if (granted != true) return;
     }
-    
+
     // Show reminder options
     if (!mounted) return;
-    
+
     final result = await showModalBottomSheet<Duration?>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -297,14 +305,14 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         ),
       ),
     );
-    
+
     if (result != null && mounted) {
       await notificationService.scheduleRelativeTourReminder(
         tourId: tour.id,
         tourTitle: tour.titleRu,
         delay: result,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -328,27 +336,40 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
           children: [
             Row(
               children: [
-                _InfoChip(icon: Icons.timer_outlined, label: '${tour.durationMinutes ?? 0} мин'),
+                _InfoChip(
+                    icon: Icons.timer_outlined,
+                    label: '${tour.durationMinutes ?? 0} мин'),
                 const SizedBox(width: 8),
-                _InfoChip(icon: Icons.route_outlined, label: '${tour.distanceKm?.toStringAsFixed(1) ?? '—'} км'),
+                _InfoChip(
+                    icon: Icons.route_outlined,
+                    label: '${tour.distanceKm?.toStringAsFixed(1) ?? '—'} км'),
                 const SizedBox(width: 8),
-                _InfoChip(icon: Icons.place_outlined, label: '${tour.items?.length ?? 0} локаций'),
+                _InfoChip(
+                    icon: Icons.place_outlined,
+                    label: '${tour.items?.length ?? 0} локаций'),
               ],
             ),
             const SizedBox(height: 16),
             Text(
               'Описание',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              tour.descriptionRu ?? 'Этот маршрут проведет вас по самым интересным местам, раскрывая историю и культуру региона.',
+              tour.descriptionRu ??
+                  'Этот маршрут проведет вас по самым интересным местам, раскрывая историю и культуру региона.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 24),
             Text(
               'Список остановок',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -356,10 +377,13 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
     );
   }
 
-  Widget _buildPoiList(BuildContext context, Tour tour, List<TourItemEntity> items) {
+  Widget _buildPoiList(
+      BuildContext context, Tour tour, List<TourItemEntity> items) {
     if (items.isEmpty) {
       return const SliverToBoxAdapter(
-        child: Center(child: Padding(padding: EdgeInsets.all(32), child: Text('Маршрут пуст'))),
+        child: Center(
+            child: Padding(
+                padding: EdgeInsets.all(32), child: Text('Маршрут пуст'))),
       );
     }
 
@@ -368,7 +392,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         (context, index) {
           final item = items[index];
           final poi = item.poi;
-          if (poi == null) return const ListTile(title: Text('Загрузка POI...'));
+          if (poi == null)
+            return const ListTile(title: Text('Загрузка POI...'));
 
           final isSelected = _selectedPoiIds.contains(poi.id);
 
@@ -379,9 +404,9 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isSelected 
-                    ? Theme.of(context).colorScheme.primary 
-                    : Theme.of(context).colorScheme.outlineVariant,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outlineVariant,
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -400,29 +425,33 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                   }
                 },
                 leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
                   child: Text('${index + 1}'),
                 ),
-                title: Text(poi.titleRu, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(poi.descriptionRu ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(poi.titleRu,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(poi.descriptionRu ?? '',
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                      IconButton(
-                        icon: const Icon(Icons.play_circle_outline),
-                        onPressed: () {
-                           final validItems = items.where((i) => i.poi != null).toList();
-                           final poiList = validItems.map((i) => i.poi!).toList();
-                           // Find the actual index in the filtered list
-                           final targetIndex = validItems.indexOf(item);
-                           
-                           ref.read(audioPlayerServiceProvider).loadPlaylist(
-                             tourId: tour.id,
-                             pois: poiList,
-                             initialIndex: targetIndex,
-                           );
-                        },
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.play_circle_outline),
+                      onPressed: () {
+                        final validItems =
+                            items.where((i) => i.poi != null).toList();
+                        final poiList = validItems.map((i) => i.poi!).toList();
+                        // Find the actual index in the filtered list
+                        final targetIndex = validItems.indexOf(item);
+
+                        ref.read(audioPlayerServiceProvider).loadPlaylist(
+                              tourId: tour.id,
+                              pois: poiList,
+                              initialIndex: targetIndex,
+                            );
+                      },
+                    ),
                     if (_isMultiSelectMode)
                       Checkbox(
                         value: isSelected,
@@ -453,7 +482,9 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
+          ],
         ),
         child: SafeArea(
           child: Row(
@@ -461,49 +492,55 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
               Expanded(
                 child: Text(
                   'Выбрано: ${_selectedPoiIds.length}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               ElevatedButton(
                 onPressed: (_selectedPoiIds.isEmpty || _isBuying)
-                  ? null 
-                  : () async {
-                      setState(() => _isBuying = true);
-                      try {
-                        await ref.read(purchaseServiceProvider.notifier).buyBatch(
-                          _selectedPoiIds.toList(), 
-                          [], // No tours selected here
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Покупка успешно завершена')),
+                    ? null
+                    : () async {
+                        setState(() => _isBuying = true);
+                        try {
+                          await ref
+                              .read(purchaseServiceProvider.notifier)
+                              .buyBatch(
+                            _selectedPoiIds.toList(),
+                            [], // No tours selected here
                           );
-                          setState(() {
-                             _isMultiSelectMode = false;
-                             _selectedPoiIds.clear();
-                          });
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Покупка успешно завершена')),
+                            );
+                            setState(() {
+                              _isMultiSelectMode = false;
+                              _selectedPoiIds.clear();
+                            });
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ошибка покупки: $e')),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _isBuying = false);
                         }
-                      } catch (e) {
-                         if (context.mounted) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(content: Text('Ошибка покупки: $e')),
-                           );
-                         }
-                      } finally {
-                        if (mounted) setState(() => _isBuying = false);
-                      }
-                    },
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 ),
-                child: _isBuying 
-                  ? const SizedBox(
-                      width: 20, 
-                      height: 20, 
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                    )
-                  : const Text('Купить выбранное'),
+                child: _isBuying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Text('Купить выбранное'),
               ),
             ],
           ),
@@ -515,7 +552,9 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
+        ],
       ),
       child: SafeArea(
         child: Semantics(
@@ -530,49 +569,52 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             icon: const Icon(Icons.play_circle_filled),
-            label: const Text('НАЧАТЬ ТУР', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            label: const Text('НАЧАТЬ ТУР',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _onStartTour(BuildContext context, WidgetRef ref, Tour tour) async {
+  Future<void> _onStartTour(
+      BuildContext context, WidgetRef ref, Tour tour) async {
     int startIndex = 0;
-    
+
     // Check saved progress
     final settings = await ref.read(settingsRepositoryProvider.future);
     final savedProgress = settings.getTourProgress();
-    
+
     if (savedProgress != null && savedProgress['tourId'] == tour.id) {
-       final savedIndex = savedProgress['stepIndex'] as int;
-       final itemsCount = tour.items?.length ?? 0;
-       
-       if (savedIndex > 0 && savedIndex < itemsCount) {
-           final resume = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                 title: const Text('Продолжить тур?'),
-                 content: Text('Вы остановились на остановке ${savedIndex + 1}. Продолжить с этого места?'),
-                 actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false), 
-                      child: const Text('Начать сначала'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true), 
-                      child: const Text('Продолжить'),
-                    ),
-                 ],
+      final savedIndex = savedProgress['stepIndex'] as int;
+      final itemsCount = tour.items?.length ?? 0;
+
+      if (savedIndex > 0 && savedIndex < itemsCount) {
+        final resume = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Продолжить тур?'),
+            content: Text(
+                'Вы остановились на остановке ${savedIndex + 1}. Продолжить с этого места?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Начать сначала'),
               ),
-           );
-           
-           if (resume == true) {
-              startIndex = savedIndex;
-           } else {
-              await settings.clearTourProgress();
-           }
-       }
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Продолжить'),
+              ),
+            ],
+          ),
+        );
+
+        if (resume == true) {
+          startIndex = savedIndex;
+        } else {
+          await settings.clearTourProgress();
+        }
+      }
     }
 
     final downloadedCities = await ref.read(downloadedCitiesProvider.future);
@@ -583,7 +625,8 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Тур не загружен'),
-          content: const Text('Для работы аудиогида без интернета рекомендуется загрузить данные города. Продолжить онлайн?'),
+          content: const Text(
+              'Для работы аудиогида без интернета рекомендуется загрузить данные города. Продолжить онлайн?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -610,7 +653,9 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
           'tour_name': tour.titleRu,
         });
 
-        ref.read(tourModeServiceProvider.notifier).startTour(tour, startIndex: startIndex);
+        ref
+            .read(tourModeServiceProvider.notifier)
+            .startTour(tour, startIndex: startIndex);
         context.push('/tour_mode');
       }
     }
@@ -636,7 +681,9 @@ class _InfoChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(icon,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(label, style: Theme.of(context).textTheme.labelLarge),
           ],

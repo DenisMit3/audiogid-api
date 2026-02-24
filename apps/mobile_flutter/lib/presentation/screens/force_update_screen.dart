@@ -32,7 +32,7 @@ class ForceUpdateScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              
+
               // Иконка обновления
               Container(
                 width: 120,
@@ -47,31 +47,31 @@ class ForceUpdateScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Заголовок
               Text(
                 'Требуется обновление',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Сообщение
               Text(
                 message,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Информация о версиях
               Container(
                 padding: const EdgeInsets.all(16),
@@ -97,9 +97,9 @@ class ForceUpdateScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Кнопка обновления
               SizedBox(
                 width: double.infinity,
@@ -120,18 +120,18 @@ class ForceUpdateScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Подсказка
               Text(
                 'После обновления приложение запустится автоматически',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
-                ),
+                      color: Colors.grey[500],
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 24),
             ],
           ),

@@ -46,34 +46,37 @@ class HomeScreen extends ConsumerWidget {
                     icon: Icons.settings_outlined,
                     tooltip: 'Настройки',
                     onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          ),
-                        );
-                      },
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            
+
             Expanded(
               child: FutureBuilder(
                 future: citiesFuture,
                 builder: (context, snapshot) {
                   // Loading State
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                     return GridView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                           maxCrossAxisExtent: 600,
-                           mainAxisExtent: 140,
-                           crossAxisSpacing: AppSpacing.md,
-                           mainAxisSpacing: AppSpacing.md,
-                        ),
-                        itemCount: 6,
-                        itemBuilder: (_, __) => const SkeletonListTile(hasLeading: true),
-                     );
+                    return GridView.builder(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 600,
+                        mainAxisExtent: 140,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
+                      ),
+                      itemCount: 6,
+                      itemBuilder: (_, __) =>
+                          const SkeletonListTile(hasLeading: true),
+                    );
                   }
 
                   // Error State
@@ -81,11 +84,11 @@ class HomeScreen extends ConsumerWidget {
                     return ErrorStateWidget.generic(
                       message: snapshot.error.toString(),
                       onRetry: () {
-                         // To retry, we would need to trigger a rebuild which calls getCities again.
-                         // Since we assigned the future in build, calling setState or ref.refresh if it was a provider would work.
-                         // But here straightforward retry is tricky without converting to Stateful or using Provider.
-                         // For now, simple invalidate (if we were using provider) or just let user re-navigate.
-                         // We'll leave it simple.
+                        // To retry, we would need to trigger a rebuild which calls getCities again.
+                        // Since we assigned the future in build, calling setState or ref.refresh if it was a provider would work.
+                        // But here straightforward retry is tricky without converting to Stateful or using Provider.
+                        // For now, simple invalidate (if we were using provider) or just let user re-navigate.
+                        // We'll leave it simple.
                       },
                     );
                   }
@@ -103,12 +106,12 @@ class HomeScreen extends ConsumerWidget {
                       // Trigger a reload
                       // In a real app with Riverpod, we'd use ref.refresh(citiesProvider)
                       await ref.read(cityRepositoryProvider).getCities();
-                      // Force rebuild? 
+                      // Force rebuild?
                       // Actually, FutureBuilder won't re-fire just by waiting again unless future variable changes.
-                      // Since we are in a Stateless widget and `citiesFuture` is created in build, 
+                      // Since we are in a Stateless widget and `citiesFuture` is created in build,
                       // set state isn't an option. Ideally we should use a Stream or Provider.
                       // But sticking to the request "replace the bare FutureBuilder", we assume maintaining structure
-                      // or better, using a FutureProvider if we could defined it. 
+                      // or better, using a FutureProvider if we could defined it.
                       // Let's assume the repo call fetches fresh data.
                     },
                     child: GridView.builder(
@@ -116,7 +119,8 @@ class HomeScreen extends ConsumerWidget {
                         vertical: AppSpacing.sm,
                         horizontal: context.horizontalPadding,
                       ),
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 600,
                         mainAxisExtent: 140,
                         crossAxisSpacing: AppSpacing.md,
@@ -131,7 +135,8 @@ class HomeScreen extends ConsumerWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: BorderSide(
-                              color: Theme.of(context).colorScheme.outlineVariant,
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
                             ),
                           ),
                           child: Semantics(
@@ -142,9 +147,12 @@ class HomeScreen extends ConsumerWidget {
                               onTap: () async {
                                 HapticFeedback.lightImpact();
                                 // Save selected city and navigate
-                                await ref.read(settingsRepositoryProvider).setSelectedCity(city.slug);
+                                await ref
+                                    .read(settingsRepositoryProvider)
+                                    .setSelectedCity(city.slug);
                                 if (context.mounted) {
-                                  context.go('/'); // Or wherever the main flow is
+                                  context
+                                      .go('/'); // Or wherever the main flow is
                                 }
                               },
                               borderRadius: BorderRadius.circular(16),
@@ -160,44 +168,55 @@ class HomeScreen extends ConsumerWidget {
                                         width: 60,
                                         height: 60,
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: Theme.of(context).colorScheme.surfaceVariant,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surfaceVariant,
                                           image: city.imageUrl != null
                                               ? DecorationImage(
-                                                  image: NetworkImage(city.imageUrl!),
+                                                  image: NetworkImage(
+                                                      city.imageUrl!),
                                                   fit: BoxFit.cover,
                                                 )
                                               : null,
                                         ),
                                         child: city.imageUrl == null
-                                            ? const Icon(Icons.location_city, size: 30)
+                                            ? const Icon(Icons.location_city,
+                                                size: 30)
                                             : null,
                                       ),
                                     ),
                                     const SizedBox(width: AppSpacing.md),
-                                    
+
                                     // Info
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           TitleText(
                                             city.name,
-                                            style: Theme.of(context).textTheme.titleMedium,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
                                           ),
                                           if (city.description != null) ...[
                                             const SizedBox(height: 4),
                                             BodyText(
                                               city.description!,
                                               maxLines: 2,
-                                              style: Theme.of(context).textTheme.bodySmall,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
                                             ),
                                           ],
                                         ],
                                       ),
                                     ),
-                                    
-                                    const Icon(Icons.chevron_right, color: Colors.grey),
+
+                                    const Icon(Icons.chevron_right,
+                                        color: Colors.grey),
                                   ],
                                 ),
                               ),

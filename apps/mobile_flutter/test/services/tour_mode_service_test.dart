@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,10 +17,15 @@ import 'package:mobile_flutter/domain/entities/poi.dart';
 
 // Mocks
 class MockAudioHandler extends Mock implements AudiogidAudioHandler {}
+
 class MockLocationService extends Mock implements LocationService {}
+
 class MockTourRepository extends Mock implements TourRepository {}
+
 class MockPoiRepository extends Mock implements PoiRepository {}
+
 class MockNotificationService extends Mock implements NotificationService {}
+
 class MockSettingsRepository extends Mock implements SettingsRepository {}
 
 void main() {
@@ -32,7 +36,7 @@ void main() {
   late MockPoiRepository mockPoiRepository;
   late MockNotificationService mockNotificationService;
   late MockSettingsRepository mockSettingsRepository;
-  
+
   late StreamController<PlaybackState> playbackStateController;
   late StreamController<LocationUpdate> locationStreamController;
 
@@ -43,16 +47,18 @@ void main() {
     mockPoiRepository = MockPoiRepository();
     mockNotificationService = MockNotificationService();
     mockSettingsRepository = MockSettingsRepository();
-    
+
     playbackStateController = StreamController<PlaybackState>.broadcast();
     locationStreamController = StreamController<LocationUpdate>.broadcast();
 
-    when(() => mockAudioHandler.playbackState).thenAnswer((_) => playbackStateController.stream);
-    when(() => mockLocationService.locationStream).thenAnswer((_) => locationStreamController.stream);
-    
+    when(() => mockAudioHandler.playbackState)
+        .thenAnswer((_) => playbackStateController.stream);
+    when(() => mockLocationService.locationStream)
+        .thenAnswer((_) => locationStreamController.stream);
+
     // Stubbing basics
     registerFallbackValue(const Duration());
-    
+
     container = ProviderContainer(
       overrides: [
         audioHandlerProvider.overrideWithValue(mockAudioHandler),
@@ -78,46 +84,55 @@ void main() {
       expect(state.status, TourModeStatus.idle);
     });
 
-    test('should auto-advance when audio completes and auto-play is enabled', () async {
+    test('should auto-advance when audio completes and auto-play is enabled',
+        () async {
       // Setup
       final service = container.read(tourModeServiceProvider.notifier);
-      
+
       // Initialize tour mode with a dummy tour
-      final tour = Tour(
-        id: '1', citySlug: 'city', titleRu: 'Tour', items: [
-          TourItemEntity(id: '1', orderIndex: 0, poi: PoiEntity(id: 'p1', citySlug: 'c', titleRu: 'P1', lat: 0, lon: 0)),
-          TourItemEntity(id: '2', orderIndex: 1, poi: PoiEntity(id: 'p2', citySlug: 'c', titleRu: 'P2', lat: 0, lon: 0)),
-        ]
-      );
-      
+      final tour = Tour(id: '1', citySlug: 'city', titleRu: 'Tour', items: [
+        TourItemEntity(
+            id: '1',
+            orderIndex: 0,
+            poi: PoiEntity(
+                id: 'p1', citySlug: 'c', titleRu: 'P1', lat: 0, lon: 0)),
+        TourItemEntity(
+            id: '2',
+            orderIndex: 1,
+            poi: PoiEntity(
+                id: 'p2', citySlug: 'c', titleRu: 'P2', lat: 0, lon: 0)),
+      ]);
+
       // Mock startTour dependencies
-      when(() => mockSettingsRepository.saveTourProgress(any(), any())).thenAnswer((_) async {});
+      when(() => mockSettingsRepository.saveTourProgress(any(), any()))
+          .thenAnswer((_) async {});
       when(() => mockLocationService.startTracking()).thenAnswer((_) async {});
-      when(() => mockLocationService.getCurrentPosition()).thenAnswer((_) async => null);
-      
+      when(() => mockLocationService.getCurrentPosition())
+          .thenAnswer((_) async => null);
+
       service.startTour(tour);
-      
+
       // Enable auto-play
       service.toggleAutoPlay(true);
-      
+
       // Verify initial step
       expect(container.read(tourModeServiceProvider).currentStepIndex, 0);
-      
+
       // Act: Emit completed playback state
       playbackStateController.add(PlaybackState(
         processingState: AudioProcessingState.completed,
         playing: false,
       ));
-      
+
       // Wait for delay in auto-advance logic (2 seconds in impl, but we can't fast-forward time easily in unit test without fake async)
       // Since we used Future.delayed in implementation, we need to wait.
       // Ideally we'd use fake async, but let's see if we can just wait a bit longer than 2s or refactor.
-      // For unit test speed, creating a long delay is bad. 
+      // For unit test speed, creating a long delay is bad.
       // NOTE: In the implementation I put `Future.delayed(const Duration(seconds: 2), ...)`
       // This makes unit testing slow.
-      
+
       await Future.delayed(const Duration(seconds: 2, milliseconds: 100));
-      
+
       // Assert
       expect(container.read(tourModeServiceProvider).currentStepIndex, 1);
     });

@@ -29,7 +29,6 @@ class QrMappingRepository {
 
   QrMappingRepository(this._api, this._db);
 
-
   /// Resolve a QR code to a target type and ID
   /// First tries API, then falls back to offline cache or local POI lookup
   Future<QrMappingResult?> resolveCode(String code) async {
@@ -107,11 +106,12 @@ class QrMappingRepository {
   Future<QrMappingResult?> _resolveFromPoiTable(String code) async {
     try {
       // Check if code is a valid ID in Pois table
-      final poi = await (_db.select(_db.pois)..where((t) => t.id.equals(code))).getSingleOrNull();
+      final poi = await (_db.select(_db.pois)..where((t) => t.id.equals(code)))
+          .getSingleOrNull();
       if (poi != null) {
         return QrMappingResult(targetType: 'poi', targetId: poi.id);
       }
-      
+
       // Also check if code might be 'osmId' or 'wikidataId' if you want robust lookup
       // For now, ID is primary.
     } catch (e) {
@@ -151,7 +151,8 @@ class QrMappingRepository {
   }
 
   /// Clear old cached mappings
-  Future<void> cleanupOldMappings({Duration maxAge = const Duration(days: 30)}) async {
+  Future<void> cleanupOldMappings(
+      {Duration maxAge = const Duration(days: 30)}) async {
     try {
       final cutoff = DateTime.now().subtract(maxAge);
       await (_db.delete(_db.qrMappingsCache)

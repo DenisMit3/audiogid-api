@@ -54,12 +54,13 @@ class ResponsivePadding extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsiveH = context.horizontalPadding;
-    
-    final padding = customPadding ?? EdgeInsets.symmetric(
-      horizontal: horizontal ? responsiveH : 0,
-      vertical: vertical ? AppSpacing.md : 0,
-    );
-    
+
+    final padding = customPadding ??
+        EdgeInsets.symmetric(
+          horizontal: horizontal ? responsiveH : 0,
+          vertical: vertical ? AppSpacing.md : 0,
+        );
+
     return Padding(
       padding: padding,
       child: child,
@@ -97,9 +98,8 @@ class ResponsiveContainer extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: maxWidth ?? defaultMaxWidth,
         ),
-        child: padding != null 
-            ? Padding(padding: padding!, child: child)
-            : child,
+        child:
+            padding != null ? Padding(padding: padding!, child: child) : child,
       ),
     );
   }
@@ -274,7 +274,7 @@ class KeyboardAwareBody extends StatelessWidget {
     }
 
     final viewInsets = MediaQuery.of(context).viewInsets;
-    
+
     return AnimatedPadding(
       duration: AppDurations.fast,
       padding: EdgeInsets.only(bottom: viewInsets.bottom),
@@ -308,26 +308,27 @@ class ResponsiveAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-    kToolbarHeight + (bottom?.preferredSize.height ?? 0),
-  );
+        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
+      );
 
   @override
   Widget build(BuildContext context) {
-    final effectiveActions = context.isSmallPhone && actions != null && actions!.length > 2
-        ? [
-            PopupMenuButton<int>(
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) => actions!
-                  .asMap()
-                  .entries
-                  .map((e) => PopupMenuItem(
-                        value: e.key,
-                        child: e.value,
-                      ))
-                  .toList(),
-            ),
-          ]
-        : actions;
+    final effectiveActions =
+        context.isSmallPhone && actions != null && actions!.length > 2
+            ? [
+                PopupMenuButton<int>(
+                  icon: const Icon(Icons.more_vert),
+                  itemBuilder: (context) => actions!
+                      .asMap()
+                      .entries
+                      .map((e) => PopupMenuItem(
+                            value: e.key,
+                            child: e.value,
+                          ))
+                      .toList(),
+                ),
+              ]
+            : actions;
 
     return AppBar(
       title: Text(
@@ -372,7 +373,7 @@ class SafeFloatingActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     Widget fab;
     if (extended && label != null) {
       fab = FloatingActionButton.extended(

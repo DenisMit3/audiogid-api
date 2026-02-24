@@ -61,7 +61,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         children: [
           // Фон - градиент с паттерном путешествий
           _TravelBackground(colorScheme: colorScheme),
-          
+
           // Контент
           SafeAreaWrapper(
             child: ResponsivePadding(
@@ -75,19 +75,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Spacer(flex: 2),
-                        
+
                         // Логотип/иконка
                         AnimatedContent(
                           delay: const Duration(milliseconds: 100),
                           child: _buildLogo(context, colorScheme),
                         ),
-                        
-                        SizedBox(height: context.responsive(
+
+                        SizedBox(
+                            height: context.responsive(
                           smallPhone: AppSpacing.lg,
                           phone: AppSpacing.xl,
                           tablet: AppSpacing.xxl,
                         )),
-                        
+
                         // Приветственный текст
                         AnimatedContent(
                           delay: const Duration(milliseconds: 200),
@@ -114,9 +115,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             ],
                           ),
                         ),
-                        
+
                         const Spacer(flex: 3),
-                        
+
                         // Кнопка "Начать путешествие" (с обучением)
                         AnimatedContent(
                           delay: const Duration(milliseconds: 300),
@@ -128,9 +129,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             onTap: () => _startWithOnboarding(),
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppSpacing.md),
-                        
+
                         // Кнопка "Пропустить"
                         AnimatedContent(
                           delay: const Duration(milliseconds: 400),
@@ -142,9 +143,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             onTap: () => _skipOnboarding(),
                           ),
                         ),
-                        
+
                         const Spacer(flex: 2),
-                        
+
                         // Версия приложения
                         AnimatedContent(
                           delay: const Duration(milliseconds: 500),
@@ -152,11 +153,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             'Версия 1.0',
                             textAlign: TextAlign.center,
                             style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.5),
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppSpacing.md),
                       ],
                     ),
@@ -204,10 +206,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   Future<void> _skipOnboarding() async {
     HapticFeedback.lightImpact();
-    
+
     // Отмечаем onboarding как пройденный
     await ref.read(onboardingCompletedProvider.notifier).complete();
-    
+
     if (mounted) {
       context.go('/city-select');
     }
@@ -282,24 +284,32 @@ class _TravelPatternPainter extends CustomPainter {
     final path = Path();
     path.moveTo(0, size.height * 0.3);
     path.quadraticBezierTo(
-      size.width * 0.3, size.height * 0.25,
-      size.width * 0.5, size.height * 0.35,
+      size.width * 0.3,
+      size.height * 0.25,
+      size.width * 0.5,
+      size.height * 0.35,
     );
     path.quadraticBezierTo(
-      size.width * 0.7, size.height * 0.45,
-      size.width, size.height * 0.4,
+      size.width * 0.7,
+      size.height * 0.45,
+      size.width,
+      size.height * 0.4,
     );
     canvas.drawPath(path, pathPaint);
 
     final path2 = Path();
     path2.moveTo(0, size.height * 0.7);
     path2.quadraticBezierTo(
-      size.width * 0.4, size.height * 0.65,
-      size.width * 0.6, size.height * 0.72,
+      size.width * 0.4,
+      size.height * 0.65,
+      size.width * 0.6,
+      size.height * 0.72,
     );
     path2.quadraticBezierTo(
-      size.width * 0.8, size.height * 0.78,
-      size.width, size.height * 0.68,
+      size.width * 0.8,
+      size.height * 0.78,
+      size.width,
+      size.height * 0.68,
     );
     canvas.drawPath(path2, pathPaint);
   }
@@ -364,9 +374,8 @@ class _WelcomeButtonState extends State<_WelcomeButton>
     final bgColor = widget.isPrimary
         ? colorScheme.primary
         : colorScheme.surface.withOpacity(0.9);
-    final fgColor = widget.isPrimary
-        ? colorScheme.onPrimary
-        : colorScheme.onSurface;
+    final fgColor =
+        widget.isPrimary ? colorScheme.onPrimary : colorScheme.onSurface;
     final subtitleColor = widget.isPrimary
         ? colorScheme.onPrimary.withOpacity(0.8)
         : colorScheme.onSurfaceVariant;
@@ -426,9 +435,9 @@ class _WelcomeButtonState extends State<_WelcomeButton>
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: AppSpacing.md),
-                
+
                 // Текст
                 Expanded(
                   child: Column(
@@ -451,7 +460,7 @@ class _WelcomeButtonState extends State<_WelcomeButton>
                     ],
                   ),
                 ),
-                
+
                 // Стрелка
                 Icon(
                   Icons.chevron_right,

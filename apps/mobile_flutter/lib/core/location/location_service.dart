@@ -10,7 +10,8 @@ part 'location_service.g.dart';
 
 class LocationService {
   final Ref _ref;
-  final StreamController<Position> _positionController = StreamController.broadcast();
+  final StreamController<Position> _positionController =
+      StreamController.broadcast();
   StreamSubscription<Position>? _positionSubscription;
 
   Stream<Position> get positionStream => _positionController.stream;
@@ -35,10 +36,10 @@ class LocationService {
         return;
       }
     }
-    
+
     if (permission == LocationPermission.deniedForever) {
       return;
-    } 
+    }
 
     // Load background setting
     final settings = await _ref.read(settingsRepositoryProvider.future);
@@ -48,17 +49,19 @@ class LocationService {
 
   void _startPositionStream(bool backgroundEnabled) {
     _positionSubscription?.cancel();
-    
+
     LocationSettings locationSettings;
     if (Platform.isAndroid) {
       locationSettings = AndroidSettings(
         accuracy: LocationAccuracy.medium,
         distanceFilter: 10,
-        foregroundNotificationConfig: backgroundEnabled ? const ForegroundNotificationConfig(
-          notificationTitle: "????????",
-          notificationText: "???????????? ????????",
-          notificationIcon: AndroidResource(name: 'ic_launcher'),
-        ) : null,
+        foregroundNotificationConfig: backgroundEnabled
+            ? const ForegroundNotificationConfig(
+                notificationTitle: "????????",
+                notificationText: "???????????? ????????",
+                notificationIcon: AndroidResource(name: 'ic_launcher'),
+              )
+            : null,
       );
     } else if (Platform.isIOS) {
       locationSettings = AppleSettings(
@@ -70,7 +73,7 @@ class LocationService {
       );
     } else {
       locationSettings = const LocationSettings(
-        accuracy: LocationAccuracy.medium, 
+        accuracy: LocationAccuracy.medium,
         distanceFilter: 10,
       );
     }
@@ -96,9 +99,11 @@ class LocationService {
     }
   }
 
-  double calculateDistance(double startLat, double startLon, double endLat, double endLon) {
+  double calculateDistance(
+      double startLat, double startLon, double endLat, double endLon) {
     const Distance distance = Distance();
-    return distance.as(LengthUnit.Meter, LatLng(startLat, startLon), LatLng(endLat, endLon));
+    return distance.as(
+        LengthUnit.Meter, LatLng(startLat, startLon), LatLng(endLat, endLon));
   }
 }
 

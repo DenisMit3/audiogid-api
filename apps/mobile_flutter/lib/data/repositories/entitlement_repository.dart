@@ -3,7 +3,8 @@ import 'package:drift/drift.dart';
 import 'package:mobile_flutter/core/api/api_provider.dart';
 import 'package:mobile_flutter/core/error/api_error.dart';
 import 'package:mobile_flutter/data/local/app_database.dart';
-import 'package:mobile_flutter/domain/entities/entitlement_grant.dart' as domain;
+import 'package:mobile_flutter/domain/entities/entitlement_grant.dart'
+    as domain;
 import 'package:mobile_flutter/domain/repositories/entitlement_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,16 +20,18 @@ class OfflineEntitlementRepository implements EntitlementRepository {
   @override
   Stream<List<domain.EntitlementGrant>> watchGrants() {
     syncGrants().ignore();
-    
-    return _db.entitlementDao.watchAllGrants().map((rows) => rows.map((r) => domain.EntitlementGrant(
-      id: r.id,
-      entitlementSlug: r.entitlementSlug,
-      scope: r.scope,
-      ref: r.ref,
-      grantedAt: r.grantedAt,
-      expiresAt: r.expiresAt,
-      isActive: r.isActive,
-    )).toList());
+
+    return _db.entitlementDao.watchAllGrants().map((rows) => rows
+        .map((r) => domain.EntitlementGrant(
+              id: r.id,
+              entitlementSlug: r.entitlementSlug,
+              scope: r.scope,
+              ref: r.ref,
+              grantedAt: r.grantedAt,
+              expiresAt: r.expiresAt,
+              isActive: r.isActive,
+            ))
+        .toList());
   }
 
   @override
@@ -40,18 +43,20 @@ class OfflineEntitlementRepository implements EntitlementRepository {
 
       // Вызываем API для получения entitlements
       final grants = await _api.getEntitlements(deviceId);
-      
+
       if (grants != null && grants.isNotEmpty) {
         // Сохраняем в локальную БД
-        await _db.entitlementDao.replaceAllGrants(grants.map((g) => EntitlementGrantsCompanion.insert(
-          id: g.id ?? '',
-          entitlementSlug: g.entitlementSlug ?? '',
-          scope: g.scope ?? '',
-          ref: Value(g.ref),
-          grantedAt: g.grantedAt ?? DateTime.now(),
-          expiresAt: Value(g.expiresAt),
-          isActive: g.isActive ?? true,
-        )).toList());
+        await _db.entitlementDao.replaceAllGrants(grants
+            .map((g) => EntitlementGrantsCompanion.insert(
+                  id: g.id ?? '',
+                  entitlementSlug: g.entitlementSlug ?? '',
+                  scope: g.scope ?? '',
+                  ref: Value(g.ref),
+                  grantedAt: g.grantedAt ?? DateTime.now(),
+                  expiresAt: Value(g.expiresAt),
+                  isActive: g.isActive ?? true,
+                ))
+            .toList());
       }
     } catch (e) {
       final appError = ApiErrorMapper.map(e);

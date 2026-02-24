@@ -16,38 +16,38 @@ class AudiogidApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Аудиогид',
       debugShowCheckedModeBanner: false,
-      
+
       // Theme configuration
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      
+
       // Router configuration
       routerConfig: router,
-      
+
       // Localization - Russian only for MVP
       locale: const Locale('ru', 'RU'),
       supportedLocales: const [
-         Locale('ru', 'RU'),
+        Locale('ru', 'RU'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      
+
       // Builder for global wrappers
       builder: (context, child) {
         // Get the text scale factor and clamp it for accessibility
         final mediaQuery = MediaQuery.of(context);
         final textScaleFactor = mediaQuery.textScaler.scale(1.0);
-        
+
         // Allow font scaling up to 1.6 (160%) but prevent layout breaking
         // at extreme scales
         final clampedTextScaler = TextScaler.linear(
           textScaleFactor.clamp(0.8, 1.6),
         );
-        
+
         return MediaQuery(
           data: mediaQuery.copyWith(
             textScaler: clampedTextScaler,
@@ -56,7 +56,8 @@ class AudiogidApp extends ConsumerWidget {
             // Dismiss keyboard on tap outside
             onTap: () {
               final currentFocus = FocusScope.of(context);
-              if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+              if (!currentFocus.hasPrimaryFocus &&
+                  currentFocus.focusedChild != null) {
                 FocusManager.instance.primaryFocus?.unfocus();
               }
             },
@@ -81,12 +82,12 @@ class _ConnectivityWrapper extends ConsumerWidget {
     // Since I can't easily add global imports in replace_file_content, I'll rely on a second pass or the user context.
     // Wait, I should add imports at the top of file first.
     // Or I can add them in this block if I was replacing whole file.
-    // I will try to use full path if possible or just assume imports. 
+    // I will try to use full path if possible or just assume imports.
     // BUT `ConnectivityService` is new.
-    
+
     // Let's implement the UI logic first.
     final status = ref.watch(connectivityServiceProvider);
-    
+
     return Stack(
       children: [
         if (child != null) child!,
@@ -102,7 +103,10 @@ class _ConnectivityWrapper extends ConsumerWidget {
                 child: Text(
                   'Нет подключения к интернету',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.white),
                 ),
               ),
             ),

@@ -62,7 +62,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             currentPage: _currentPage,
             totalPages: _pages.length,
           ),
-          
+
           // Контент
           SafeAreaWrapper(
             child: Column(
@@ -83,7 +83,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ),
                 ),
-                
+
                 // PageView
                 Expanded(
                   child: PageView.builder(
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     },
                   ),
                 ),
-                
+
                 // Индикаторы и кнопка
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),
@@ -110,9 +110,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         totalPages: _pages.length,
                         colorScheme: colorScheme,
                       ),
-                      
+
                       const SizedBox(height: AppSpacing.xl),
-                      
+
                       // Кнопка действия
                       _buildActionButton(context, colorScheme),
                     ],
@@ -173,10 +173,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _finishOnboarding() async {
     HapticFeedback.lightImpact();
-    
+
     // Отмечаем onboarding как пройденный
     await ref.read(onboardingCompletedProvider.notifier).complete();
-    
+
     if (mounted) {
       context.go('/city-select');
     }
@@ -216,7 +216,7 @@ class _OnboardingPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 1),
-            
+
             // Иконка
             AnimatedContent(
               delay: const Duration(milliseconds: 100),
@@ -244,9 +244,9 @@ class _OnboardingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const Spacer(flex: 1),
-            
+
             // Заголовок
             AnimatedContent(
               delay: const Duration(milliseconds: 200),
@@ -259,9 +259,9 @@ class _OnboardingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: AppSpacing.md),
-            
+
             // Описание
             AnimatedContent(
               delay: const Duration(milliseconds: 300),
@@ -274,9 +274,9 @@ class _OnboardingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: AppSpacing.xl),
-            
+
             // Подсказка
             AnimatedContent(
               delay: const Duration(milliseconds: 400),
@@ -310,7 +310,7 @@ class _OnboardingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const Spacer(flex: 2),
           ],
         ),
@@ -416,24 +416,32 @@ class _OnboardingPatternPainter extends CustomPainter {
     final path = Path();
     path.moveTo(0, size.height * 0.25 + offset);
     path.quadraticBezierTo(
-      size.width * 0.25, size.height * 0.2 + offset,
-      size.width * 0.5, size.height * 0.28 + offset,
+      size.width * 0.25,
+      size.height * 0.2 + offset,
+      size.width * 0.5,
+      size.height * 0.28 + offset,
     );
     path.quadraticBezierTo(
-      size.width * 0.75, size.height * 0.36 + offset,
-      size.width, size.height * 0.3 + offset,
+      size.width * 0.75,
+      size.height * 0.36 + offset,
+      size.width,
+      size.height * 0.3 + offset,
     );
     canvas.drawPath(path, pathPaint);
 
     final path2 = Path();
     path2.moveTo(0, size.height * 0.75 - offset);
     path2.quadraticBezierTo(
-      size.width * 0.3, size.height * 0.7 - offset,
-      size.width * 0.55, size.height * 0.78 - offset,
+      size.width * 0.3,
+      size.height * 0.7 - offset,
+      size.width * 0.55,
+      size.height * 0.78 - offset,
     );
     path2.quadraticBezierTo(
-      size.width * 0.8, size.height * 0.85 - offset,
-      size.width, size.height * 0.72 - offset,
+      size.width * 0.8,
+      size.height * 0.85 - offset,
+      size.width,
+      size.height * 0.72 - offset,
     );
     canvas.drawPath(path2, pathPaint);
   }

@@ -50,7 +50,7 @@ class EmptyStateWidget extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Title
             Text(
               title,
@@ -60,7 +60,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               semanticsLabel: title,
             ),
-            
+
             // Subtitle
             if (subtitle != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -72,7 +72,7 @@ class EmptyStateWidget extends StatelessWidget {
                 ),
               ),
             ],
-            
+
             // Action button
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.lg),
@@ -93,8 +93,8 @@ class EmptyStateWidget extends StatelessWidget {
     return EmptyStateWidget(
       icon: Icons.search_off_outlined,
       title: 'Ничего не найдено',
-      subtitle: query != null 
-          ? 'По запросу "$query" ничего не найдено' 
+      subtitle: query != null
+          ? 'По запросу "$query" ничего не найдено'
           : 'Попробуйте изменить параметры поиска',
     );
   }
@@ -211,7 +211,7 @@ class ErrorStateWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Title
             Text(
               title,
@@ -220,7 +220,7 @@ class ErrorStateWidget extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             // Subtitle
             if (subtitle != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -234,7 +234,7 @@ class ErrorStateWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-            
+
             // Error code
             if (errorCode != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -255,7 +255,7 @@ class ErrorStateWidget extends StatelessWidget {
                 ),
               ),
             ],
-            
+
             // Retry button
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
@@ -280,7 +280,8 @@ class ErrorStateWidget extends StatelessWidget {
     return ErrorStateWidget(
       icon: Icons.wifi_off_outlined,
       title: 'Ошибка сети',
-      subtitle: 'Не удалось подключиться к серверу. Проверьте интернет-соединение.',
+      subtitle:
+          'Не удалось подключиться к серверу. Проверьте интернет-соединение.',
       onRetry: onRetry,
     );
   }
@@ -316,11 +317,12 @@ class ErrorStateWidget extends StatelessWidget {
   }
 
   /// Factory for permission errors
-  factory ErrorStateWidget.permission({String? permission, VoidCallback? onSettings}) {
+  factory ErrorStateWidget.permission(
+      {String? permission, VoidCallback? onSettings}) {
     return ErrorStateWidget(
       icon: Icons.lock_outline,
       title: 'Нет доступа',
-      subtitle: permission != null 
+      subtitle: permission != null
           ? 'Требуется разрешение: $permission'
           : 'У вас нет прав для просмотра этого контента.',
       onRetry: onSettings,

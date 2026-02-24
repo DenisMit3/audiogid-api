@@ -35,10 +35,12 @@ class AnalyticsObserver extends RouteObserver<ModalRoute<void>> {
     final screenName = route.settings.name;
     // GoRouter uses path as name usually if name is not set, or we can check matchedLocation from state if available.
     // But RouteObserver sees Route objects. PageRoute from GoRouter usually has settings.name set to path or name.
-    
+
     if (screenName != null) {
       // Avoid logging internal redirects if possible
-      ref.read(analyticsServiceProvider).logEvent('screen_view', {'screen': screenName});
+      ref
+          .read(analyticsServiceProvider)
+          .logEvent('screen_view', {'screen': screenName});
     }
   }
 }

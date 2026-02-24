@@ -79,7 +79,7 @@ class FavoritesScreen extends ConsumerWidget {
                   onRemove: () {
                     HapticFeedback.lightImpact();
                     ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
-                    
+
                     // Show undo snackbar
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -87,7 +87,9 @@ class FavoritesScreen extends ConsumerWidget {
                         action: SnackBarAction(
                           label: 'Отменить',
                           onPressed: () {
-                            ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
+                            ref
+                                .read(poiRepositoryProvider)
+                                .toggleFavorite(poi.id);
                           },
                         ),
                         behavior: SnackBarBehavior.floating,
@@ -187,9 +189,9 @@ class _FavoriteCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: AppSpacing.md),
-                    
+
                     // Content
                     Expanded(
                       child: Column(
@@ -215,7 +217,7 @@ class _FavoriteCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Remove button
                     AccessibleIconButton(
                       icon: Icons.bookmark,

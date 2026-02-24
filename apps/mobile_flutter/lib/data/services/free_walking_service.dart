@@ -58,12 +58,12 @@ class FreeWalkingState {
 @Riverpod(keepAlive: true)
 class FreeWalkingService extends _$FreeWalkingService {
   StreamSubscription<Position>? _positionSubscription;
-  
+
   // Configuration
   static const double CHECK_INTERVAL_METERS = 10.0;
-  
+
   final Map<String, DateTime> _lastPlayedMap = {};
-  
+
   Position? _lastCheckPosition;
 
   @override
@@ -85,7 +85,7 @@ class FreeWalkingService extends _$FreeWalkingService {
     state = state.copyWith(isActive: false, statusMessage: 'Paused');
     _positionSubscription?.cancel();
   }
-  
+
   void toggleAutoPlay() {
     state = state.copyWith(isAutoPlayEnabled: !state.isAutoPlayEnabled);
   }
@@ -107,12 +107,13 @@ class FreeWalkingService extends _$FreeWalkingService {
       // Throttle checks by distance moved
       if (_lastCheckPosition != null) {
         final dist = locationService.calculateDistance(
-            pos.latitude, pos.longitude,
-            _lastCheckPosition!.latitude, _lastCheckPosition!.longitude
-        );
+            pos.latitude,
+            pos.longitude,
+            _lastCheckPosition!.latitude,
+            _lastCheckPosition!.longitude);
         if (dist < CHECK_INTERVAL_METERS) return;
       }
-      
+
       _lastCheckPosition = pos;
       _checkForNearbyPoi(pos);
     });
@@ -121,11 +122,12 @@ class FreeWalkingService extends _$FreeWalkingService {
   Future<void> _checkForNearbyPoi(Position pos) async {
     final poiRepo = ref.read(poiRepositoryProvider);
     final locationService = ref.read(locationServiceProvider);
-    
+
     // Get candidates from local DB (efficient bounding box)
     final fetchRadius = state.activationRadius * 1.5;
-    final candidates = await poiRepo.getNearbyCandidates(pos.latitude, pos.longitude, fetchRadius);
-    
+    final candidates = await poiRepo.getNearbyCandidates(
+        pos.latitude, pos.longitude, fetchRadius);
+
     // Filter precisely and check history
     Poi? nearest;
     double minDistance = double.infinity;
@@ -133,7 +135,7 @@ class FreeWalkingService extends _$FreeWalkingService {
 
     for (final poi in candidates) {
       if (state.playedPoiIds.contains(poi.id)) continue;
-      
+
       // Cooldown check
       if (_lastPlayedMap.containsKey(poi.id)) {
         final lastPlayed = _lastPlayedMap[poi.id]!;
@@ -141,10 +143,10 @@ class FreeWalkingService extends _$FreeWalkingService {
           continue;
         }
       }
-      
+
       final dist = locationService.calculateDistance(
           pos.latitude, pos.longitude, poi.lat, poi.lon);
-          
+
       if (dist <= state.activationRadius && dist < minDistance) {
         minDistance = dist;
         nearest = poi;
@@ -154,7 +156,7 @@ class FreeWalkingService extends _$FreeWalkingService {
     if (nearest != null) {
       // Trigger!
       _lastPlayedMap[nearest.id] = now;
-      
+
       final newHistory = [nearest, ...state.recentActivity];
       if (newHistory.length > 10) newHistory.removeLast();
 
@@ -166,25 +168,24 @@ class FreeWalkingService extends _$FreeWalkingService {
       );
 
       if (state.isAutoPlayEnabled) {
-          _playPoi(nearest);
+        _playPoi(nearest);
       } else {
-          // Send local notification
-          ref.read(notificationServiceProvider).showLocalNotification(
-               id: nearest.id.hashCode,
-               title: "Рядом интересное!",
-               body: nearest.titleRu,
-               payload: {'type': 'poi', 'id': nearest.id},
-          );
+        // Send local notification
+        ref.read(notificationServiceProvider).showLocalNotification(
+          id: nearest.id.hashCode,
+          title: "Рядом интересное!",
+          body: nearest.titleRu,
+          payload: {'type': 'poi', 'id': nearest.id},
+        );
       }
     }
   }
 
   Future<void> _playPoi(Poi poi) async {
-     await ref.read(audioPlayerServiceProvider).loadPlaylist(
-         tourId: 'free_walking', // Pseudo ID
-         pois: [poi], 
-         initialIndex: 0
-     );
-     await ref.read(audioPlayerServiceProvider).play();
+    await ref.read(audioPlayerServiceProvider).loadPlaylist(
+        tourId: 'free_walking', // Pseudo ID
+        pois: [poi],
+        initialIndex: 0);
+    await ref.read(audioPlayerServiceProvider).play();
   }
 }

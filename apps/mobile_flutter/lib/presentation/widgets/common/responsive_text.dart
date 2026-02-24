@@ -56,7 +56,7 @@ class TitleText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseStyle = style ?? Theme.of(context).textTheme.titleLarge;
-    
+
     return Semantics(
       header: true,
       child: Text(
@@ -90,7 +90,7 @@ class BodyText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseStyle = style ?? Theme.of(context).textTheme.bodyMedium;
-    
+
     return Text(
       text,
       style: baseStyle?.copyWith(
@@ -119,7 +119,7 @@ class LabelText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseStyle = style ?? Theme.of(context).textTheme.labelMedium;
-    
+
     return Text(
       text,
       style: baseStyle?.copyWith(
@@ -200,7 +200,8 @@ class _ExpandableTextState extends State<ExpandableText> {
                   onTap: () => setState(() => _isExpanded = !_isExpanded),
                   child: Semantics(
                     button: true,
-                    label: _isExpanded ? widget.collapseText : widget.expandText,
+                    label:
+                        _isExpanded ? widget.collapseText : widget.expandText,
                     child: Text(
                       _isExpanded ? widget.collapseText : widget.expandText,
                       style: textTheme.labelMedium?.copyWith(
@@ -266,7 +267,8 @@ class HighlightedText extends StatelessWidget {
         break;
       }
       if (index > start) {
-        spans.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+        spans.add(
+            TextSpan(text: text.substring(start, index), style: baseStyle));
       }
       spans.add(TextSpan(
         text: text.substring(index, index + highlight!.length),
@@ -309,10 +311,11 @@ class TextBadge extends StatelessWidget {
     final fgColor = textColor ?? colorScheme.onSecondaryContainer;
 
     return Container(
-      padding: padding ?? const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
+      padding: padding ??
+          const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(20),
@@ -341,17 +344,15 @@ class TextBadge extends StatelessWidget {
 
   /// Factory for duration badges
   factory TextBadge.duration(int minutes) {
-    final text = minutes >= 60
-        ? '${minutes ~/ 60}ч ${minutes % 60}мин'
-        : '$minutes мин';
+    final text =
+        minutes >= 60 ? '${minutes ~/ 60}ч ${minutes % 60}мин' : '$minutes мин';
     return TextBadge(text, icon: Icons.schedule);
   }
 
   /// Factory for distance badges
   factory TextBadge.distance(double km) {
-    final text = km >= 1 
-        ? '${km.toStringAsFixed(1)} км' 
-        : '${(km * 1000).toInt()} м';
+    final text =
+        km >= 1 ? '${km.toStringAsFixed(1)} км' : '${(km * 1000).toInt()} м';
     return TextBadge(text, icon: Icons.straighten);
   }
 
@@ -363,7 +364,8 @@ class TextBadge extends StatelessWidget {
 
   static String _pluralize(int n, String one, String few, String many) {
     if (n % 10 == 1 && n % 100 != 11) return one;
-    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return few;
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20))
+      return few;
     return many;
   }
 }

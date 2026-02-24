@@ -21,7 +21,8 @@ class StorageManager extends _$StorageManager {
     if (!await dir.exists()) return 0;
     int size = 0;
     try {
-      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+      await for (final entity
+          in dir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
           size += await entity.length();
         }
@@ -38,8 +39,9 @@ class StorageManager extends _$StorageManager {
     if (freeSpace >= bytesNeeded) return;
 
     final appDocDir = await getApplicationDocumentsDirectory();
-    final offlineDir = Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
-    
+    final offlineDir =
+        Directory(p.join(appDocDir.path, OfflineConstants.offlineDir));
+
     if (!await offlineDir.exists()) return;
 
     List<FileSystemEntity> entities = [];
@@ -56,7 +58,8 @@ class StorageManager extends _$StorageManager {
       modifiedTimes[e.path] = stat.modified;
     }
 
-    entities.sort((a, b) => (modifiedTimes[a.path] ?? DateTime.now()).compareTo(modifiedTimes[b.path] ?? DateTime.now()));
+    entities.sort((a, b) => (modifiedTimes[a.path] ?? DateTime.now())
+        .compareTo(modifiedTimes[b.path] ?? DateTime.now()));
 
     for (final entity in entities) {
       if (freeSpace >= bytesNeeded) break;
@@ -64,9 +67,9 @@ class StorageManager extends _$StorageManager {
       await entity.delete(recursive: true);
       freeSpace += size;
     }
-    
+
     if (freeSpace < bytesNeeded) {
-       throw Exception("Not enough space even after cleanup");
+      throw Exception("Not enough space even after cleanup");
     }
   }
 }

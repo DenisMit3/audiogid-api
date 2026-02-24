@@ -6,13 +6,13 @@ class AppColors {
   // Primary brand colors
   static const Color primaryPurple = Color(0xFF6750A4);
   static const Color primaryBlue = Color(0xFF3B82F6);
-  
+
   // Semantic colors
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF0EA5E9);
-  
+
   // Neutral colors
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color backgroundDark = Color(0xFF0F172A);
@@ -36,13 +36,14 @@ extension ResponsiveExtension on BuildContext {
   double get textScaleFactor => MediaQuery.of(this).textScaler.scale(1.0);
   EdgeInsets get safeAreaPadding => MediaQuery.of(this).padding;
   EdgeInsets get viewInsets => MediaQuery.of(this).viewInsets;
-  
+
   bool get isSmallPhone => screenWidth < Breakpoints.phone;
-  bool get isPhone => screenWidth >= Breakpoints.phone && screenWidth < Breakpoints.tablet;
+  bool get isPhone =>
+      screenWidth >= Breakpoints.phone && screenWidth < Breakpoints.tablet;
   bool get isTablet => screenWidth >= Breakpoints.tablet;
   bool get isLargeTablet => screenWidth >= Breakpoints.largeTablet;
   bool get isLandscape => screenWidth > screenHeight;
-  
+
   /// Get responsive value based on screen size
   T responsive<T>({
     required T phone,
@@ -54,25 +55,26 @@ extension ResponsiveExtension on BuildContext {
     if (isLargeTablet && largeTablet != null) return largeTablet;
     if (isTablet && tablet != null) return tablet;
     if (isSmallPhone && smallPhone != null) return smallPhone;
-    if (screenWidth >= Breakpoints.largePhone && largePhone != null) return largePhone;
+    if (screenWidth >= Breakpoints.largePhone && largePhone != null)
+      return largePhone;
     return phone;
   }
-  
+
   /// Get responsive padding based on screen size
   double get horizontalPadding => responsive(
-    smallPhone: 12.0,
-    phone: 16.0,
-    largePhone: 20.0,
-    tablet: 32.0,
-    largeTablet: 48.0,
-  );
-  
-  /// Get responsive card padding  
+        smallPhone: 12.0,
+        phone: 16.0,
+        largePhone: 20.0,
+        tablet: 32.0,
+        largeTablet: 48.0,
+      );
+
+  /// Get responsive card padding
   double get cardPadding => responsive(
-    smallPhone: 12.0,
-    phone: 16.0,
-    tablet: 20.0,
-  );
+        smallPhone: 12.0,
+        phone: 16.0,
+        tablet: 20.0,
+      );
 }
 
 /// Spacing constants following 8-point grid
@@ -103,10 +105,11 @@ class AppCurves {
 
 class AppTheme {
   /// Creates responsive text theme that adapts to font scaling
-  static TextTheme _createTextTheme(ColorScheme colorScheme, {bool isDark = false}) {
+  static TextTheme _createTextTheme(ColorScheme colorScheme,
+      {bool isDark = false}) {
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    
+
     return TextTheme(
       // Display styles
       displayLarge: TextStyle(
@@ -235,7 +238,7 @@ class AppTheme {
       colorScheme: colorScheme,
       textTheme: _createTextTheme(colorScheme),
       scaffoldBackgroundColor: AppColors.backgroundLight,
-      
+
       // AppBar customization
       appBarTheme: AppBarTheme(
         elevation: 0,
@@ -250,7 +253,7 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      
+
       // Card customization
       cardTheme: CardThemeData(
         elevation: 0,
@@ -261,7 +264,7 @@ class AppTheme {
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
       ),
-      
+
       // Button customizations
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -276,7 +279,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -289,7 +292,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -298,7 +301,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input decoration
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -319,9 +322,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-      
+
       // Chip theme
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
@@ -329,7 +333,7 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      
+
       // Bottom navigation
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         elevation: 8,
@@ -346,7 +350,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-      
+
       // Navigation bar (Material 3)
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
@@ -367,7 +371,7 @@ class AppTheme {
           );
         }),
       ),
-      
+
       // Snackbar
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -375,7 +379,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Dialog
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(
@@ -387,7 +391,7 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      
+
       // Bottom sheet
       bottomSheetTheme: const BottomSheetThemeData(
         shape: RoundedRectangleBorder(
@@ -395,14 +399,14 @@ class AppTheme {
         ),
         showDragHandle: true,
       ),
-      
+
       // Divider
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
         thickness: 1,
         space: 1,
       ),
-      
+
       // Page transitions
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -427,7 +431,7 @@ class AppTheme {
       colorScheme: colorScheme,
       textTheme: _createTextTheme(colorScheme, isDark: true),
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      
+
       // AppBar customization
       appBarTheme: AppBarTheme(
         elevation: 0,
@@ -442,7 +446,7 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      
+
       // Card customization
       cardTheme: CardThemeData(
         elevation: 0,
@@ -454,7 +458,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         color: AppColors.surfaceDark,
       ),
-      
+
       // Button customizations
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -469,7 +473,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -482,7 +486,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -491,7 +495,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input decoration
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -512,9 +516,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-      
+
       // Chip theme
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
@@ -522,7 +527,7 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      
+
       // Bottom navigation
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         elevation: 8,
@@ -539,7 +544,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-      
+
       // Navigation bar (Material 3)
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
@@ -560,7 +565,7 @@ class AppTheme {
           );
         }),
       ),
-      
+
       // Snackbar
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -569,7 +574,7 @@ class AppTheme {
         ),
         backgroundColor: colorScheme.inverseSurface,
       ),
-      
+
       // Dialog
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(
@@ -582,7 +587,7 @@ class AppTheme {
           color: colorScheme.onSurface,
         ),
       ),
-      
+
       // Bottom sheet
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surfaceDark,
@@ -591,14 +596,14 @@ class AppTheme {
         ),
         showDragHandle: true,
       ),
-      
+
       // Divider
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
         thickness: 1,
         space: 1,
       ),
-      
+
       // Page transitions
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {

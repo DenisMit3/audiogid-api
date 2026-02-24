@@ -4,7 +4,8 @@ class OfflineProgressIndicator extends StatelessWidget {
   final double progress;
   final String? label;
 
-  const OfflineProgressIndicator({super.key, required this.progress, this.label});
+  const OfflineProgressIndicator(
+      {super.key, required this.progress, this.label});
 
   @override
   Widget build(BuildContext context) {

@@ -62,7 +62,8 @@ class FadeSlideTransition extends StatelessWidget {
       child: FadeTransition(
         opacity: fadeAnimation,
         child: FadeTransition(
-          opacity: Tween<double>(begin: 1, end: 0.9).animate(secondaryFadeAnimation),
+          opacity:
+              Tween<double>(begin: 1, end: 0.9).animate(secondaryFadeAnimation),
           child: child,
         ),
       ),
@@ -93,7 +94,8 @@ CustomTransitionPage<T> buildPageWithTransition<T>({
         case TransitionType.fadeSlide:
           return _buildFadeSlideTransition(animation, child);
         case TransitionType.sharedAxis:
-          return _buildSharedAxisTransition(animation, secondaryAnimation, child);
+          return _buildSharedAxisTransition(
+              animation, secondaryAnimation, child);
       }
     },
   );
@@ -218,33 +220,35 @@ class HeroImage extends StatelessWidget {
       // #region agent log
       print('[DEBUG f46abe] HeroImage: URL is null/empty, showing placeholder');
       // #endregion
-      imageWidget = placeholder ?? Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primary.withOpacity(0.6),
-              colorScheme.secondary.withOpacity(0.6),
-            ],
-          ),
-          borderRadius: borderRadius,
-        ),
-        child: Icon(
-          Icons.image_outlined,
-          size: 48,
-          color: Colors.white.withOpacity(0.7),
-        ),
-      );
+      imageWidget = placeholder ??
+          Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary.withOpacity(0.6),
+                  colorScheme.secondary.withOpacity(0.6),
+                ],
+              ),
+              borderRadius: borderRadius,
+            ),
+            child: Icon(
+              Icons.image_outlined,
+              size: 48,
+              color: Colors.white.withOpacity(0.7),
+            ),
+          );
     } else {
       // #region agent log
       print('[DEBUG f46abe] HeroImage: Loading image from URL: $imageUrl');
       // #endregion
-      
+
       // Check if it's a data URL (base64 encoded)
       if (imageUrl!.startsWith('data:')) {
         // #region agent log
-        print('[DEBUG f46abe] HeroImage: Detected data URL, using Image.memory');
+        print(
+            '[DEBUG f46abe] HeroImage: Detected data URL, using Image.memory');
         // #endregion
         try {
           // Extract base64 data from data URL
@@ -264,7 +268,8 @@ class HeroImage extends StatelessWidget {
                 width: width,
                 height: height,
                 color: colorScheme.errorContainer,
-                child: Icon(Icons.broken_image, color: colorScheme.onErrorContainer),
+                child: Icon(Icons.broken_image,
+                    color: colorScheme.onErrorContainer),
               );
             },
           );
@@ -276,7 +281,8 @@ class HeroImage extends StatelessWidget {
             width: width,
             height: height,
             color: colorScheme.errorContainer,
-            child: Icon(Icons.broken_image, color: colorScheme.onErrorContainer),
+            child:
+                Icon(Icons.broken_image, color: colorScheme.onErrorContainer),
           );
         }
       } else {
@@ -288,7 +294,8 @@ class HeroImage extends StatelessWidget {
           fit: fit,
           progressIndicatorBuilder: (context, url, progress) {
             // #region agent log
-            print('[DEBUG f46abe] HeroImage PROGRESS: url=$url, downloaded=${progress.downloaded}, total=${progress.totalSize}, percent=${progress.progress}');
+            print(
+                '[DEBUG f46abe] HeroImage PROGRESS: url=$url, downloaded=${progress.downloaded}, total=${progress.totalSize}, percent=${progress.progress}');
             // #endregion
             return Container(
               width: width,
@@ -311,9 +318,9 @@ class HeroImage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      progress.progress != null 
-                        ? '${(progress.progress! * 100).toInt()}%'
-                        : 'Загрузка...',
+                      progress.progress != null
+                          ? '${(progress.progress! * 100).toInt()}%'
+                          : 'Загрузка...',
                       style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ],
@@ -332,13 +339,15 @@ class HeroImage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.broken_image, color: colorScheme.onErrorContainer, size: 32),
+                  Icon(Icons.broken_image,
+                      color: colorScheme.onErrorContainer, size: 32),
                   const SizedBox(height: 4),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       'Ошибка: $error',
-                      style: TextStyle(color: colorScheme.onErrorContainer, fontSize: 10),
+                      style: TextStyle(
+                          color: colorScheme.onErrorContainer, fontSize: 10),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -361,7 +370,8 @@ class HeroImage extends StatelessWidget {
 
     return Hero(
       tag: tag,
-      flightShuttleBuilder: (flightContext, animation, direction, fromContext, toContext) {
+      flightShuttleBuilder:
+          (flightContext, animation, direction, fromContext, toContext) {
         return Material(
           color: Colors.transparent,
           child: AnimatedBuilder(

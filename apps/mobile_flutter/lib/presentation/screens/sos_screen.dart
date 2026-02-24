@@ -21,20 +21,24 @@ class _SosScreenState extends ConsumerState<SosScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-            throw Exception("Нет доступа к геолокации");
+          throw Exception("Нет доступа к геолокации");
         }
       }
-      
-      final position = await Geolocator.getCurrentPosition();
-      
-      await ref.read(shareServiceProvider).sendSos(position.latitude, position.longitude);
-      
-      if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Открываю SMS...')));
-      }
 
+      final position = await Geolocator.getCurrentPosition();
+
+      await ref
+          .read(shareServiceProvider)
+          .sendSos(position.latitude, position.longitude);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Открываю SMS...')));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -48,18 +52,22 @@ class _SosScreenState extends ConsumerState<SosScreen> {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-          if (permission == LocationPermission.denied) {
-            throw Exception("Нет доступа к геолокации");
+        if (permission == LocationPermission.denied) {
+          throw Exception("Нет доступа к геолокации");
         }
       }
 
       final position = await Geolocator.getCurrentPosition();
-      await ref.read(shareServiceProvider).shareTrip(position.latitude, position.longitude);
+      await ref
+          .read(shareServiceProvider)
+          .shareTrip(position.latitude, position.longitude);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Ошибка: $e')));
     } finally {
       if (mounted) {
-          setState(() => _isLoading = false);
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -78,16 +86,22 @@ class _SosScreenState extends ConsumerState<SosScreen> {
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 20, spreadRadius: 5)
-                  ]
-                ),
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.red.withOpacity(0.5),
+                          blurRadius: 20,
+                          spreadRadius: 5)
+                    ]),
                 alignment: Alignment.center,
-                child: _isLoading 
-                   ? const CircularProgressIndicator(color: Colors.white)
-                   : const Text("SOS", style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold)),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("SOS",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 40),
@@ -96,16 +110,16 @@ class _SosScreenState extends ConsumerState<SosScreen> {
               label: const Text('Поделиться маршрутом (1 час)'),
               onPressed: _isLoading ? null : _handleShareTrip,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
             ),
-             const SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextButton(
                 onPressed: () {
-                     context.push('/trusted_contacts');
+                  context.push('/trusted_contacts');
                 },
-                child: const Text("Настроить контакты")
-            )
+                child: const Text("Настроить контакты"))
           ],
         ),
       ),

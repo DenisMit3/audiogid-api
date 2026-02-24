@@ -77,7 +77,7 @@ class MainShell extends StatelessWidget {
               onDestinationSelected: (index) {
                 // Provide haptic feedback
                 HapticFeedback.lightImpact();
-                
+
                 switch (index) {
                   case 0:
                     context.go('/');

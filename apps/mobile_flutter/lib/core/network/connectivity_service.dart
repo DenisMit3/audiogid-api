@@ -22,7 +22,8 @@ class ConnectivityService extends _$ConnectivityService {
     final result = await _connectivity.checkConnectivity();
     _updateStatus(result);
 
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    _connectivity.onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
       _updateStatus(results);
     });
   }

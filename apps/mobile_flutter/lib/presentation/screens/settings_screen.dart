@@ -14,7 +14,6 @@ import 'package:mobile_flutter/data/services/auth_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
 
-
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -98,44 +97,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               try {
                 // Show loading indicator
                 if (mounted) {
-                   Navigator.of(context).pop(); // Close confirm dialog
-                   showDialog(
-                     context: context,
-                     barrierDismissible: false,
-                     builder: (_) => const Center(child: CircularProgressIndicator()),
-                   );
+                  Navigator.of(context).pop(); // Close confirm dialog
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                  );
                 }
 
                 // Get ID
                 final prefs = await SharedPreferences.getInstance();
                 final deviceId = prefs.getString('device_anon_id');
-                
+
                 if (deviceId != null) {
-                    final api = ref.read(accountApiProvider);
-                    final req = RequestDeletionRequest(
-                        subjectId: deviceId, 
-                        idempotencyKey: const Uuid().v4()
-                    );
-                    
-                    final res = await api.requestDeletion(req);
-                    // We can poll here if needed, but for now we accept the request is queued.
-                    // The instruction said "handle response (async job, poll status via getDeletionStatus())"
-                    
-                   if (res != null && res.id != null) {
-                      String? status = res.status;
-                      int retries = 0;
-                      // Poll for a bit to ensure it started/completed
-                      while ((status == 'PENDING' || status == 'QUEUED') && retries < 5) {
-                          await Future.delayed(const Duration(seconds: 1));
-                          final statusRes = await api.getDeletionStatus(res.id!);
-                          status = statusRes?.status;
-                          retries++;
-                      }
-                   }
+                  final api = ref.read(accountApiProvider);
+                  final req = RequestDeletionRequest(
+                      subjectId: deviceId, idempotencyKey: const Uuid().v4());
+
+                  final res = await api.requestDeletion(req);
+                  // We can poll here if needed, but for now we accept the request is queued.
+                  // The instruction said "handle response (async job, poll status via getDeletionStatus())"
+
+                  if (res != null && res.id != null) {
+                    String? status = res.status;
+                    int retries = 0;
+                    // Poll for a bit to ensure it started/completed
+                    while ((status == 'PENDING' || status == 'QUEUED') &&
+                        retries < 5) {
+                      await Future.delayed(const Duration(seconds: 1));
+                      final statusRes = await api.getDeletionStatus(res.id!);
+                      status = statusRes?.status;
+                      retries++;
+                    }
+                  }
                 }
 
                 // Delete local data
-                final settingsRepo = await ref.read(settingsRepositoryProvider.future);
+                final settingsRepo =
+                    await ref.read(settingsRepositoryProvider.future);
                 await settingsRepo.clearAll();
 
                 if (mounted) {
@@ -147,15 +147,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context.go('/');
                 }
               } catch (e) {
-                 if (mounted) {
-                   // Pop loading if open? Difficult to track nesting here simply.
-                   // Assuming loading dialog is top.
-                   Navigator.of(context).pop(); 
-                   
-                   ScaffoldMessenger.of(context).showSnackBar(
-                     SnackBar(content: Text('Ошибка удаления: $e')),
-                   );
-                 }
+                if (mounted) {
+                  // Pop loading if open? Difficult to track nesting here simply.
+                  // Assuming loading dialog is top.
+                  Navigator.of(context).pop();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ошибка удаления: $e')),
+                  );
+                }
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -182,19 +182,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Account Section
             _buildSectionHeader(context, 'Аккаунт'),
             if (user == null)
-               ListTile(
-                 title: const Text('Войти / Регистрация'),
-                 subtitle: const Text('Синхронизация покупок'),
-                 leading: const Icon(Icons.login),
-                 onTap: () => context.push('/login'),
-               )
+              ListTile(
+                title: const Text('Войти / Регистрация'),
+                subtitle: const Text('Синхронизация покупок'),
+                leading: const Icon(Icons.login),
+                onTap: () => context.push('/login'),
+              )
             else ...[
-               ListTile(
-                 title: const Text('Выйти'),
-                 subtitle: Text('ID: ${user.id.substring(0, 8)}...'),
-                 leading: const Icon(Icons.logout),
-                 onTap: () => ref.read(currentUserProvider.notifier).logout(),
-               ),
+              ListTile(
+                title: const Text('Выйти'),
+                subtitle: Text('ID: ${user.id.substring(0, 8)}...'),
+                leading: const Icon(Icons.logout),
+                onTap: () => ref.read(currentUserProvider.notifier).logout(),
+              ),
             ],
             const Divider(),
 
@@ -205,11 +205,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: const Text('Упрощенный язык и короткие рассказы'),
               secondary: const Icon(Icons.child_care),
               value: _kidsMode,
-              onChanged: _isLoadingSettings ? null : (value) async {
-                 setState(() => _kidsMode = value);
-                 final repo = await ref.read(settingsRepositoryProvider.future);
-                 await repo.setKidsModeEnabled(value);
-              },
+              onChanged: _isLoadingSettings
+                  ? null
+                  : (value) async {
+                      setState(() => _kidsMode = value);
+                      final repo =
+                          await ref.read(settingsRepositoryProvider.future);
+                      await repo.setKidsModeEnabled(value);
+                    },
             ),
             const Divider(),
 
@@ -239,15 +242,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final inAppReview = InAppReview.instance;
 
                 if (await inAppReview.isAvailable()) {
-                   inAppReview.requestReview();
+                  inAppReview.requestReview();
                 } else {
-                   // Fallback
-                   final isAndroid = Theme.of(context).platform == TargetPlatform.android;
-                   if (isAndroid) {
-                     _launchUrl('market://details?id=com.audiogid.app');
-                   } else {
-                     _launchUrl('https://apps.apple.com/app/id6470000000');
-                   }
+                  // Fallback
+                  final isAndroid =
+                      Theme.of(context).platform == TargetPlatform.android;
+                  if (isAndroid) {
+                    _launchUrl('market://details?id=com.audiogid.app');
+                  } else {
+                    _launchUrl('https://apps.apple.com/app/id6470000000');
+                  }
                 }
               },
             ),
@@ -255,7 +259,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Рассказать друзьям'),
               leading: const Icon(Icons.share_outlined),
               onTap: () {
-                Share.share('Я исследую город с Audiogid! Присоединяйся: https://audiogid.app');
+                Share.share(
+                    'Я исследую город с Audiogid! Присоединяйся: https://audiogid.app');
               },
             ),
             ListTile(
@@ -263,15 +268,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               leading: const Icon(Icons.privacy_tip_outlined),
               onTap: () => _launchUrl('https://audiogid.app/privacy'),
             ),
-            
+
             const Divider(),
 
             // Data Section
             _buildSectionHeader(context, 'Данные'),
-             ListTile(
+            ListTile(
               title: const Text('Удалить аккаунт'),
               subtitle: const Text('Удалить все личные данные'),
-              leading: const Icon(Icons.delete_forever_outlined, color: Colors.red),
+              leading:
+                  const Icon(Icons.delete_forever_outlined, color: Colors.red),
               textColor: Colors.red,
               iconColor: Colors.red,
               onTap: _showDeleteAccountDialog,
@@ -300,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.sm, 
+        vertical: AppSpacing.sm,
         horizontal: AppSpacing.sm, // Match ListTile padding roughly
       ),
       child: Text(

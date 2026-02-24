@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,10 +17,15 @@ import 'package:network_image_mock/network_image_mock.dart';
 
 // Mocks
 class MockTourRepository extends Mock implements TourRepository {}
+
 class MockPurchaseService extends Mock implements PurchaseService {}
+
 class MockAnalyticsService extends Mock implements AnalyticsService {}
+
 class MockAudioPlayerService extends Mock implements AudioPlayerService {}
+
 class MockSettingsRepository extends Mock implements SettingsRepository {}
+
 class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
@@ -54,11 +58,11 @@ void main() {
         settingsRepositoryProvider.overrideWithValue(mockSettingsRepository),
         notificationServiceProvider.overrideWithValue(mockNotificationService),
         // Override selected city to non-null
-        selectedCityProvider.overrideWith((ref) => Stream.value(
-          CityEntity(id: '1', slug: 'test_city', nameRu: 'Test City', isActive: true)
-        )),
+        selectedCityProvider.overrideWith((ref) => Stream.value(CityEntity(
+            id: '1', slug: 'test_city', nameRu: 'Test City', isActive: true))),
         // Override downloaded cities
-        downloadedCitiesProvider.overrideWith((ref) => Future.value({'test_city'})),
+        downloadedCitiesProvider
+            .overrideWith((ref) => Future.value({'test_city'})),
       ],
       child: const MaterialApp(
         home: TourDetailScreen(tourId: '1'),
@@ -66,30 +70,32 @@ void main() {
     );
   }
 
-  testWidgets('TourDetailScreen shows buying loading indicator', (WidgetTester tester) async {
+  testWidgets('TourDetailScreen shows buying loading indicator',
+      (WidgetTester tester) async {
     // Arrange
     final tour = Tour(
       id: '1',
       citySlug: 'test_city',
       titleRu: 'Test Tour',
-      items: [], // Empty for now, but we need items to select things? 
+      items: [], // Empty for now, but we need items to select things?
       // Actually we need items to show the list and select them.
     );
     // Add items
     // Since TourItemEntity and PoiEntity are required, we mock them? No they are data classes.
     // Assuming we can create them.
     // ... skipping complex object creation for brevity if possible, but we need items to click.
-    
+
     // Simplification: We test that the button exists and loading state appears if we could click it.
     // A full integration widget test is hard without all entities.
     // Let's assume initialized.
-    
-    when(() => mockTourRepository.watchTour('1')).thenAnswer((_) => Stream.value(tour));
-    
+
+    when(() => mockTourRepository.watchTour('1'))
+        .thenAnswer((_) => Stream.value(tour));
+
     await mockNetworkImagesFor(() async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle(); // Wait for stream
-      
+
       expect(find.text('Test Tour'), findsOneWidget);
     });
   });

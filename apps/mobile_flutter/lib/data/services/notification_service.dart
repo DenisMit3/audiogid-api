@@ -36,20 +36,22 @@ class NotificationService {
 
   Future<void> init() async {
     if (_isInitialized) return;
-    
+
     // Initialize timezone for scheduled notifications
     tz_data.initializeTimeZones();
-    
+
     // Local Notifications Init
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    
-    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
-    
+
+    const initSettings =
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
+
     await _localNotifications.initialize(
       settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
@@ -57,14 +59,15 @@ class NotificationService {
 
     // Create Android notification channels
     await _createNotificationChannels();
-    
+
     _isInitialized = true;
   }
 
   Future<void> _createNotificationChannels() async {
-    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-        
+    final androidPlugin =
+        _localNotifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -74,7 +77,7 @@ class NotificationService {
           importance: Importance.high,
         ),
       );
-      
+
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
           NotificationChannels.pushMessages,
@@ -83,7 +86,7 @@ class NotificationService {
           importance: Importance.max,
         ),
       );
-      
+
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
           NotificationChannels.downloads,
@@ -97,7 +100,7 @@ class NotificationService {
 
   void _onNotificationTap(NotificationResponse response) {
     debugPrint('Notification clicked: ${response.payload}');
-    
+
     final payload = response.payload;
     if (payload != null) {
       final parts = payload.split(':');
@@ -105,7 +108,7 @@ class NotificationService {
         final type = parts[0];
         final id = parts[1];
         debugPrint('Navigate to $type with id $id');
-        
+
         try {
           final router = _ref.read(routerProvider);
           if (type == 'tour') {
@@ -122,12 +125,12 @@ class NotificationService {
       }
     }
   }
-  
+
   /// Show an immediate notification
   Future<void> showNotification({
-    required int id, 
-    String? title, 
-    String? body, 
+    required int id,
+    String? title,
+    String? body,
     String? payload,
     String channelId = NotificationChannels.tourReminders,
   }) async {
@@ -138,9 +141,9 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
-          channelId == NotificationChannels.tourReminders 
-            ? 'Напоминания о турах' 
-            : 'Push-уведомления',
+          channelId == NotificationChannels.tourReminders
+              ? 'Напоминания о турах'
+              : 'Push-уведомления',
           channelDescription: 'Notifications',
           importance: Importance.max,
           priority: Priority.high,
@@ -163,10 +166,9 @@ class NotificationService {
     required String body,
     Map<String, dynamic>? payload,
   }) async {
-    final payloadStr = payload != null 
-        ? '${payload['type']}:${payload['id']}' 
-        : null;
-    
+    final payloadStr =
+        payload != null ? '${payload['type']}:${payload['id']}' : null;
+
     await showNotification(
       id: id,
       title: title,
@@ -192,7 +194,7 @@ class NotificationService {
       hour,
       minute,
     );
-    
+
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
@@ -220,7 +222,7 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
-    
+
     debugPrint('Daily reminder scheduled for $hour:$minute');
   }
 
@@ -231,10 +233,11 @@ class NotificationService {
     required DateTime scheduledDateTime,
     String? message,
   }) async {
-    final notificationId = NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
-    
+    final notificationId =
+        NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
+
     final tzDateTime = tz.TZDateTime.from(scheduledDateTime, tz.local);
-    
+
     await _localNotifications.zonedSchedule(
       id: notificationId,
       title: 'Напоминание: $tourTitle',
@@ -258,7 +261,7 @@ class NotificationService {
       payload: 'tour:$tourId',
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
-    
+
     debugPrint('Tour reminder scheduled for $tourTitle at $scheduledDateTime');
   }
 
@@ -279,8 +282,9 @@ class NotificationService {
 
   /// Check if notifications are enabled
   Future<bool> areNotificationsEnabled() async {
-    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin =
+        _localNotifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       return await androidPlugin.areNotificationsEnabled() ?? false;
     }
@@ -293,10 +297,11 @@ class NotificationService {
         IOSFlutterLocalNotificationsPlugin>();
     if (iosPlugin != null) {
       return await iosPlugin.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      ) ?? false;
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
     }
     return true;
   }
@@ -313,7 +318,8 @@ class NotificationService {
 
   /// Cancel a tour-specific reminder
   Future<void> cancelTourReminder(String tourId) async {
-    final notificationId = NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
+    final notificationId =
+        NotificationIds.tourReminderBase + tourId.hashCode.abs() % 1000;
     await cancelNotification(notificationId);
   }
 

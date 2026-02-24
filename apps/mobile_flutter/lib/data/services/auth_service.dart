@@ -8,7 +8,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(ref.watch(authApiProvider));
 });
 
-final currentUserProvider = NotifierProvider<CurrentUserNotifier, AsyncValue<User?>>(() {
+final currentUserProvider =
+    NotifierProvider<CurrentUserNotifier, AsyncValue<User?>>(() {
   return CurrentUserNotifier();
 });
 
@@ -77,10 +78,10 @@ class AuthService {
 
   Future<User> loginWithTelegram(api.TelegramLogin data) async {
     final res = await _api.loginTelegram(data);
-    
+
     final token = res?.accessToken;
     final refreshToken = res?.refreshToken;
-    
+
     if (token == null) throw Exception("No access token returned");
 
     await _storage.write(key: 'jwt_token', value: token);
@@ -91,13 +92,12 @@ class AuthService {
   }
 
   Future<User> verifySms(String phone, String code) async {
-    final res = await _api.loginSmsVerify(
-        api.PhoneVerify(phone: phone, code: code)
-    );
-    
+    final res =
+        await _api.loginSmsVerify(api.PhoneVerify(phone: phone, code: code));
+
     final token = res?.accessToken;
     final refreshToken = res?.refreshToken;
-    
+
     if (token == null) throw Exception("No access token returned");
 
     await _storage.write(key: 'jwt_token', value: token);
@@ -111,18 +111,19 @@ class AuthService {
     final res = await _api.me();
     if (res == null) throw Exception("Failed to fetch user");
     return User(
-        id: res.id ?? '',
-        role: res.role ?? 'user',
-        isActive: res.isActive ?? true,
+      id: res.id ?? '',
+      role: res.role ?? 'user',
+      isActive: res.isActive ?? true,
     );
   }
 
   Future<void> logout() async {
     try {
-        final refresh = await _storage.read(key: 'refresh_token');
-        await _api.logout(refreshReq: api.RefreshReq(refreshToken: refresh ?? ""));
+      final refresh = await _storage.read(key: 'refresh_token');
+      await _api.logout(
+          refreshReq: api.RefreshReq(refreshToken: refresh ?? ""));
     } catch (e) {
-        // Log error but proceed to clear local
+      // Log error but proceed to clear local
     }
     await _storage.delete(key: 'jwt_token');
     await _storage.delete(key: 'refresh_token');
@@ -131,19 +132,20 @@ class AuthService {
   Future<String?> refreshToken() async {
     final refresh = await _storage.read(key: 'refresh_token');
     if (refresh == null) return null;
-    
+
     try {
-      final res = await _api.refreshToken(api.RefreshReq(refreshToken: refresh));
-      
+      final res =
+          await _api.refreshToken(api.RefreshReq(refreshToken: refresh));
+
       final newToken = res?.accessToken;
       final newRefresh = res?.refreshToken;
-      
+
       if (newToken != null) {
-          await _storage.write(key: 'jwt_token', value: newToken);
-          if (newRefresh != null) {
-            await _storage.write(key: 'refresh_token', value: newRefresh);
-          }
-          return newToken;
+        await _storage.write(key: 'jwt_token', value: newToken);
+        if (newRefresh != null) {
+          await _storage.write(key: 'refresh_token', value: newRefresh);
+        }
+        return newToken;
       }
       return null;
     } catch (e) {

@@ -157,7 +157,8 @@ GoRouter router(Ref ref) {
       ),
       GoRoute(
         path: '/itinerary/view/:id',
-        builder: (context, state) => ItineraryViewerScreen(itineraryId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            ItineraryViewerScreen(itineraryId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/free_walking',
@@ -175,13 +176,13 @@ GoRouter router(Ref ref) {
         path: '/share_trip',
         name: 'share_trip',
         builder: (context, state) {
-             final lat = double.tryParse(state.uri.queryParameters['lat'] ?? '');
-             final lon = double.tryParse(state.uri.queryParameters['lon'] ?? '');
-             final time = state.uri.queryParameters['time'];
-             if (lat != null && lon != null) {
-                 return SharedLocationScreen(lat: lat, lon: lon, time: time);
-             }
-             return const Scaffold(body: Center(child: Text("Invalid Link")));
+          final lat = double.tryParse(state.uri.queryParameters['lat'] ?? '');
+          final lon = double.tryParse(state.uri.queryParameters['lon'] ?? '');
+          final time = state.uri.queryParameters['time'];
+          if (lat != null && lon != null) {
+            return SharedLocationScreen(lat: lat, lon: lon, time: time);
+          }
+          return const Scaffold(body: Center(child: Text("Invalid Link")));
         },
       ),
 
@@ -196,11 +197,13 @@ GoRouter router(Ref ref) {
       ),
       GoRoute(
         path: '/dl/city/:slug',
-        redirect: (context, state) => '/catalog?city=${state.pathParameters['slug']}',
+        redirect: (context, state) =>
+            '/catalog?city=${state.pathParameters['slug']}',
       ),
       GoRoute(
         path: '/dl/itinerary/:id',
-        redirect: (context, state) => '/itinerary/view/${state.pathParameters['id']}',
+        redirect: (context, state) =>
+            '/itinerary/view/${state.pathParameters['id']}',
       ),
     ],
   );

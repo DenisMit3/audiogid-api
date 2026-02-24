@@ -16,19 +16,19 @@ class SelectionNotifier extends _$SelectionNotifier {
   }
 
   void verifySelection(List<String> visibleIds) {
-      // Optional: remove hidden ids?
-      // No, keep selection persistent
+    // Optional: remove hidden ids?
+    // No, keep selection persistent
   }
 
   void selectAll(List<String> ids) {
-      state = {...state, ...ids};
+    state = {...state, ...ids};
   }
 
   void clear() {
     state = {};
   }
-  
+
   bool isSelected(String id) => state.contains(id);
-  
+
   int get count => state.length;
 }

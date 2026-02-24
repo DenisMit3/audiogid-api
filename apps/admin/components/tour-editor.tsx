@@ -71,22 +71,20 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     const router = useRouter();
     const queryClient = useQueryClient();
 
+    // Синхронизация items с tour.items при обновлении данных
+    useEffect(() => {
+        if (tour?.items) {
+            setItems(tour.items);
+        }
+    }, [tour?.items]);
+
     // Загрузка списка городов
     const { data: citiesData } = useQuery({
         queryKey: ['cities'],
         queryFn: async () => {
-            // #region agent log
-            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-editor.tsx:cities-fetch',message:'Fetching cities',data:{url:`${API_URL}/public/cities`},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             const res = await fetch(`${API_URL}/public/cities`);
-            // #region agent log
-            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-editor.tsx:cities-response',message:'Cities response',data:{status:res.status,ok:res.ok},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             if (!res.ok) return [];
             const data = await res.json();
-            // #region agent log
-            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-editor.tsx:cities-data',message:'Cities loaded',data:{count:data?.length,cities:data?.map((c:any)=>c.slug)},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-            // #endregion
             return data;
         }
     });
@@ -113,10 +111,6 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
             const url = tour ? `${API_URL}/admin/tours/${tour.id}` : `${API_URL}/admin/tours`;
             const method = tour ? 'PATCH' : 'POST';
 
-            // #region agent log
-            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-editor.tsx:save-start',message:'Saving tour',data:{url,method,values,hasToken:!!token},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-            // #endregion
-
             const res = await fetch(url, {
                 method,
                 headers: {
@@ -125,11 +119,6 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                 },
                 body: JSON.stringify(values)
             });
-
-            // #region agent log
-            const resText = await res.clone().text();
-            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-editor.tsx:save-response',message:'Save response',data:{status:res.status,ok:res.ok,body:resText.substring(0,500)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-            // #endregion
 
             if (!res.ok) throw new Error('Не удалось сохранить информацию о туре');
             return res.json();

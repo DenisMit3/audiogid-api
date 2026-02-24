@@ -34,9 +34,6 @@ export default function TourEditPage({ params }: { params: { id: string } }) {
     );
 
     // Flatten structure for Editor
-    // #region agent log
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tours/[id]/page.tsx:data',message:'Tour data received',data:{hasTour:!!tourData?.tour,hasItems:!!tourData?.items,itemsCount:tourData?.items?.length,itemsType:typeof tourData?.items,isItemsArray:Array.isArray(tourData?.items)},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     const editorData = {
         ...tourData.tour,
         items: tourData.items,

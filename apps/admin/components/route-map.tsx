@@ -50,11 +50,11 @@ function MapBounds({ items }: { items: RouteItem[] }) {
 }
 
 export function RouteMap({ items }: { items: RouteItem[] }) {
-    // #region agent log
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'route-map.tsx:render',message:'RouteMap render start',data:{itemsCount:items?.length,isArray:Array.isArray(items)},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const polylinePositions = useMemo(() => {
         return items

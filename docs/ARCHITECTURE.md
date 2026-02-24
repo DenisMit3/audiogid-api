@@ -695,7 +695,8 @@ cd packages/api_client
 
 ## 10. Контакты и ресурсы
 
-- **API Docs**: https://audiogid-api.vercel.app/docs
+- **API Docs**: http://82.202.159.64:8000/docs
+- **Admin Panel**: http://82.202.159.64:3080
 - **OpenAPI Spec**: `apps/api/openapi.yaml`
 - **Project Context**: `AG_CONTEXT.md`
 - **Current TODO**: `AG_TODO_NOW.md`

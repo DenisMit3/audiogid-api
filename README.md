@@ -8,6 +8,7 @@ Built with FastAPI, SQLModel, and PostgreSQL + PostGIS.
 - **Database**: PostgreSQL + PostGIS (локально на Cloud.ru)
 - **API Version**: 1.13.0
 - **Server**: http://82.202.159.64:8000/v1
+- **Admin Panel**: http://82.202.159.64:3080
 
 ## Quick Start
 

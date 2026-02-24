@@ -1,7 +1,7 @@
 # IMPLEMENTATION PLAN — PR-6: Nearby Discovery
 
 ## 1. Schema & Indexes
-*   **Strategy**: Use PostGIS for robust distance calculation (`geography` type). Neon/Vercel Postgres typically supports PostGIS.
+*   **Strategy**: Use PostGIS for robust distance calculation (`geography` type). PostgreSQL + PostGIS on Cloud.ru.
     *   *Fallback if not available*: Haversine formula on indexed float lat/lon. 
     *   **Decision**: Attempt to enable PostGIS via migration. If fails, basic Haversine (ADR-010).
 *   **Schema**: Add `location` column (Geography(Point)) to `Poi` and `HelperPlace`. Sync from lat/lon columns or existing data? Lat/Lon currently stored as floats?
@@ -45,7 +45,7 @@ We need "Nearby" discovery for POIs and Helpers.
 
 ## Decision
 *   **Engine**: PostGIS (Geometry/Geography type).
-*   **Reasoning**: Provides efficient KNN/Radius queries via GiST indexes compared to bounding box + Haversine in app code. Supported by Neon/Vercel standard Postgres images.
+*   **Reasoning**: Provides efficient KNN/Radius queries via GiST indexes compared to bounding box + Haversine in app code. Supported by PostgreSQL + PostGIS on Cloud.ru.
 *   **Columns**:
     *   `lat` / `lon` (float): Source of truth for simple inputs/outputs.
     *   `geom` (Geography Point): Derived/Synced column for queries.

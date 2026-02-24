@@ -40,7 +40,7 @@ Welcome to the AudioGuide Administration Panel. This tool allows you to manage c
 
 ### Backups
 - **Direct Export:** Go to **Settings > Backup** to download a full CSV dump of your POI database.
-- **Recovery:** Managed via Neon Console (Postgres PITR).
+- **Recovery:** Use `pg_dump` for PostgreSQL backups on Cloud.ru server.
 
 ### System Jobs
 - **Monitoring:** Go to **Jobs** to see background tasks (TTS generation, Offline Bundles).

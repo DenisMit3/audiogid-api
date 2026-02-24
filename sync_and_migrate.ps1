@@ -1,5 +1,5 @@
-# Helper script to sync environments from Vercel and run database migrations
-# Works with both Neon (cloud) and local PostgreSQL
+# Helper script to sync environments and run database migrations
+# Works with local PostgreSQL on Cloud.ru
 
 Write-Host "--- AudioGid Database Sync & Migrate ---" -ForegroundColor Cyan
 

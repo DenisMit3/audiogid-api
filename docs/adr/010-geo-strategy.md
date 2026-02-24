@@ -4,7 +4,7 @@
 Mobile users need "Nearby" discovery to find POIs and Helpers suitable for walking distance.
 
 ## Decision
-*   **Engine**: PostGIS (Neon/Vercel compliant via `CREATE EXTENSION IF NOT EXISTS postgis`).
+*   **Engine**: PostGIS (PostgreSQL + PostGIS extension via `CREATE EXTENSION IF NOT EXISTS postgis`).
 *   **Type**: `geography(Point, 4326)`.
     *   *Why?*: Native calculation in **Meters** (not degrees) without complex projection handling (SRID 3857 vs 4326 casts).
 *   **Storage**: 

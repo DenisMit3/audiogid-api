@@ -9,7 +9,7 @@
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | Neon Postgres Connection String |
+| `DATABASE_URL` | PostgreSQL Connection String (local on Cloud.ru) |
 | `PUBLIC_APP_BASE_URL` | Базовый URL для генерации абсолютных ссылок (webhooks, sharing) |
 | `YOOKASSA_*` | Учетные данные YooKassa (Shop ID, Secret Key, Webhook Secret) |
 | `PAYMENT_WEBHOOK_BASE_PATH` | Путь вебхука (must start with `/`) |

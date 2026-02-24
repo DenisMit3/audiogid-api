@@ -4,7 +4,7 @@ from starlette.responses import JSONResponse
 import asyncio
 
 class TimeoutMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, timeout: int = 120):  # 2 min for Neon cold start
+    def __init__(self, app, timeout: int = 120):  # 2 min timeout for long operations
         super().__init__(app)
         self.timeout = timeout
 

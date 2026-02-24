@@ -75,12 +75,10 @@ Files Changed
 
 Deploy step (WHEN YOU REACH THIS STEP — DO NOT DO NOW)
 - Cloud dashboard clicks:
-    - **Vercel**: Create Project "api", link to `apps/api`.
-    - **Vercel**: Create Project "admin", link to `apps/admin`.
-    - **Vercel Postgres**: Create Database, attach to "api".
+    - **Cloud.ru**: Deploy API and Admin services.
     - **Upstash**: Create QStash database, get Tokens.
 - Env vars to add/update:
-    - `DATABASE_URL` (From Neon/Vercel Postgres)
+    - `DATABASE_URL` (PostgreSQL on Cloud.ru: postgresql://audiogid:password@localhost:5432/audiogid)
     - `QSTASH_TOKEN` (From Upstash Console)
     - `QSTASH_CURRENT_SIGNING_KEY` (From Upstash Console)
     - `QSTASH_NEXT_SIGNING_KEY` (From Upstash Console)

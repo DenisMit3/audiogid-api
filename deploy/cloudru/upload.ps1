@@ -6,10 +6,9 @@ $USER = "user1"
 $REMOTE_DIR = "/opt/audiogid"
 
 $files = @(
-    "neon_backup.dump",
-    "setup-postgres.sh",
-    "import-data.sh",
-    "update-config.sh"
+    "init-db.sh",
+    "seed-data.py",
+    "deploy-full.sh"
 )
 
 Write-Host "=== Uploading files to Cloud.ru ===" -ForegroundColor Cyan

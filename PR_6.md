@@ -45,8 +45,8 @@ Files Changed
 
 Deploy step (WHEN YOU REACH THIS STEP — DO NOT DO NOW)
 - Cloud dashboard clicks:
-    - **Neon**: Confirm PostGIS is valid.
-    - **Vercel**: Redeploy `api`.
+    - **Cloud.ru**: Confirm PostGIS is installed.
+    - **Cloud.ru**: Redeploy `api`.
 - Env vars to add/update:
     - None.
 - vercel.json snippet (if needed): n/a.

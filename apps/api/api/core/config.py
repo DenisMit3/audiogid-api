@@ -3,7 +3,7 @@ import os
 class AppConfig:
     def __init__(self):
         # FAIL-FAST: Explicitly verify required vars.
-        # Use pooled URL for Neon (unpooled has cold start issues on free tier)
+        # PostgreSQL connection (local on Cloud.ru or any PostgreSQL instance)
         self.DATABASE_URL = self._get_required("DATABASE_URL")
         
         # Deploy environment: "production", "staging", "development"

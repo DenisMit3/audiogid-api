@@ -105,12 +105,12 @@ USER IS ONLY PREPARING A PROMPT (NOT IMPLEMENTING NOW)
 Если не хватает вводных — используй дефолты ниже и фиксируй их в ADR.
 
 ### 7.1 Platform defaults (fixed)
-- Admin: Next.js App Router (Vercel).
-- API: FastAPI (Vercel Python Runtime / serverless functions).
-- Schedules: Vercel Cron Jobs + Upstash QStash.
-- DB: Neon Postgres (фиксируем).
+- Admin: Next.js App Router (Cloud.ru).
+- API: FastAPI (Cloud.ru server).
+- Schedules: Cron Jobs + Upstash QStash.
+- DB: PostgreSQL + PostGIS (локально на Cloud.ru).
 - Redis (если нужен): Upstash Redis.
-- Storage: Vercel Blob (фиксируем; S3 API — только через отдельное ADR).
+- Storage: MinIO S3-compatible (локально на Cloud.ru).
 - Observability: JSON structured logs + trace_id; Sentry optional behind flag.
 
 ### 7.2 Product defaults (fixed)
@@ -165,13 +165,13 @@ Required env:
 
 ---
 
-## 9) VERCEL-ONLY ARCHITECTURE
-- Admin: Next.js App Router (Vercel).
-- API: FastAPI (Vercel Python Runtime / serverless).
-- Schedules: Vercel Cron (triggers only) + Upstash QStash (jobs/callbacks).
-- DB: Neon Postgres.
+## 9) CLOUD.RU ARCHITECTURE
+- Admin: Next.js App Router (Cloud.ru).
+- API: FastAPI (Cloud.ru server).
+- Schedules: Cron + Upstash QStash (jobs/callbacks).
+- DB: PostgreSQL + PostGIS (локально на Cloud.ru).
 - Redis (если нужен): Upstash Redis.
-- Storage: Vercel Blob.
+- Storage: MinIO S3-compatible (локально на Cloud.ru).
 - Observability: JSON logs + trace_id.
 
 ---

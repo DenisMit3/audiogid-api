@@ -4,9 +4,83 @@ from .core.database import engine
 
 router = APIRouter()
 
+# Минимальные версии приложений для работы
+# Формат: "platform": {"min_version": "x.y.z", "store_url": "..."}
+APP_VERSIONS = {
+    "android": {
+        "min_version": "1.0.0",
+        "current_version": "1.0.0",
+        "store_url": "https://play.google.com/store/apps/details?id=app.audiogid.mobile_flutter",
+        "force_update": False,  # Если True - блокирует приложение
+    },
+    "ios": {
+        "min_version": "1.0.0",
+        "current_version": "1.0.0",
+        "store_url": "https://apps.apple.com/app/audiogid/id000000000",
+        "force_update": False,
+    }
+}
+
 def get_session():
     with Session(engine) as session:
         yield session
+
+@router.get("/ops/app-version")
+def check_app_version(platform: str = "android", version: str = "1.0.0"):
+    """
+    Проверка версии приложения.
+    Возвращает информацию о необходимости обновления.
+    
+    Args:
+        platform: "android" или "ios"
+        version: текущая версия приложения (например "1.0.0")
+    
+    Returns:
+        - update_required: bool - требуется ли обновление
+        - force_update: bool - блокировать ли приложение без обновления
+        - min_version: str - минимальная поддерживаемая версия
+        - current_version: str - последняя доступная версия
+        - store_url: str - ссылка на магазин приложений
+        - message_ru: str - сообщение для пользователя
+    """
+    platform = platform.lower()
+    if platform not in APP_VERSIONS:
+        platform = "android"
+    
+    config = APP_VERSIONS[platform]
+    min_version = config["min_version"]
+    current_version = config["current_version"]
+    
+    # Сравниваем версии
+    def parse_version(v: str) -> tuple:
+        try:
+            parts = v.split(".")
+            return tuple(int(p) for p in parts[:3])
+        except:
+            return (0, 0, 0)
+    
+    user_ver = parse_version(version)
+    min_ver = parse_version(min_version)
+    current_ver = parse_version(current_version)
+    
+    update_required = user_ver < min_ver
+    update_available = user_ver < current_ver
+    
+    message_ru = None
+    if update_required:
+        message_ru = "Ваша версия приложения устарела. Пожалуйста, обновите приложение для продолжения работы."
+    elif update_available:
+        message_ru = "Доступна новая версия приложения. Рекомендуем обновить для лучшей работы."
+    
+    return {
+        "update_required": update_required,
+        "update_available": update_available,
+        "force_update": config["force_update"] and update_required,
+        "min_version": min_version,
+        "current_version": current_version,
+        "store_url": config["store_url"],
+        "message_ru": message_ru
+    }
 
 @router.get("/ops/health")
 def health_check():

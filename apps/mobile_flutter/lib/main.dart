@@ -17,16 +17,19 @@ import 'package:mobile_flutter/data/services/notification_service.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:mobile_flutter/data/services/security_service.dart';
 import 'package:mobile_flutter/core/services/api_health_service.dart';
+import 'package:mobile_flutter/core/services/app_update_service.dart';
+import 'package:mobile_flutter/presentation/screens/force_update_screen.dart';
 
 // Firebase imports removed
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) {
-    MemoryAllocations.instance.addListener((event) {
-      debugPrint('Memory: ${event.toString()}');
-    });
-  }
+  // Memory tracking disabled to reduce log noise
+  // if (kDebugMode) {
+  //   MemoryAllocations.instance.addListener((event) {
+  //     debugPrint('Memory: ${event.toString()}');
+  //   });
+  // }
   await FlutterDownloader.initialize(debug: true);
   
   // Firebase initialization removed
@@ -52,6 +55,31 @@ void main() async {
   container.read(analyticsServiceProvider).logEvent('app_open');
   // Check for root/jailbreak
   container.read(securityServiceProvider).checkDeviceSecurity();
+
+  // Check for app updates (force update check)
+  AppUpdateInfo? updateInfo;
+  try {
+    updateInfo = await container.read(appUpdateServiceProvider).checkForUpdate();
+    debugPrint('App update check: required=${updateInfo.updateRequired}, force=${updateInfo.forceUpdate}');
+  } catch (e) {
+    debugPrint('App update check failed: $e');
+  }
+
+  // If force update is required, show update screen and block the app
+  if (updateInfo != null && updateInfo.forceUpdate) {
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: ForceUpdateScreen(
+          storeUrl: updateInfo.storeUrl,
+          message: updateInfo.messageRu ?? 'Пожалуйста, обновите приложение для продолжения работы.',
+          currentVersion: updateInfo.currentVersion,
+          minVersion: updateInfo.minVersion,
+        ),
+      ),
+    );
+    return; // Блокируем дальнейшую загрузку приложения
+  }
 
   // API Connectivity Check
   try {

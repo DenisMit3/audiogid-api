@@ -8,15 +8,7 @@ import { Button } from "@/components/ui/button";
 import TourEditor from '@/components/tour-editor';
 
 const fetchTour = async (id: string) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-edit-page.tsx:fetchTour-start',message:'Fetching tour',data:{id,url:`/api/proxy/admin/tours/${id}`},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     const res = await fetch(`/api/proxy/admin/tours/${id}`);
-    // #region agent log
-    const resClone = res.clone();
-    const resText = await resClone.text();
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tour-edit-page.tsx:fetchTour-response',message:'Tour fetch response',data:{id,status:res.status,ok:res.ok,body:resText.substring(0,500)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     if (!res.ok) throw new Error("Не удалось загрузить тур");
     return res.json();
 };
@@ -42,6 +34,9 @@ export default function TourEditPage({ params }: { params: { id: string } }) {
     );
 
     // Flatten structure for Editor
+    // #region agent log
+    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'tours/[id]/page.tsx:data',message:'Tour data received',data:{hasTour:!!tourData?.tour,hasItems:!!tourData?.items,itemsCount:tourData?.items?.length,itemsType:typeof tourData?.items,isItemsArray:Array.isArray(tourData?.items)},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     const editorData = {
         ...tourData.tour,
         items: tourData.items,

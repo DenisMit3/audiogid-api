@@ -47,7 +47,12 @@ import {
 } from "@/components/ui/popover";
 import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
-const RouteMap = dynamic(() => import('./route-map').then(mod => mod.RouteMap), {
+const RouteMap = dynamic(() => import('./route-map').then(mod => {
+    // #region agent log
+    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'route-builder.tsx:dynamic-import',message:'RouteMap module loaded',data:{modKeys:Object.keys(mod||{}),hasRouteMap:!!mod?.RouteMap,typeofRouteMap:typeof mod?.RouteMap},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    return mod.RouteMap;
+}), {
     ssr: false,
     loading: () => <div className="h-full w-full flex items-center justify-center bg-slate-100 font-mono text-xs">Загрузка карты...</div>
 });
@@ -150,6 +155,9 @@ const API_URL = '/api/proxy';
 // throw removed for build
 
 export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
+    // #region agent log
+    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f46abe'},body:JSON.stringify({sessionId:'f46abe',location:'route-builder.tsx:render',message:'RouteBuilder render',data:{itemsCount:items?.length,itemsType:typeof items,isArray:Array.isArray(items),citySlug,hasOnReorder:typeof onReorder,hasOnAddItem:typeof onAddItem},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })

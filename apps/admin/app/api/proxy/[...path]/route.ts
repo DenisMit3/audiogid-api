@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-// API URL with port 8000 - required for Cloud.ru deployment
+// API URL with port 8000 - required for Cloud.ru deployment (updated 2026-02-24)
 const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://82.202.159.64:8000/v1';
 const BACKEND_URL = ENV_API_URL.endsWith('/v1') ? ENV_API_URL : `${ENV_API_URL}/v1`;
 

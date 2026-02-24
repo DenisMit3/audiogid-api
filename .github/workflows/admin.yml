@@ -5,7 +5,7 @@ on:
     branches: [ "main", "master" ]
     paths:
       - "apps/admin/**"
-      - "items/**"
+      - ".github/workflows/admin.yml"
   pull_request:
     branches: [ "main", "master" ]
     paths:

@@ -35,12 +35,12 @@ jobs:
             apps/api/ ${USER}@${SERVER}:${APP_DIR}/api/
           
           # Run migrations on server (DB is local on Cloud.ru)
-          # Load .env and run migrations
+          # Load .env from parent dir or api dir, then run migrations
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
-            if [ ! -d venv ]; then python3 -m venv venv; fi && \
             . venv/bin/activate && \
             pip install -q -r requirements.txt && \
-            set -a && . .env && set +a && \
+            if [ -f ../.env ]; then set -a && . ../.env && set +a; fi && \
+            if [ -f .env ]; then set -a && . .env && set +a; fi && \
             alembic upgrade head"
           
           # Restart API service

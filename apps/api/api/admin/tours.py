@@ -52,6 +52,7 @@ class TourItemRead(BaseModel):
     poi_lat: Optional[float]
     poi_lon: Optional[float]
     transition_text_ru: Optional[str]
+    transition_audio_url: Optional[str]
     duration_seconds: Optional[int]
 
 class TourDetailResponse(BaseModel):
@@ -78,10 +79,12 @@ class CreateItemReq(BaseModel):
     poi_id: uuid.UUID
     order_index: int
     transition_text_ru: Optional[str] = None
+    transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None
 
 class TourItemUpdate(BaseModel):
     transition_text_ru: Optional[str] = None
+    transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None
     order_index: Optional[int] = None
 
@@ -191,6 +194,7 @@ def get_tour(
             "poi_lat": item.poi.lat if item.poi else None,
             "poi_lon": item.poi.lon if item.poi else None,
             "transition_text_ru": item.transition_text_ru,
+            "transition_audio_url": item.transition_audio_url,
             "duration_seconds": item.duration_seconds
         })
     items_read.sort(key=lambda x: x['order_index'])
@@ -320,6 +324,7 @@ def update_tour_item(
         "poi_lat": item.poi.lat if item.poi else None,
         "poi_lon": item.poi.lon if item.poi else None,
         "transition_text_ru": item.transition_text_ru,
+        "transition_audio_url": item.transition_audio_url,
         "duration_seconds": item.duration_seconds
     }
 
@@ -335,6 +340,7 @@ def add_tour_item(tour_id: uuid.UUID, req: CreateItemReq, session: Session = Dep
         poi_id=req.poi_id, 
         order_index=req.order_index,
         transition_text_ru=req.transition_text_ru,
+        transition_audio_url=req.transition_audio_url,
         duration_seconds=req.duration_seconds
     )
     session.add(item)

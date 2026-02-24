@@ -30,8 +30,12 @@ export default function LoginPage() {
 
             if (res.ok) {
                 console.log('[LOGIN] Success, redirecting to dashboard');
-                router.push('/dashboard');
-                router.refresh();
+                console.log('[LOGIN] Response headers Set-Cookie:', res.headers.get('set-cookie'));
+                console.log('[LOGIN] Document cookies:', document.cookie);
+                
+                // Используем window.location вместо router.push для надёжного редиректа
+                console.log('[LOGIN] Using window.location.href for redirect');
+                window.location.href = '/dashboard';
             } else {
                 const err = await res.json();
                 console.log('[LOGIN] Error response:', err);

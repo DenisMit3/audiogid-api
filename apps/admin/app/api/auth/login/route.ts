@@ -44,7 +44,11 @@ export async function POST(request: Request) {
 
         // Set HttpOnly Cookie
         const origin = new URL(request.url).origin;
-        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || origin.startsWith('https');
+        const xForwardedProto = request.headers.get('x-forwarded-proto');
+        const isHttps = xForwardedProto === 'https' || origin.startsWith('https');
+        
+        console.log('[LOGIN API] Cookie settings:', { origin, xForwardedProto, isHttps, tokenExists: !!token, tokenLength: token?.length });
+        
         response.cookies.set({
             name: 'token',
             value: token,
@@ -54,6 +58,8 @@ export async function POST(request: Request) {
             secure: isHttps,
             sameSite: 'lax'
         });
+
+        console.log('[LOGIN API] Set-Cookie header:', response.headers.get('set-cookie'));
 
         return response;
 

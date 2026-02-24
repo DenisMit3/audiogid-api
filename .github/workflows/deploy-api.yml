@@ -39,8 +39,7 @@ jobs:
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
             . venv/bin/activate && \
             pip install -q -r requirements.txt && \
-            if [ -f ../.env ]; then set -a && . ../.env && set +a; fi && \
-            if [ -f .env ]; then set -a && . .env && set +a; fi && \
+            export \$(grep -v '^#' ${APP_DIR}/.env | xargs) 2>/dev/null || true && \
             alembic upgrade head"
           
           # Restart API service

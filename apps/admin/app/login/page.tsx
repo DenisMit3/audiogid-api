@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,41 +9,33 @@ import { Label } from '@/components/ui/label';
 import { Lock, Mail, Sparkles, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleLogin = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        console.log('[LOGIN] handleLogin called', { email, password: '***' });
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
         setLoading(true);
+        
         try {
-            console.log('[LOGIN] Sending request to /api/auth/login');
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
                 credentials: 'include'
             });
-            console.log('[LOGIN] Response status:', res.status);
 
             if (res.ok) {
-                console.log('[LOGIN] Success, redirecting to dashboard');
-                console.log('[LOGIN] Response headers Set-Cookie:', res.headers.get('set-cookie'));
-                console.log('[LOGIN] Document cookies:', document.cookie);
-                
-                // Используем window.location вместо router.push для надёжного редиректа
-                console.log('[LOGIN] Using window.location.href for redirect');
+                // Редирект через полную перезагрузку страницы
                 window.location.href = '/dashboard';
             } else {
-                const err = await res.json();
-                console.log('[LOGIN] Error response:', err);
-                alert(`Ошибка входа: ${err.detail || 'Неизвестная ошибка'}`);
+                const data = await res.json();
+                setError(data.detail || 'Неверный email или пароль');
             }
-        } catch (error) {
-            console.error('[LOGIN] Exception:', error);
-            alert('Ошибка входа');
+        } catch (err) {
+            setError('Ошибка соединения с сервером');
         } finally {
             setLoading(false);
         }
@@ -83,6 +74,11 @@ export default function LoginPage() {
                     </CardHeader>
                     <CardContent className="pt-4">
                         <form onSubmit={handleLogin} className="space-y-4">
+                            {error && (
+                                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="text-sm font-medium">Эл. почта</Label>
                                 <div className="relative group">
@@ -96,6 +92,7 @@ export default function LoginPage() {
                                         className="pl-10 h-12 bg-white/50 dark:bg-slate-800/50"
                                         required
                                         disabled={loading}
+                                        autoComplete="email"
                                     />
                                 </div>
                             </div>
@@ -112,6 +109,7 @@ export default function LoginPage() {
                                         className="pl-10 h-12 bg-white/50 dark:bg-slate-800/50"
                                         required
                                         disabled={loading}
+                                        autoComplete="current-password"
                                     />
                                 </div>
                             </div>
@@ -119,7 +117,6 @@ export default function LoginPage() {
                                 type="submit"
                                 className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 group"
                                 disabled={loading || !email || !password}
-                                onClick={() => console.log('[LOGIN] Button clicked', { email, password: password ? '***' : 'empty', loading, disabled: loading || !email || !password })}
                             >
                                 {loading ? (
                                     <div className="flex items-center gap-2">

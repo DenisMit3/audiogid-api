@@ -15,10 +15,6 @@ export async function POST(request: Request) {
 
     const apiUrl = `${API_BASE_URL}${endpoint}`;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'auth/login/route.ts:18',message:'Login request direct',data:{apiUrl,bodyKeys:Object.keys(body)},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{});
-    // #endregion
-
     try {
         const backendRes = await fetch(apiUrl, {
             method: 'POST',
@@ -27,9 +23,6 @@ export async function POST(request: Request) {
         });
 
         const responseText = await backendRes.text();
-        // #region agent log
-        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'auth/login/route.ts:30',message:'Backend response direct',data:{status:backendRes.status,responsePreview:responseText.substring(0,300)},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
 
         if (!backendRes.ok) {
             let err = { detail: 'Backend Error' };
@@ -42,31 +35,20 @@ export async function POST(request: Request) {
 
         const response = NextResponse.json({ success: true });
 
-        // Set HttpOnly Cookie
-        const origin = new URL(request.url).origin;
-        const xForwardedProto = request.headers.get('x-forwarded-proto');
-        const isHttps = xForwardedProto === 'https' || origin.startsWith('https');
-        
-        console.log('[LOGIN API] Cookie settings:', { origin, xForwardedProto, isHttps, tokenExists: !!token, tokenLength: token?.length });
-        
+        // Set HttpOnly Cookie - always use secure:false for HTTP
         response.cookies.set({
             name: 'token',
             value: token,
             httpOnly: true,
             path: '/',
             maxAge: 60 * 60 * 24, // 1 day
-            secure: isHttps,
+            secure: false,
             sameSite: 'lax'
         });
-
-        console.log('[LOGIN API] Set-Cookie header:', response.headers.get('set-cookie'));
 
         return response;
 
     } catch (e: any) {
-        // #region agent log
-        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'auth/login/route.ts:60',message:'Login error',data:{error:e.message},timestamp:Date.now(),hypothesisId:'F'})}).catch(()=>{});
-        // #endregion
         console.error('Login Error:', e);
         return NextResponse.json({
             detail: 'Internal Server Error',

@@ -24,9 +24,6 @@ export async function DELETE(request: Request, { params }: { params: { path: str
 }
 
 async function proxy(request: Request, pathSegments: string[], method: string) {
-    // #region agent log
-    fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'proxy/route.ts:27',message:'Proxy called',data:{pathSegments,method,BACKEND_URL,ENV_API_URL},timestamp:Date.now(),hypothesisId:'A,E'})}).catch(()=>{});
-    // #endregion
     if (!BACKEND_URL) return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
     const path = pathSegments.join('/');
     const cookieStore = cookies();
@@ -64,10 +61,6 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
 
         const finalUrl = `${base}/${targetPath}${query}`;
 
-        // #region agent log
-        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'proxy/route.ts:62',message:'Final URL constructed',data:{finalUrl,base,targetPath,body:body?.substring(0,200)},timestamp:Date.now(),hypothesisId:'B,C,E'})}).catch(()=>{});
-        // #endregion
-
         const res = await fetch(finalUrl, {
             method,
             headers,
@@ -75,9 +68,6 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
         });
 
         const responseText = await res.text();
-        // #region agent log
-        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'proxy/route.ts:72',message:'Backend response',data:{status:res.status,responsePreview:responseText.substring(0,500),contentType:res.headers.get('content-type')},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
-        // #endregion
 
         let data = {};
         try {
@@ -90,9 +80,6 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
         response.headers.set('X-Debug-Upstream-Url', finalUrl);
         return response;
     } catch (e) {
-        // #region agent log
-        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e1d8fd'},body:JSON.stringify({sessionId:'e1d8fd',location:'proxy/route.ts:85',message:'Proxy error',data:{error:String(e)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         return NextResponse.json({ error: 'Proxy Error', details: String(e) }, { status: 502 });
     }
 }

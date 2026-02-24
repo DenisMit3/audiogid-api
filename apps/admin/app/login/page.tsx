@@ -17,23 +17,28 @@ export default function LoginPage() {
 
     const handleLogin = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+        console.log('[LOGIN] handleLogin called', { email, password: '***' });
         setLoading(true);
         try {
+            console.log('[LOGIN] Sending request to /api/auth/login');
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
+            console.log('[LOGIN] Response status:', res.status);
 
             if (res.ok) {
+                console.log('[LOGIN] Success, redirecting to dashboard');
                 router.push('/dashboard');
                 router.refresh();
             } else {
                 const err = await res.json();
+                console.log('[LOGIN] Error response:', err);
                 alert(`Ошибка входа: ${err.detail || 'Неизвестная ошибка'}`);
             }
         } catch (error) {
-            console.error(error);
+            console.error('[LOGIN] Exception:', error);
             alert('Ошибка входа');
         } finally {
             setLoading(false);
@@ -109,6 +114,7 @@ export default function LoginPage() {
                                 type="submit"
                                 className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/25 group"
                                 disabled={loading || !email || !password}
+                                onClick={() => console.log('[LOGIN] Button clicked', { email, password: password ? '***' : 'empty', loading, disabled: loading || !email || !password })}
                             >
                                 {loading ? (
                                     <div className="flex items-center gap-2">

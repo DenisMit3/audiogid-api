@@ -40,14 +40,18 @@ export function DebugPanel() {
 
     const copyLog = useCallback((log: LogEntry) => {
         const text = `[${log.level.toUpperCase()}] ${log.timestamp.toISOString()}\n${log.message}${log.data ? '\n' + JSON.stringify(log.data, null, 2) : ''}${log.stack ? '\n\nStack:\n' + log.stack : ''}`;
-        navigator.clipboard.writeText(text);
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(() => {});
+        }
     }, []);
 
     const copyAll = useCallback(() => {
         const text = filteredLogs.map(l => 
             `[${l.level.toUpperCase()}] ${l.timestamp.toISOString()} - ${l.message}`
         ).join('\n');
-        navigator.clipboard.writeText(text);
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(() => {});
+        }
     }, [filteredLogs]);
 
     // Floating button

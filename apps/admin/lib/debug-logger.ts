@@ -36,18 +36,23 @@ const ICONS: Record<LogLevel, string> = {
 
 class DebugLogger {
     private logs: LogEntry[] = [];
-    private maxLogs = 100;
+    private maxLogs = 500; // Увеличено для максимального логирования
     private listeners: Set<(logs: LogEntry[]) => void> = new Set();
     private enabled = true;
     private isLogging = false; // Prevent recursion
 
     constructor() {
         if (typeof window !== 'undefined') {
-            this.enabled = localStorage.getItem('debug_enabled') !== 'false';
+            // Принудительно включаем логирование
+            this.enabled = true;
+            localStorage.setItem('debug_enabled', 'true');
             this.interceptConsole();
             this.interceptFetch();
             this.interceptErrors();
             this.logNavigation();
+            
+            // Логируем старт
+            console.log('🔍 Debug Logger initialized - максимальное логирование включено');
         }
     }
 
@@ -81,28 +86,57 @@ class DebugLogger {
 
     private interceptFetch() {
         const origFetch = window.fetch;
+        const self = this;
         window.fetch = async (input, init) => {
             const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
             const method = init?.method || 'GET';
             const start = Date.now();
 
-            this.add('api', `→ ${method} ${url}`);
+            // Логируем тело запроса для POST/PUT/PATCH
+            let bodyPreview = '';
+            if (init?.body && typeof init.body === 'string') {
+                try {
+                    const parsed = JSON.parse(init.body);
+                    bodyPreview = JSON.stringify(parsed).slice(0, 200);
+                } catch {
+                    bodyPreview = String(init.body).slice(0, 200);
+                }
+            }
+
+            self.add('api', `→ ${method} ${url}${bodyPreview ? ` | Body: ${bodyPreview}` : ''}`);
 
             try {
                 const res = await origFetch(input, init);
                 const duration = Date.now() - start;
                 const status = res.status;
                 
+                // Клонируем response чтобы прочитать тело
+                const cloned = res.clone();
+                let responsePreview = '';
+                try {
+                    const text = await cloned.text();
+                    responsePreview = text.slice(0, 300);
+                } catch {}
+                
                 if (status >= 400) {
-                    this.add('error', `← ${status} ${url} (${duration}ms)`);
+                    self.add('error', `← ${status} ${url} (${duration}ms)`, { 
+                        status, 
+                        response: responsePreview,
+                        headers: Object.fromEntries(res.headers.entries())
+                    });
                 } else {
-                    this.add('api', `← ${status} ${url} (${duration}ms)`);
+                    self.add('api', `← ${status} ${url} (${duration}ms)`, {
+                        response: responsePreview.slice(0, 100)
+                    });
                 }
                 
                 return res;
             } catch (err: any) {
                 const duration = Date.now() - start;
-                this.add('error', `✗ ${method} ${url} - ${err.message} (${duration}ms)`, undefined, err.stack);
+                self.add('error', `✗ ${method} ${url} - ${err.message} (${duration}ms)`, {
+                    error: err.message,
+                    name: err.name
+                }, err.stack);
                 throw err;
             }
         };

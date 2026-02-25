@@ -165,7 +165,7 @@ def list_pois(
 def create_poi(
     poi_in: PoiCreate,
     session: Session = Depends(get_session),
-    user: User = Depends(get_current_admin) 
+    user: User = Depends(get_current_admin)
 ):
     db_poi = Poi.from_orm(poi_in)
     db_poi.id = uuid.uuid4()
@@ -367,7 +367,7 @@ def delete_poi_narration(poi_id: uuid.UUID, narration_id: uuid.UUID, session: Se
 def publish_poi(poi_id: uuid.UUID, session: Session = Depends(get_session), user: User = Depends(require_permission('poi:publish'))):
     poi = session.get(Poi, poi_id)
     if not poi: raise HTTPException(404)
-    
+
     # Gates check
     if not poi.description_ru or len(poi.description_ru) < 10:
         raise HTTPException(400, "Description too short")

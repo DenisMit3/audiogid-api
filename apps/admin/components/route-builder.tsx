@@ -274,11 +274,11 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
                 
                 // Формируем понятное сообщение на русском
                 if (errorMsg.includes('Description too short')) {
-                    errorMsg = 'Описание POI слишком короткое (минимум 10 символов)';
+                    errorMsg = 'Описание POI слишком короткое (минимум 10 символов). Откройте POI и добавьте описание.';
                 } else if (errorMsg.includes('Missing coordinates')) {
-                    errorMsg = 'У POI не заданы координаты';
+                    errorMsg = 'У POI не заданы координаты. Откройте POI и укажите местоположение на карте.';
                 } else if (errorMsg.includes('Field required')) {
-                    errorMsg = 'Не все обязательные поля POI заполнены';
+                    errorMsg = 'Не все обязательные поля POI заполнены. Откройте POI и заполните название и город.';
                 } else if (!errorMsg) {
                     errorMsg = `Не удалось ${action === 'publish' ? 'опубликовать' : 'снять с публикации'} POI`;
                 }
@@ -308,6 +308,12 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
     const createPoiMutation = useMutation({
         mutationFn: async ({ lat, lon, title }: { lat: number, lon: number, title: string }) => {
             const token = localStorage.getItem('admin_token');
+            const payload = {
+                title_ru: title,
+                city_slug: citySlug || 'kaliningrad_city',
+                lat: lat,
+                lon: lon
+            };
             const res = await fetch(`${API_URL}/admin/pois`, {
                 method: 'POST',
                 headers: {
@@ -315,10 +321,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
                     'Authorization': `Bearer ${token}`,
                     'x-admin-token': 'temp-admin-key-2026'
                 },
-                body: JSON.stringify({
-                    title_ru: title,
-                    city_slug: citySlug || 'kaliningrad_city'
-                })
+                body: JSON.stringify(payload)
             });
             if (!res.ok) {
                 const errorText = await res.text();

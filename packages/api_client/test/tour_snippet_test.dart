@@ -31,8 +31,33 @@ void main() {
       // TODO
     });
 
+    // String descriptionRu
+    test('to test the property `descriptionRu`', () async {
+      // TODO
+    });
+
+    // String coverImage
+    test('to test the property `coverImage`', () async {
+      // TODO
+    });
+
     // int durationMinutes
     test('to test the property `durationMinutes`', () async {
+      // TODO
+    });
+
+    // num distanceKm
+    test('to test the property `distanceKm`', () async {
+      // TODO
+    });
+
+    // String tourType
+    test('to test the property `tourType`', () async {
+      // TODO
+    });
+
+    // String difficulty
+    test('to test the property `difficulty`', () async {
       // TODO
     });
 

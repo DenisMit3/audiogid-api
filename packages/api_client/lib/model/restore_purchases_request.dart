@@ -142,7 +142,7 @@ class RestorePurchasesRequest {
       }());
 
       return RestorePurchasesRequest(
-        platform: RestorePurchasesRequestPlatformEnum.fromJson(json[r'platform']) as RestorePurchasesRequestPlatformEnum? ?? const RestorePurchasesRequestPlatformEnum._(r'auto'),
+        platform: RestorePurchasesRequestPlatformEnum.fromJson(json[r'platform']) ?? 'auto',
         idempotencyKey: mapValueOfType<String>(json, r'idempotency_key')!,
         deviceAnonId: mapValueOfType<String>(json, r'device_anon_id')!,
         appleReceipt: mapValueOfType<String>(json, r'apple_receipt'),

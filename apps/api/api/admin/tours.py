@@ -53,7 +53,7 @@ class TourItemRead(BaseModel):
     poi_lon: Optional[float]
     transition_text_ru: Optional[str]
     # transition_audio_url: Optional[str]  # Column not in DB yet
-    # duration_seconds: Optional[int]  # Column not in DB yet
+    duration_seconds: Optional[int]
 
 class TourDetailResponse(BaseModel):
     tour: TourRead
@@ -80,12 +80,12 @@ class CreateItemReq(BaseModel):
     order_index: int
     transition_text_ru: Optional[str] = None
     # transition_audio_url: Optional[str] = None  # Column not in DB yet
-    # duration_seconds: Optional[int] = None  # Column not in DB yet
+    duration_seconds: Optional[int] = None
 
 class TourItemUpdate(BaseModel):
     transition_text_ru: Optional[str] = None
     # transition_audio_url: Optional[str] = None  # Column not in DB yet
-    # duration_seconds: Optional[int] = None  # Column not in DB yet
+    duration_seconds: Optional[int] = None
     order_index: Optional[int] = None
 
 class ReorderItemsReq(BaseModel):
@@ -195,7 +195,7 @@ def get_tour(
             "poi_lon": item.poi.lon if item.poi else None,
             "transition_text_ru": item.transition_text_ru,
             # "transition_audio_url": item.transition_audio_url,  # Column not in DB yet
-            # "duration_seconds": item.duration_seconds  # Column not in DB yet
+            "duration_seconds": item.duration_seconds
         })
     items_read.sort(key=lambda x: x['order_index'])
     
@@ -325,7 +325,7 @@ def update_tour_item(
         "poi_lon": item.poi.lon if item.poi else None,
         "transition_text_ru": item.transition_text_ru,
         # "transition_audio_url": item.transition_audio_url,  # Column not in DB yet
-        # "duration_seconds": item.duration_seconds  # Column not in DB yet
+        "duration_seconds": item.duration_seconds
     }
 
 @router.post("/admin/tours/{tour_id}/items", status_code=201)

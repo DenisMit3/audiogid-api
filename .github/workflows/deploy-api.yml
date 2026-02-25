@@ -44,11 +44,6 @@ jobs:
             . venv/bin/activate && \
             alembic upgrade head 2>&1 || (echo 'Upgrade failed, stamping head...' && alembic stamp head)"
           
-          # Ensure critical columns exist (fix for missing migrations)
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
-            . venv/bin/activate && \
-            python scripts/fix_missing_columns.py"
-          
           # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"
           

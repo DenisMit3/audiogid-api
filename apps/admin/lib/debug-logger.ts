@@ -40,6 +40,12 @@ class DebugLogger {
     private listeners: Set<(logs: LogEntry[]) => void> = new Set();
     private enabled = true;
     private isLogging = false; // Prevent recursion
+    
+    // Remote logging
+    private remoteUrl: string | null = null;
+    private remoteWs: WebSocket | null = null;
+    private remoteBuffer: any[] = [];
+    private remoteConnected = false;
 
     constructor() {
         if (typeof window !== 'undefined') {
@@ -51,8 +57,75 @@ class DebugLogger {
             this.interceptErrors();
             this.logNavigation();
             
+            // Автоподключение к remote серверу (localhost для разработки)
+            this.connectRemote('http://localhost:8765');
+            
             // Логируем старт
             console.log('🔍 Debug Logger initialized - максимальное логирование включено');
+        }
+    }
+    
+    // Подключение к серверу логов
+    connectRemote(serverUrl: string) {
+        this.remoteUrl = serverUrl.replace(/\/$/, '');
+        const wsUrl = this.remoteUrl.replace(/^http/, 'ws');
+        
+        try {
+            this.remoteWs = new WebSocket(wsUrl);
+            
+            this.remoteWs.onopen = () => {
+                this.remoteConnected = true;
+                // Отправляем буфер
+                if (this.remoteBuffer.length > 0) {
+                    this.remoteBuffer.forEach(entry => this.sendToRemote(entry));
+                    this.remoteBuffer = [];
+                }
+                this.sendToRemote({ level: 'info', source: 'admin', message: 'Admin connected to log server' });
+            };
+            
+            this.remoteWs.onclose = () => {
+                this.remoteConnected = false;
+                // Переподключение через 5 сек
+                setTimeout(() => this.connectRemote(serverUrl), 5000);
+            };
+            
+            this.remoteWs.onerror = () => {
+                this.remoteConnected = false;
+            };
+        } catch (e) {
+            // Сервер недоступен - не критично
+        }
+    }
+    
+    // Отправка лога на remote сервер
+    private sendToRemote(entry: { level: string; source: string; message: string; data?: any; stack?: string }) {
+        if (!this.remoteUrl) return;
+        
+        const payload = {
+            ...entry,
+            timestamp: new Date().toISOString(),
+            url: typeof window !== 'undefined' ? window.location.href : ''
+        };
+        
+        // Через WebSocket если подключен
+        if (this.remoteWs && this.remoteConnected) {
+            try {
+                this.remoteWs.send(JSON.stringify(payload));
+                return;
+            } catch {}
+        }
+        
+        // HTTP fallback
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.remoteUrl + '/log', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(payload));
+        } catch {
+            // Буферизуем если не удалось отправить
+            if (this.remoteBuffer.length < 100) {
+                this.remoteBuffer.push(entry);
+            }
         }
     }
 
@@ -207,6 +280,15 @@ class DebugLogger {
             this.logs = this.logs.slice(0, this.maxLogs);
         }
 
+        // Отправляем на remote сервер
+        this.sendToRemote({
+            level,
+            source: 'admin',
+            message,
+            data,
+            stack
+        });
+
         this.notify();
     }
 
@@ -227,6 +309,15 @@ class DebugLogger {
         if (this.logs.length > this.maxLogs) {
             this.logs = this.logs.slice(0, this.maxLogs);
         }
+
+        // Отправляем на remote сервер
+        this.sendToRemote({
+            level,
+            source: 'admin',
+            message,
+            data,
+            stack
+        });
 
         this.notify();
         this.isLogging = false;

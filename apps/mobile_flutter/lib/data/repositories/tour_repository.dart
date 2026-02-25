@@ -133,7 +133,7 @@ class OfflineTourRepository implements TourRepository {
                 descriptionRu: Value(t.descriptionRu),
                 coverImage: Value(t.coverImage),
                 durationMinutes: Value(t.durationMinutes),
-                distanceKm: Value(t.distanceKm),
+                distanceKm: Value(t.distanceKm?.toDouble()),
                 tourType: Value(t.tourType ?? 'walking'),
               ))
           .toList();

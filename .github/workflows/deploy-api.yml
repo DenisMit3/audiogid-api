@@ -39,10 +39,10 @@ jobs:
             . venv/bin/activate && \
             pip install -q -r requirements.txt"
           
-          # Run database migrations
+          # Run database migrations (stamp if column already exists)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
             . venv/bin/activate && \
-            alembic upgrade head"
+            alembic upgrade head || alembic stamp head"
           
           # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"

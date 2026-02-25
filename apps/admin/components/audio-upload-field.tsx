@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Upload, Trash2, Play, Pause, Loader2, CheckCircle2, XCircle, Music } from 'lucide-react';
+import { Upload, Trash2, Play, Pause, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -27,43 +27,51 @@ export function AudioUploadField({ value, onChange, entityType = 'tour', entityI
 
     const uploadMutation = useMutation({
         mutationFn: async (file: File) => {
-            const token = localStorage.getItem('admin_token');
-            
-            // Get presigned URL
-            const preRes = await fetch(`${API_URL}/admin/media/presign`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    filename: file.name,
-                    content_type: file.type,
-                    entity_type: entityType,
-                    entity_id: entityId || 'transition-audio'
-                })
-            });
-
-            if (!preRes.ok) throw new Error("Не удалось получить URL для загрузки");
-            const { upload_url, final_url, method, headers } = await preRes.json();
+            // Use server-side upload proxy to avoid localhost:9000 issue
+            // The /api/upload-audio endpoint runs on the server and can access MinIO
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('entity_type', entityType);
+            if (entityId) {
+                formData.append('entity_id', entityId);
+            }
 
             // Simulate progress
             const progressInterval = setInterval(() => {
-                setUploadProgress(prev => Math.min(prev + 10, 90));
-            }, 150);
+                setUploadProgress(prev => Math.min(prev + 5, 90));
+            }, 200);
 
             try {
-                const uploadRes = await fetch(upload_url, {
-                    method: method || 'PUT',
-                    body: file,
-                    headers: headers || {}
+                // Don't send Authorization header - cookie is sent automatically
+                const uploadRes = await fetch('/api/upload-audio', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include' // Ensure cookies are sent
                 });
 
                 clearInterval(progressInterval);
                 setUploadProgress(100);
 
-                if (!uploadRes.ok) throw new Error("Не удалось загрузить файл");
-                return final_url;
+                if (!uploadRes.ok) {
+                    const errorData = await uploadRes.json().catch(() => ({}));
+                    console.error('Upload failed:', uploadRes.status, errorData);
+                    
+                    // 503 = MinIO недоступен (ECONNREFUSED)
+                    if (uploadRes.status === 503) {
+                        throw new Error('Хранилище файлов недоступно. Загрузка работает только когда админка запущена на сервере Cloud.ru.');
+                    }
+                    
+                    // 401 = не авторизован
+                    if (uploadRes.status === 401) {
+                        throw new Error('Сессия истекла. Пожалуйста, перезайдите в систему.');
+                    }
+                    
+                    throw new Error(errorData.detail || errorData.error || 'Не удалось загрузить файл');
+                }
+                
+                const result = await uploadRes.json();
+                console.log('Upload success:', result.url);
+                return result.url;
             } catch (e) {
                 clearInterval(progressInterval);
                 setUploadProgress(0);
@@ -124,9 +132,11 @@ export function AudioUploadField({ value, onChange, entityType = 'tour', entityI
         setIsPlaying(false);
     };
 
+    // Получаем короткое имя файла
+    const fileName = value ? decodeURIComponent(value.split('/').pop() || '').replace(/^[a-f0-9-]+_/, '') : '';
+
     return (
         <div className="space-y-3">
-            {/* Hidden file input */}
             <input
                 ref={fileInputRef}
                 type="file"
@@ -135,94 +145,65 @@ export function AudioUploadField({ value, onChange, entityType = 'tour', entityI
                 className="hidden"
             />
 
-            {/* Upload progress */}
+            {/* Загрузка */}
             {uploadMutation.isPending && (
-                <div className="space-y-2 p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-600 text-sm">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Загрузка аудио...</span>
-                        <span className="ml-auto">{uploadProgress}%</span>
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
+                    <div className="flex-1">
+                        <Progress value={uploadProgress} className="h-1.5" />
                     </div>
-                    <Progress value={uploadProgress} className="h-2" />
+                    <span className="text-xs">{uploadProgress}%</span>
                 </div>
             )}
 
-            {/* Error message */}
+            {/* Ошибка */}
             {errorMsg && (
-                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center gap-2">
+                <p className="text-sm text-red-600 flex items-center gap-2">
                     <XCircle className="w-4 h-4 shrink-0" />
-                    <span>{errorMsg}</span>
-                </div>
+                    {errorMsg}
+                </p>
             )}
 
-            {/* Current audio file */}
+            {/* Аудио загружено */}
             {value && !uploadMutation.isPending && (
-                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                    <audio 
-                        ref={audioRef} 
-                        src={value} 
-                        onEnded={handleAudioEnded}
-                        className="hidden"
-                    />
+                <div className="border rounded-lg overflow-hidden">
+                    <audio ref={audioRef} src={value} onEnded={handleAudioEnded} className="hidden" />
                     
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Music className="w-5 h-5 text-purple-500 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-purple-700 truncate">
-                                Аудио загружено
-                            </p>
-                            <p className="text-xs text-purple-500 truncate">
-                                {value.split('/').pop()}
-                            </p>
+                    {/* Заголовок */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                            <span className="text-sm text-slate-700 truncate" title={fileName}>
+                                {fileName || 'audio.mp3'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <Button type="button" variant="ghost" size="icon" onClick={togglePlay} className="h-7 w-7">
+                                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" onClick={handleRemove} className="h-7 w-7 text-red-500 hover:text-red-600">
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-1">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={togglePlay}
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-100"
-                        >
-                            {isPlaying ? (
-                                <Pause className="w-4 h-4" />
-                            ) : (
-                                <Play className="w-4 h-4" />
-                            )}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleRemove}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
-                    </div>
+                    
+                    {/* Плеер */}
+                    <audio src={value} controls className="w-full h-8" style={{ display: 'block' }} />
                 </div>
             )}
 
-            {/* Upload button - show when no file or after successful upload for replacement */}
+            {/* Кнопка загрузки */}
             {!uploadMutation.isPending && (
-                <div className="flex gap-2">
-                    <Button
-                        type="button"
-                        variant={value ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className={value ? "" : "bg-purple-500 hover:bg-purple-600"}
-                    >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {value ? "Заменить аудио" : "Загрузить аудио"}
-                    </Button>
-                </div>
-            )}
-
-            {/* Audio player for preview */}
-            {value && (
-                <audio src={value} controls className="w-full h-10" />
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {value ? 'Заменить аудио' : 'Загрузить аудио'}
+                </Button>
             )}
         </div>
     );

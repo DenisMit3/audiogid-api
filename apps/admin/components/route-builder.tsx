@@ -147,12 +147,18 @@ function SortableItem({ item, onRemove, onEdit }: { item: TourItem, onRemove: (i
                         </div>
                     )}
                     {item.transition_audio_url && (
-                        <div className="flex items-center gap-1 text-purple-500">
+                        <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium">
                             <Mic className="w-3 h-3" />
-                            <span>Аудио</span>
+                            <span>Аудио ✓</span>
                         </div>
                     )}
-                    {(!item.duration_seconds && !item.transition_text_ru && !item.transition_audio_url) && (
+                    {!item.transition_audio_url && (
+                        <div className="flex items-center gap-1 text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full text-xs">
+                            <Mic className="w-3 h-3" />
+                            <span>Нет аудио</span>
+                        </div>
+                    )}
+                    {(!item.duration_seconds && !item.transition_text_ru) && (
                         <span className="italic opacity-50">Детали не добавлены</span>
                     )}
                 </div>
@@ -482,39 +488,52 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
 
             {/* Edit Modal */}
             <Dialog open={!!editingItem} onOpenChange={(o) => { if (!o) { setEditingItem(null); setSelectedItemId(undefined); } }}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            Редактировать: {editingItem?.poi_title}
+                <DialogContent className="max-w-md p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
+                    {/* Header */}
+                    <div className="px-5 py-4 border-b bg-slate-50 shrink-0">
+                        <DialogTitle className="text-base font-semibold text-slate-800">
+                            {editingItem?.poi_title}
                         </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="grid gap-2">
-                            <Label>Рекомендуемая длительность осмотра</Label>
-                            <div className="flex gap-2 items-center">
+                        <p className="text-xs text-slate-500 mt-0.5">Настройки точки маршрута</p>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+                        {/* Длительность */}
+                        <div>
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                                Время осмотра
+                            </Label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
                                     value={editForm.duration}
                                     onChange={e => setEditForm({ ...editForm, duration: parseInt(e.target.value) || 0 })}
-                                    className="w-32"
+                                    className="w-24 h-9"
                                 />
-                                <span className="text-sm text-muted-foreground">секунд ({Math.floor(editForm.duration / 60)} мин)</span>
+                                <span className="text-sm text-slate-500">сек</span>
+                                <span className="text-xs text-slate-400">({Math.floor(editForm.duration / 60)} мин)</span>
                             </div>
                         </div>
                         
-                        <div className="grid gap-2">
-                            <Label>Заметка перехода к следующей точке</Label>
+                        {/* Заметка */}
+                        <div>
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                                Инструкция перехода
+                            </Label>
                             <Textarea
                                 value={editForm.text}
                                 onChange={e => setEditForm({ ...editForm, text: e.target.value })}
-                                placeholder="Пройдите 50м прямо, поверните налево у фонтана..."
-                                rows={3}
+                                placeholder="Пройдите 50м прямо, поверните налево..."
+                                rows={2}
+                                className="resize-none text-sm"
                             />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label className="flex items-center gap-2">
-                                <Mic className="w-4 h-4 text-purple-500" />
+                        {/* Аудио */}
+                        <div>
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 flex items-center gap-1.5">
+                                <Mic className="w-3.5 h-3.5 text-purple-500" />
                                 Аудио перехода
                             </Label>
                             <AudioUploadField
@@ -523,15 +542,18 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                                 entityType="tour"
                                 entityId={editingItem?.id}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Аудио-инструкция для перехода к следующей точке маршрута
-                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => { setEditingItem(null); setSelectedItemId(undefined); }}>Отмена</Button>
-                        <Button onClick={saveEdit}>Сохранить</Button>
-                    </DialogFooter>
+                    
+                    {/* Footer */}
+                    <div className="px-5 py-3 border-t bg-slate-50 flex justify-end gap-2 shrink-0">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingItem(null); setSelectedItemId(undefined); }}>
+                            Отмена
+                        </Button>
+                        <Button size="sm" onClick={saveEdit}>
+                            Сохранить
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

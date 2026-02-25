@@ -74,9 +74,10 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     // Синхронизация items с tour.items при обновлении данных
     useEffect(() => {
         if (tour?.items) {
+            console.log('[TourEditor] Syncing items from tour:', tour.items.length, 'items');
             setItems(tour.items);
         }
-    }, [tour?.items]);
+    }, [JSON.stringify(tour?.items)]);
 
     // Загрузка списка городов
     const { data: citiesData } = useQuery({

@@ -84,7 +84,7 @@ class PoiMedia(SQLModel, table=True):
     media_type: str = "image"
     license_type: str 
     author: str
-    source_page_url: str
+    source_page_url: Optional[str] = None
     poi: Optional[Poi] = Relationship(back_populates="media")
 
 class Narration(SQLModel, table=True):

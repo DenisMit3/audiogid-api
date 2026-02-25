@@ -88,7 +88,7 @@ class CreateMediaReq(BaseModel):
     media_type: str
     license_type: str
     author: str
-    source_page_url: str
+    source_page_url: Optional[str] = None
 
 class CreateNarrationReq(BaseModel):
     url: str

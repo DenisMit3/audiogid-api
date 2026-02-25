@@ -1,11 +1,11 @@
 # API Contract & Caching Policy
 
-**Последнее обновление:** 2026-02-24
+**Последнее обновление:** 2026-02-25
 
 ## Каноническая спецификация
 Файл [openapi.yaml](../apps/api/openapi.yaml) является единственным источником истины.
 
-**Текущая версия API:** 1.13.0  
+**Текущая версия API:** 1.14.0  
 **Production Server:** http://82.202.159.64:8000/v1
 
 ## Политика кеширования (Caching Safety)
@@ -85,6 +85,29 @@ Content-Type: application/json
 | `/billing/entitlements` | GET | Активные права доступа |
 | `/billing/restore` | POST | Восстановление покупок |
 | `/billing/batch-purchase` | POST | Batch проверка SKU |
+
+## Известные ограничения
+
+### TourItem модель
+- `duration_seconds` - работает (время пребывания в точке)
+- `transition_audio_url` - **временно отключено** (требуется ручное добавление колонки в БД владельцем)
+
+Для добавления колонки выполнить от имени владельца БД:
+```sql
+ALTER TABLE tour_items ADD COLUMN transition_audio_url VARCHAR;
+```
+
+### Admin API
+| Endpoint | Метод | Описание |
+|----------|-------|----------|
+| `/admin/tours` | GET | Список туров (с пагинацией) |
+| `/admin/tours/{id}` | GET | Детали тура с items |
+| `/admin/tours` | POST | Создание тура |
+| `/admin/tours/{id}` | PUT | Обновление тура |
+| `/admin/tours/{id}` | DELETE | Удаление тура |
+| `/admin/tours/{id}/items` | POST | Добавление POI в тур |
+| `/admin/tours/{id}/items/{item_id}` | PUT | Обновление item тура |
+| `/admin/tours/{id}/items/{item_id}` | DELETE | Удаление item из тура |
 
 ### Ops API
 | Endpoint | Метод | Описание |

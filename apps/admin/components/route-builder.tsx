@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -18,7 +18,7 @@ import {
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash, MapPin, Plus, Clock, FileText, Edit2, Navigation, Play, Mic } from 'lucide-react';
+import { GripVertical, Trash, MapPin, Plus, Clock, FileText, Edit2, Navigation, Mic, MousePointer2, Search, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,8 +41,9 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
+import { AudioUploadField } from './audio-upload-field';
 
 const RouteMap = dynamic(() => import('./route-map').then(mod => mod.RouteMap), {
     ssr: false,
@@ -190,11 +191,12 @@ type Props = {
     onAddItem: (poiId: string, poiTitle: string) => void;
     onRemoveItem: (id: string) => void;
     onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number, transition_audio_url?: string }) => void;
+    onAddNewPoi?: (lat: number, lon: number, title: string) => Promise<string | null>;
 };
 
 const API_URL = '/api/proxy';
 
-export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveItem, onUpdateItem }: Props) {
+export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveItem, onUpdateItem, onAddNewPoi }: Props) {
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -204,6 +206,60 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
     const [editingItem, setEditingItem] = useState<TourItem | null>(null);
     const [editForm, setEditForm] = useState({ text: '', duration: 0, audioUrl: '' });
     const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
+    const [isAddMode, setIsAddMode] = useState(false);
+    const [isMapExpanded, setIsMapExpanded] = useState(false);
+    const [newPointDialog, setNewPointDialog] = useState<{ lat: number, lon: number } | null>(null);
+    const [newPointTitle, setNewPointTitle] = useState('');
+    const queryClient = useQueryClient();
+
+    // Create new POI mutation
+    const createPoiMutation = useMutation({
+        mutationFn: async ({ lat, lon, title }: { lat: number, lon: number, title: string }) => {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${API_URL}/admin/pois`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'x-admin-token': 'temp-admin-key-2026'
+                },
+                body: JSON.stringify({
+                    title_ru: title,
+                    city_slug: citySlug || 'kaliningrad_city'
+                })
+            });
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('POI creation error:', errorText);
+                throw new Error('Не удалось создать точку');
+            }
+            return res.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['pois_search'] });
+            onAddItem(data.id, data.title_ru);
+            setNewPointDialog(null);
+            setNewPointTitle('');
+            setIsAddMode(false);
+        }
+    });
+
+    // Handle map click in add mode
+    const handleMapClick = useCallback((lat: number, lon: number) => {
+        if (isAddMode) {
+            setNewPointDialog({ lat, lon });
+        }
+    }, [isAddMode]);
+
+    // Save new point
+    const handleSaveNewPoint = () => {
+        if (!newPointDialog || !newPointTitle.trim()) return;
+        createPoiMutation.mutate({
+            lat: newPointDialog.lat,
+            lon: newPointDialog.lon,
+            title: newPointTitle.trim()
+        });
+    };
 
     // Calculate total route stats
     const routeStats = useMemo(() => {
@@ -282,8 +338,9 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
     );
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
-            {/* Left Column: List */}
+        <div className={`grid gap-6 ${isMapExpanded ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`} style={{ height: isMapExpanded ? '80vh' : '700px' }}>
+            {/* Left Column: List - hidden when map expanded */}
+            {!isMapExpanded && (
             <div className="flex flex-col h-full space-y-4">
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
                     <div>
@@ -293,34 +350,45 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                         </p>
                     </div>
 
-                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Plus className="w-4 h-4 mr-2" /> Добавить
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[300px]" align="end">
-                            <Command>
-                                <CommandInput placeholder="Поиск точек..." />
-                                <CommandGroup className="max-h-[200px] overflow-auto">
-                                    {!poiOptions?.items?.length && <div className="p-2 text-xs text-center">Точки не найдены</div>}
-                                    {poiOptions?.items?.map((poi: any) => (
-                                        <CommandItem
-                                            key={poi.id}
-                                            value={poi.title_ru}
-                                            onSelect={() => {
-                                                onAddItem(poi.id, poi.title_ru);
-                                                setOpenCombobox(false);
-                                            }}
-                                        >
-                                            <MapPin className="mr-2 h-4 w-4 opacity-50" />
-                                            {poi.title_ru}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant={isAddMode ? "default" : "outline"} 
+                            size="sm"
+                            onClick={() => setIsAddMode(!isAddMode)}
+                            className={isAddMode ? "bg-blue-500 hover:bg-blue-600" : ""}
+                        >
+                            <MousePointer2 className="w-4 h-4 mr-2" />
+                            {isAddMode ? "Отмена" : "Добавить на карте"}
+                        </Button>
+                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Plus className="w-4 h-4 mr-2" /> Из списка
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 w-[300px]" align="end">
+                                <Command>
+                                    <CommandInput placeholder="Поиск точек..." />
+                                    <CommandGroup className="max-h-[200px] overflow-auto">
+                                        {!poiOptions?.items?.length && <div className="p-2 text-xs text-center">Точки не найдены</div>}
+                                        {poiOptions?.items?.map((poi: any) => (
+                                            <CommandItem
+                                                key={poi.id}
+                                                value={poi.title_ru}
+                                                onSelect={() => {
+                                                    onAddItem(poi.id, poi.title_ru);
+                                                    setOpenCombobox(false);
+                                                }}
+                                            >
+                                                <MapPin className="mr-2 h-4 w-4 opacity-50" />
+                                                {poi.title_ru}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto bg-slate-50/50 rounded-lg p-2 border border-dashed border-slate-200">
@@ -334,10 +402,12 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                             strategy={verticalListSortingStrategy}
                         >
                             {sortedItems.length === 0 && (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                    <MapPin className="w-8 h-8 mb-2 opacity-50" />
-                                    <span className="text-sm">Маршрут пуст</span>
-                                    <span className="text-xs mt-1">Добавьте точки или найдите на карте</span>
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 py-8">
+                                    <MapPin className="w-12 h-12 mb-3 opacity-50" />
+                                    <span className="text-sm font-medium">Маршрут пуст</span>
+                                    <span className="text-xs mt-1 text-center max-w-[200px]">
+                                        Нажмите "Добавить на карте" и кликните на карту, или выберите точку из списка
+                                    </span>
                                 </div>
                             )}
                             {sortedItems.map((item, idx) => (
@@ -373,14 +443,41 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                     </div>
                 )}
             </div>
+            )}
 
             {/* Right Column: Map */}
-            <div className="h-full">
-                <RouteMap 
-                    items={sortedItems} 
-                    onRemoveItem={onRemoveItem}
-                    selectedItemId={selectedItemId}
-                />
+            <div className="h-full flex flex-col">
+                {/* Map toolbar */}
+                <div className="flex justify-between items-center mb-2">
+                    <div className="text-sm text-slate-500">
+                        {isAddMode && (
+                            <span className="text-blue-600 font-medium flex items-center gap-1">
+                                <MousePointer2 className="w-4 h-4" />
+                                Кликните на карту для добавления точки
+                            </span>
+                        )}
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsMapExpanded(!isMapExpanded)}
+                    >
+                        {isMapExpanded ? (
+                            <><Minimize2 className="w-4 h-4 mr-1" /> Свернуть</>
+                        ) : (
+                            <><Maximize2 className="w-4 h-4 mr-1" /> Развернуть</>
+                        )}
+                    </Button>
+                </div>
+                <div className="flex-1 min-h-[500px]">
+                    <RouteMap 
+                        items={sortedItems} 
+                        onRemoveItem={onRemoveItem}
+                        onMapClick={handleMapClick}
+                        selectedItemId={selectedItemId}
+                        isAddMode={isAddMode}
+                    />
+                </div>
             </div>
 
             {/* Edit Modal */}
@@ -418,21 +515,14 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                         <div className="grid gap-2">
                             <Label className="flex items-center gap-2">
                                 <Mic className="w-4 h-4 text-purple-500" />
-                                Аудио перехода (URL)
+                                Аудио перехода
                             </Label>
-                            <Input
+                            <AudioUploadField
                                 value={editForm.audioUrl}
-                                onChange={e => setEditForm({ ...editForm, audioUrl: e.target.value })}
-                                placeholder="https://storage.example.com/audio/transition.mp3"
+                                onChange={(url) => setEditForm({ ...editForm, audioUrl: url || '' })}
+                                entityType="tour"
+                                entityId={editingItem?.id}
                             />
-                            {editForm.audioUrl && (
-                                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-md">
-                                    <Button variant="ghost" size="sm" className="text-purple-600">
-                                        <Play className="w-4 h-4 mr-1" /> Прослушать
-                                    </Button>
-                                    <audio src={editForm.audioUrl} controls className="h-8 flex-1" />
-                                </div>
-                            )}
                             <p className="text-xs text-muted-foreground">
                                 Аудио-инструкция для перехода к следующей точке маршрута
                             </p>
@@ -441,6 +531,50 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                     <DialogFooter>
                         <Button variant="outline" onClick={() => { setEditingItem(null); setSelectedItemId(undefined); }}>Отмена</Button>
                         <Button onClick={saveEdit}>Сохранить</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* New Point Dialog */}
+            <Dialog open={!!newPointDialog} onOpenChange={(o) => { if (!o) { setNewPointDialog(null); setNewPointTitle(''); } }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Новая точка маршрута</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="bg-slate-50 p-3 rounded-lg text-sm">
+                            <div className="flex items-center gap-2 text-slate-600">
+                                <MapPin className="w-4 h-4" />
+                                <span>Координаты:</span>
+                            </div>
+                            <div className="mt-1 font-mono text-xs">
+                                {newPointDialog?.lat.toFixed(6)}, {newPointDialog?.lon.toFixed(6)}
+                            </div>
+                        </div>
+                        
+                        <div className="grid gap-2">
+                            <Label>Название точки *</Label>
+                            <Input
+                                value={newPointTitle}
+                                onChange={e => setNewPointTitle(e.target.value)}
+                                placeholder="Например: Кафедральный собор"
+                                autoFocus
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Будет создана новая достопримечательность и добавлена в маршрут
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => { setNewPointDialog(null); setNewPointTitle(''); }}>
+                            Отмена
+                        </Button>
+                        <Button 
+                            onClick={handleSaveNewPoint} 
+                            disabled={!newPointTitle.trim() || createPoiMutation.isPending}
+                        >
+                            {createPoiMutation.isPending ? 'Создание...' : 'Создать и добавить'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

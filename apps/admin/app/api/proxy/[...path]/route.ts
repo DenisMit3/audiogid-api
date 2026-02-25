@@ -28,11 +28,19 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
     const path = pathSegments.join('/');
     const cookieStore = cookies();
     const token = cookieStore.get('token');
+    
+    // Also check for x-admin-token header (used by route-builder)
+    const adminTokenHeader = request.headers.get('x-admin-token');
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
     };
-    if (token) {
+    
+    // Forward x-admin-token header directly to backend (required by publish.py routes)
+    if (adminTokenHeader) {
+        headers['x-admin-token'] = adminTokenHeader;
+        headers['Authorization'] = `Bearer ${adminTokenHeader}`;
+    } else if (token) {
         headers['Authorization'] = `Bearer ${token.value}`;
     }
 

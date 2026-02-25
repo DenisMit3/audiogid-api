@@ -160,9 +160,9 @@ app.include_router(ops_router, prefix="/v1") # Ops first
 if public_router: app.include_router(public_router, prefix="/v1")
 if ingestion_router: app.include_router(ingestion_router, prefix="/v1")
 if map_router: app.include_router(map_router, prefix="/v1")
-if publish_router: app.include_router(publish_router, prefix="/v1")
 if admin_tours_router: app.include_router(admin_tours_router, prefix="/v1")
-if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")
+if admin_pois_router: app.include_router(admin_pois_router, prefix="/v1")  # POI routes before publish to use Bearer auth
+if publish_router: app.include_router(publish_router, prefix="/v1")  # publish routes after POI (has duplicate /admin/pois with x-admin-token)
 if admin_qr_router: app.include_router(admin_qr_router, prefix="/v1")
 if admin_jobs_router: app.include_router(admin_jobs_router, prefix="/v1")
 if admin_cities_router:

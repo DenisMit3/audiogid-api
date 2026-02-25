@@ -40,7 +40,8 @@ export default function TourEditPage({ params }: { params: { id: string } }) {
         sources: tourData.sources,
         media: tourData.media,
         can_publish: tourData.can_publish,
-        publish_issues: tourData.publish_issues
+        publish_issues: tourData.publish_issues,
+        unpublished_poi_ids: tourData.unpublished_poi_ids
     };
 
     return (

@@ -480,7 +480,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                     checkResult={{
                         can_publish: tour.can_publish,
                         issues: tour.publish_issues,
-                        unpublished_poi_ids: [] // Add this if needed
+                        unpublished_poi_ids: tour.unpublished_poi_ids || []
                     }}
                     currentStatus={tour.published_at ? 'published' : 'draft'}
                 />

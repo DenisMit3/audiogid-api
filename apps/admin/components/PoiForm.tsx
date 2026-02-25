@@ -58,7 +58,6 @@ const poiSchema = z.object({
     cover_image: z.string().optional(),
     lat: z.coerce.number().min(-90).max(90).optional(),
     lon: z.coerce.number().min(-180).max(180).optional(),
-    is_active: z.boolean().default(true),
     opening_hours: z.any().optional(),
     external_links: z.array(z.string().url()).optional(),
 });
@@ -108,7 +107,6 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
             cover_image: poi?.cover_image || '',
             lat: poi?.lat,
             lon: poi?.lon,
-            is_active: poi?.is_active ?? true,
             opening_hours: poi?.opening_hours || null,
             external_links: poi?.external_links || [],
         }
@@ -427,22 +425,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                 <p className="text-xs text-muted-foreground">Официальный сайт, Wikipedia, и т.д.</p>
                                             </div>
 
-                                            <div className="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
-                                                <FormField
-                                                    control={form.control}
-                                                    name="is_active"
-                                                    render={({ field }) => (
-                                                        <FormItem className="flex items-center space-x-3 space-y-0">
-                                                            <FormControl>
-                                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                                            </FormControl>
-                                                            <div className="space-y-1 leading-none">
-                                                                <FormLabel>Статус активности</FormLabel>
-                                                                <FormDescription>Видимость в приложении</FormDescription>
-                                                            </div>
-                                                        </FormItem>
-                                                    )}
-                                                />
+                                            <div className="flex justify-end items-center bg-slate-50 p-4 rounded-lg">
                                                 <Button type="submit" disabled={mutation.isPending}>
                                                     {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                     <Save className="mr-2 h-4 w-4" />

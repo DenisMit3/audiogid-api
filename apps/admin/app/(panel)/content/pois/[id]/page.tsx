@@ -28,12 +28,13 @@ export default function PoiEditPage({ params }: { params: { id: string } }) {
     );
 
     // Merge structure for PoiForm
-    // API returns { poi: Object, sources: Array, media: Array }
-    // PoiForm expects { ...poiFields, sources: [], media: [] }
+    // API returns { poi: Object, sources: Array, media: Array, narrations: Array }
+    // PoiForm expects { ...poiFields, sources: [], media: [], narrations: [] }
     const poiData = {
         ...data.poi,
         sources: data.sources,
-        media: data.media
+        media: data.media,
+        narrations: data.narrations
     };
 
     return (

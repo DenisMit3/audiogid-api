@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func, or_
 from pydantic import BaseModel
 
-from ..core.models import City, CityBase, AuditLog, AppEvent, User
+from ..core.models import City, CityBase, AuditLog, AppEvent, User, Poi, Tour
 from ..auth.deps import get_current_admin, get_session, require_permission
 
 router = APIRouter()
@@ -76,9 +76,13 @@ def list_cities(
     # Enriched response with counts
     items = []
     for city in cities:
-        # These counts might be N+1, but for admin pagination it's acceptable or we can optimise with join
-        poi_count = session.exec(select(func.count()).select_from(city.pois)).one() if city.pois else 0
-        tour_count = session.exec(select(func.count()).select_from(city.tours)).one() if city.tours else 0
+        # Count POIs and Tours for this city using proper queries
+        poi_count = session.exec(
+            select(func.count()).select_from(Poi).where(Poi.city_slug == city.slug)
+        ).one()
+        tour_count = session.exec(
+            select(func.count()).select_from(Tour).where(Tour.city_slug == city.slug)
+        ).one()
         
         items.append(CityRead(
             **city.dict(),
@@ -127,8 +131,12 @@ def get_city(
     city = session.get(City, city_id)
     if not city: raise HTTPException(404, "City not found")
     
-    poi_count = session.exec(select(func.count()).select_from(city.pois)).one() if city.pois else 0
-    tour_count = session.exec(select(func.count()).select_from(city.tours)).one() if city.tours else 0
+    poi_count = session.exec(
+        select(func.count()).select_from(Poi).where(Poi.city_slug == city.slug)
+    ).one()
+    tour_count = session.exec(
+        select(func.count()).select_from(Tour).where(Tour.city_slug == city.slug)
+    ).one()
     
     return CityRead(**city.dict(), poi_count=poi_count, tour_count=tour_count)
 
@@ -159,8 +167,12 @@ def update_city(
     session.commit()
     session.refresh(city)
     
-    poi_count = session.exec(select(func.count()).select_from(city.pois)).one() if city.pois else 0
-    tour_count = session.exec(select(func.count()).select_from(city.tours)).one() if city.tours else 0
+    poi_count = session.exec(
+        select(func.count()).select_from(Poi).where(Poi.city_slug == city.slug)
+    ).one()
+    tour_count = session.exec(
+        select(func.count()).select_from(Tour).where(Tour.city_slug == city.slug)
+    ).one()
     
     return CityRead(**city.dict(), poi_count=poi_count, tour_count=tour_count)
 

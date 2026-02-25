@@ -119,11 +119,9 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                 tours =
                     tours.where((t) => (t.durationMinutes ?? 0) < 60).toList();
               } else if (_selectedFilter == 'walking') {
-                tours =
-                    tours.where((t) => t.tourType == 'walking').toList();
+                tours = tours.where((t) => t.tourType == 'walking').toList();
               } else if (_selectedFilter == 'driving') {
-                tours =
-                    tours.where((t) => t.tourType == 'driving').toList();
+                tours = tours.where((t) => t.tourType == 'driving').toList();
               }
 
               // Empty state

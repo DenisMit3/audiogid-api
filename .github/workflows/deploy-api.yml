@@ -39,7 +39,12 @@ jobs:
             . venv/bin/activate && \
             pip install -q -r requirements.txt"
           
-          # Restart API service (migrations run on startup if needed)
+          # Run database migrations
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
+            . venv/bin/activate && \
+            alembic upgrade head"
+          
+          # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"
           
           # Wait and check health (via nginx on port 80)

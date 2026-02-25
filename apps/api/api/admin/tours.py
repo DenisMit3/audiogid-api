@@ -179,80 +179,38 @@ def get_tour(
     session: Session = Depends(get_session),
     user: User = Depends(require_permission('tour:read'))
 ):
-    debug_steps = []
-    try:
-        debug_steps.append("1:start")
-        tour = session.get(Tour, tour_id)
-        debug_steps.append(f"2:tour_loaded:{tour is not None}")
-        if not tour or tour.is_deleted: raise HTTPException(404, "Tour not found")
-        
-        # Enrich items with POI titles
-        items_read = []
-        debug_steps.append(f"3:items_count:{len(tour.items)}")
-        for idx, item in enumerate(tour.items):
-            try:
-                debug_steps.append(f"4:item_{idx}:poi_id={item.poi_id}")
-                poi_title = item.poi.title_ru if item.poi else "Deleted POI"
-                items_read.append({
-                    "id": item.id,
-                    "poi_id": item.poi_id,
-                    "order_index": item.order_index,
-                    "poi_title": poi_title,
-                    "poi_lat": item.poi.lat if item.poi else None,
-                    "poi_lon": item.poi.lon if item.poi else None,
-                    "transition_text_ru": item.transition_text_ru,
-                    "transition_audio_url": item.transition_audio_url,
-                    "duration_seconds": item.duration_seconds
-                })
-            except Exception as item_err:
-                debug_steps.append(f"4:item_{idx}:ERROR:{str(item_err)}")
-                items_read.append({
-                    "id": item.id,
-                    "poi_id": item.poi_id,
-                    "order_index": item.order_index,
-                    "poi_title": "Error loading POI",
-                    "poi_lat": None,
-                    "poi_lon": None,
-                    "transition_text_ru": item.transition_text_ru,
-                    "transition_audio_url": item.transition_audio_url,
-                    "duration_seconds": item.duration_seconds
-                })
-        items_read.sort(key=lambda x: x['order_index'])
-        
-        debug_steps.append("5:before_check_publish")
-        check = check_publish_status(tour_id, session, user)
-        debug_steps.append(f"6:check_publish_done:can_publish={check.can_publish}")
-        
-        debug_steps.append(f"7:sources_count={len(tour.sources)},media_count={len(tour.media)}")
-        
-        # Test serialization separately
-        debug_steps.append("8:testing_tour_serialization")
-        try:
-            _ = TourRead.from_orm(tour) if hasattr(TourRead, 'from_orm') else TourRead.model_validate(tour)
-            debug_steps.append("8:tour_serialization_ok")
-        except Exception as ser_err:
-            debug_steps.append(f"8:tour_serialization_FAIL:{str(ser_err)}")
-            raise
-        
-        debug_steps.append("9:building_response")
-        result = {
-            "tour": tour,
-            "items": items_read,
-            "sources": tour.sources,
-            "media": tour.media,
-            "can_publish": check.can_publish,
-            "publish_issues": check.issues,
-            "unpublished_poi_ids": check.unpublished_poi_ids
-        }
-        debug_steps.append("10:success")
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        err_trace = traceback.format_exc()
-        debug_info = " | ".join(debug_steps)
-        raise HTTPException(500, detail=f"Error: {str(e)} | Debug: {debug_info} | Trace: {err_trace[:300]}")
+    tour = session.get(Tour, tour_id)
+    if not tour or tour.is_deleted: raise HTTPException(404, "Tour not found")
+    
+    # Enrich items with POI titles
+    items_read = []
+    for item in tour.items:
+        poi_title = item.poi.title_ru if item.poi else "Deleted POI"
+        items_read.append({
+            "id": item.id,
+            "poi_id": item.poi_id,
+            "order_index": item.order_index,
+            "poi_title": poi_title,
+            "poi_lat": item.poi.lat if item.poi else None,
+            "poi_lon": item.poi.lon if item.poi else None,
+            "transition_text_ru": item.transition_text_ru,
+            "transition_audio_url": item.transition_audio_url,
+            "duration_seconds": item.duration_seconds
+        })
+    items_read.sort(key=lambda x: x['order_index'])
+    
+    # Check Publish Status
+    check = check_publish_status(tour_id, session, user)
+    
+    return {
+        "tour": tour,
+        "items": items_read,
+        "sources": tour.sources,
+        "media": tour.media,
+        "can_publish": check.can_publish,
+        "publish_issues": check.issues,
+        "unpublished_poi_ids": check.unpublished_poi_ids
+    }
 
 @router.patch("/admin/tours/{tour_id}", response_model=TourRead)
 def update_tour(

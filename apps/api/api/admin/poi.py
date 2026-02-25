@@ -212,8 +212,14 @@ def get_poi(
     
     # Logic for can_publish
     issues = []
-    if not poi.description_ru or len(poi.description_ru) < 10: issues.append("Description too short")
-    if poi.lat is None: issues.append("Missing coordinates")
+    if not poi.title_ru or len(poi.title_ru) < 3:
+        issues.append("Название (RU) слишком короткое - минимум 3 символа")
+    if not poi.description_ru or len(poi.description_ru) < 10:
+        issues.append("Описание (RU) слишком короткое - минимум 10 символов")
+    if poi.lat is None or poi.lon is None:
+        issues.append("Не указаны координаты - выберите точку на карте")
+    if not poi.city_slug:
+        issues.append("Не выбран город")
     
     # Convert to dict to avoid geo serialization issues
     poi_dict = {
@@ -364,15 +370,28 @@ def delete_poi_narration(poi_id: uuid.UUID, narration_id: uuid.UUID, session: Se
 # --- Publishing ---
 
 @router.post("/admin/pois/{poi_id}/publish")
-def publish_poi(poi_id: uuid.UUID, session: Session = Depends(get_session), user: User = Depends(require_permission('poi:publish'))):
+def publish_poi(poi_id: uuid.UUID, response: Response, session: Session = Depends(get_session), user: User = Depends(require_permission('poi:publish'))):
     poi = session.get(Poi, poi_id)
     if not poi: raise HTTPException(404)
 
-    # Gates check
+    # Gates check - collect all issues
+    issues = []
+    if not poi.title_ru or len(poi.title_ru) < 3:
+        issues.append("Название (RU) слишком короткое - минимум 3 символа")
     if not poi.description_ru or len(poi.description_ru) < 10:
-        raise HTTPException(400, "Description too short")
-    if poi.lat is None:
-        raise HTTPException(400, "Missing coordinates")
+        issues.append("Описание (RU) слишком короткое - минимум 10 символов")
+    if poi.lat is None or poi.lon is None:
+        issues.append("Не указаны координаты - выберите точку на карте")
+    if not poi.city_slug:
+        issues.append("Не выбран город")
+    
+    if issues:
+        response.status_code = 422
+        return {
+            "error": "POI_PUBLISH_BLOCKED",
+            "message": "Невозможно опубликовать",
+            "issues": issues
+        }
         
     poi.published_at = datetime.utcnow()
     session.add(poi)

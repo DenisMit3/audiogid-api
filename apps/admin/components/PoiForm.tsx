@@ -150,12 +150,22 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                 method: 'POST',
                 credentials: 'include'
             });
-            if (!res.ok) throw new Error(`${action} не удалось`);
-            return res.json();
+            const data = await res.json();
+            if (!res.ok) {
+                // Если есть детальные issues - показываем их
+                if (data.issues && data.issues.length > 0) {
+                    throw new Error(data.issues.join('\n'));
+                }
+                throw new Error(data.message || `${action} не удалось`);
+            }
+            return data;
         },
         onSuccess: () => {
             setIsPublishModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['poi', poi?.id] });
+        },
+        onError: (err: Error) => {
+            alert(`Ошибка публикации:\n${err.message}`);
         }
     });
 

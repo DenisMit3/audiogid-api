@@ -424,6 +424,15 @@ def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_sess
     missing_requirements = []
     unpublished_poi_ids = []
     
+    # Проверка базовых полей
+    if not tour.title_ru or len(tour.title_ru) < 3:
+        issues.append("Название (RU) слишком короткое - минимум 3 символа")
+        missing_requirements.append("title_ru")
+    
+    if not tour.city_slug:
+        issues.append("Не выбран город")
+        missing_requirements.append("city_slug")
+    
     # if len(tour.sources) == 0:
     #     issues.append("Missing Sources")
     #     missing_requirements.append("sources")
@@ -437,15 +446,15 @@ def check_publish_status(tour_id: uuid.UUID, session: Session = Depends(get_sess
     #     missing_requirements.append("media")
         
     if len(tour.items) == 0:
-        issues.append("Tour has no items")
+        issues.append("В туре нет точек - добавьте хотя бы одну точку маршрута")
         missing_requirements.append("items")
     else:
         for item in tour.items:
             if item.poi and not item.poi.published_at:
-                issues.append(f"Contains unpublished POI: {item.poi.title_ru}")
+                issues.append(f"Содержит неопубликованную точку: {item.poi.title_ru}")
                 unpublished_poi_ids.append(str(item.poi_id))
             if item.poi and item.poi.is_deleted:
-                issues.append(f"Contains deleted POI")
+                issues.append(f"Содержит удаленную точку: {item.poi.title_ru if item.poi else 'Неизвестная'}")
             
     return PublishCheckResult(
         can_publish=len(issues) == 0,
@@ -461,7 +470,7 @@ def publish_tour(response: Response, tour_id: uuid.UUID, user: User = Depends(re
         response.status_code = 422
         return {
             "error": "TOUR_PUBLISH_BLOCKED",
-            "message": "Gates Failed",
+            "message": "Невозможно опубликовать тур",
             "issues": check.issues
         }
     tour = session.get(Tour, tour_id)

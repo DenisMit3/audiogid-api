@@ -56,20 +56,17 @@ const fetchCities = async ({ page, search }: { page: number, search: string }) =
     params.append('per_page', '20');
     if (search) params.append('search', search);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-
     const res = await fetch(`${API_URL}/admin/cities?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error('Не удалось загрузить города');
     return res.json();
 };
 
 const deleteCity = async (id: string) => {
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/cities/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) {
         const error = await res.json();

@@ -64,12 +64,11 @@ export default function JobsDashboard() {
 
     // Fetcher
     const fetchJobs = async () => {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
         const params = new URLSearchParams({ limit: '20' });
         if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
 
         const res = await fetch(`${API_URL}/admin/jobs?${params}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            credentials: 'include'
         });
         if (!res.ok) throw new Error("Не удалось загрузить задачи");
         return res.json();
@@ -89,7 +88,7 @@ export default function JobsDashboard() {
         mutationFn: async (id: string) => {
             const res = await fetch(`${API_URL}/admin/jobs/${id}/cancel`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error("Не удалось отменить");
         },
@@ -100,7 +99,7 @@ export default function JobsDashboard() {
         mutationFn: async (id: string) => {
             const res = await fetch(`${API_URL}/admin/jobs/${id}/retry`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error("Не удалось повторить");
         },

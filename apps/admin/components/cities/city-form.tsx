@@ -85,7 +85,6 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
 
     const mutation = useMutation({
         mutationFn: async (values: CityFormValues) => {
-            const token = localStorage.getItem('admin_token');
             const url = isEdit
                 ? `${API_URL}/admin/cities/${initialData.id}`
                 : `${API_URL}/admin/cities`;
@@ -94,10 +93,8 @@ export function CityForm({ initialData, isEdit }: CityFormProps) {
 
             const res = await fetch(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(values),
             });
 

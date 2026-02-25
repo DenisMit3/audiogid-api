@@ -57,10 +57,8 @@ const fetchPois = async ({ page, search, status }: { page: number, search: strin
     if (search) params.append('search', search);
     if (status && status !== 'all') params.append('status', status);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-
     const res = await fetch(`${API_URL}/admin/pois?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error('Не удалось загрузить точки');
     return res.json();
@@ -221,10 +219,8 @@ export default function PoiListPage() {
                             const ids = Object.keys(rowSelection);
                             await fetch(`${API_URL}/admin/pois/bulk-publish`, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                                },
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
                                 body: JSON.stringify({ ids })
                             });
                             queryClient.invalidateQueries({ queryKey: ['pois'] });
@@ -240,10 +236,8 @@ export default function PoiListPage() {
                             const ids = Object.keys(rowSelection);
                             await fetch(`${API_URL}/admin/pois/bulk-unpublish`, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                                },
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
                                 body: JSON.stringify({ ids })
                             });
                             queryClient.invalidateQueries({ queryKey: ['pois'] });
@@ -260,10 +254,8 @@ export default function PoiListPage() {
                             const ids = Object.keys(rowSelection);
                             await fetch(`${API_URL}/admin/pois/bulk-delete`, {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                                },
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
                                 body: JSON.stringify({ ids })
                             });
                             queryClient.invalidateQueries({ queryKey: ['pois'] });

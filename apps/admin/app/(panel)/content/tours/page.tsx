@@ -55,10 +55,9 @@ const fetchTours = async ({ page, search, status }: { page: number, search: stri
     if (search) params.append('search', search);
     if (status && status !== 'all') params.append('status', status);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-
+    // Token is handled by HttpOnly cookie via proxy - no need to send Authorization header
     const res = await fetch(`${API_URL}/admin/tours?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error('Не удалось загрузить туры');
     return res.json();
@@ -83,10 +82,9 @@ export default function TourListPage() {
     // Delete mutation
     const deleteMutation = useMutation({
         mutationFn: async (tourId: string) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/tours/${tourId}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Не удалось удалить тур');
             return res.json();
@@ -101,10 +99,9 @@ export default function TourListPage() {
     // Publish/Unpublish mutation
     const togglePublishMutation = useMutation({
         mutationFn: async ({ tourId, action }: { tourId: string, action: 'publish' | 'unpublish' }) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/tours/${tourId}/${action}`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
+                credentials: 'include'
             });
             const data = await res.json();
             if (!res.ok) {

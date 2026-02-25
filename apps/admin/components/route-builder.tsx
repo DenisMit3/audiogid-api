@@ -251,13 +251,9 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
     // POI Publish/Unpublish mutation
     const togglePoiPublishMutation = useMutation({
         mutationFn: async ({ poiId, action }: { poiId: string, action: 'publish' | 'unpublish' }) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/pois/${poiId}/${action}`, {
                 method: 'POST',
-                headers: { 
-                    Authorization: `Bearer ${token}`,
-                    'x-admin-token': 'temp-admin-key-2026'
-                }
+                credentials: 'include'
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
@@ -310,7 +306,6 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
     // Create new POI mutation
     const createPoiMutation = useMutation({
         mutationFn: async ({ lat, lon, title }: { lat: number, lon: number, title: string }) => {
-            const token = localStorage.getItem('admin_token');
             const payload = {
                 title_ru: title,
                 city_slug: citySlug || 'kaliningrad_city',
@@ -319,11 +314,8 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
             };
             const res = await fetch(`${API_URL}/admin/pois`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'x-admin-token': 'temp-admin-key-2026'
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(payload)
             });
             if (!res.ok) {
@@ -391,7 +383,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
         queryFn: async () => {
             const cityFilter = citySlug ? `&city_slug=${citySlug}` : '';
             const res = await fetch(`${API_URL}/admin/pois?page=1&per_page=100${cityFilter}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) return { items: [] };
             return res.json();

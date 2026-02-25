@@ -111,16 +111,13 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
     // 1. Save Basic Info
     const saveMutation = useMutation({
         mutationFn: async (values: TourFormValues) => {
-            const token = localStorage.getItem('admin_token');
             const url = tour ? `${API_URL}/admin/tours/${tour.id}` : `${API_URL}/admin/tours`;
             const method = tour ? 'PATCH' : 'POST';
 
             const res = await fetch(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(values)
             });
 
@@ -142,10 +139,8 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         mutationFn: async ({ poiId, order }: { poiId: string, order: number }) => {
             const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/items`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ poi_id: poiId, order_index: order })
             });
             if (!res.ok) throw new Error("Не удалось добавить элемент");
@@ -158,7 +153,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         mutationFn: async (itemId: string) => {
             await fetch(`${API_URL}/admin/tours/${tour!.id}/items/${itemId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tour', tour?.id] })
@@ -168,10 +163,8 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         mutationFn: async (itemIds: string[]) => {
             await fetch(`${API_URL}/admin/tours/${tour!.id}/items`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ item_ids: itemIds })
             });
         },
@@ -184,10 +177,8 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         mutationFn: async ({ itemId, data }: { itemId: string, data: any }) => {
             const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/items/${itemId}`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
             if (!res.ok) throw new Error("Не удалось обновить элемент");
@@ -201,7 +192,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
         mutationFn: async (action: 'publish' | 'unpublish') => {
             const res = await fetch(`${API_URL}/admin/tours/${tour!.id}/${action}`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error(`${action} не удалось`);
             return res.json();

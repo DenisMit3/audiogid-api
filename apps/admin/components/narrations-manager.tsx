@@ -60,13 +60,10 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
     // 1. Get Presigned URL & Upload
     const uploadMutation = useMutation({
         mutationFn: async (file: File) => {
-            const token = localStorage.getItem('admin_token');
             const preRes = await fetch(`${API_URL}/admin/media/presign`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     filename: file.name,
                     content_type: file.type,
@@ -104,10 +101,8 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
         mutationFn: async () => {
             const res = await fetch(`${API_URL}/admin/pois/${poiId}/narrations`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     url: uploadedUrl,
                     locale: locale,
@@ -136,7 +131,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
         mutationFn: async (id: string) => {
             await fetch(`${API_URL}/admin/pois/${poiId}/narrations/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             return id;
         },
@@ -279,10 +274,8 @@ function GenerateAIButton({ poiId }: { poiId: string }) {
         mutationFn: async () => {
             const res = await fetch(`${API_URL}/admin/pois/${poiId}/generate-tts`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ locale: 'ru' })
             });
             if (!res.ok) {

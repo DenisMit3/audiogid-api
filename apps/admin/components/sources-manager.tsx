@@ -45,10 +45,8 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
 
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ name: newName, url: newUrl })
             });
             if (!res.ok) throw new Error('Не удалось добавить источник');
@@ -71,9 +69,7 @@ export function SourcesManager({ poiId, sources: initialSources, entityType }: P
 
             const res = await fetch(endpoint, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Не удалось удалить источник');
             return sourceId;
@@ -153,10 +149,8 @@ function ImportWikipediaButton({ poiId }: { poiId: string }) {
         mutationFn: async () => {
             const res = await fetch(`${API_URL}/admin/pois/${poiId}/import-wikipedia`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ query: query, lang: 'ru' })
             });
             if (!res.ok) {

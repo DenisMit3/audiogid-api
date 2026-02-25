@@ -15,9 +15,8 @@ const HeatmapMap = dynamic(() => import('@/components/analytics/heatmap-map'), {
 
 const fetchHeatmap = async (days: number) => {
     if (!API_URL) return { points: [], max: 1 };
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/analytics/heatmap?days=${days}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error("Не удалось загрузить данные тепловой карты");
     return res.json();

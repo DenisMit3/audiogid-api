@@ -68,13 +68,10 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
     const uploadMutation = useMutation({
         mutationFn: async (file: File) => {
             // A. Get Presigned
-            const token = localStorage.getItem('admin_token');
             const preRes = await fetch(`${API_URL}/admin/media/presign`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     filename: file.name,
                     content_type: file.type,
@@ -133,10 +130,8 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
 
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     url: uploadedUrl,
                     media_type: mediaType,
@@ -170,7 +165,7 @@ export function MediaUploader({ entityId, entityType, media: initialMedia }: Pro
                 : `${API_URL}/admin/tours/${entityId}/media/${mediaId}`;
             await fetch(endpoint, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             return mediaId;
         },

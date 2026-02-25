@@ -25,9 +25,8 @@ const aiSchema = z.object({
 type AIValues = z.infer<typeof aiSchema>;
 
 const fetchAISettings = async () => {
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/settings/ai`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     
     if (!res.ok) {
@@ -67,13 +66,10 @@ export default function AISettingsPage() {
 
     const saveMutation = useMutation({
         mutationFn: async (values: AIValues) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/settings/ai`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(values)
             });
             if (!res.ok) throw new Error("Не удалось сохранить настройки ИИ");

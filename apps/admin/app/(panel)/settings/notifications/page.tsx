@@ -32,9 +32,8 @@ type NotificationsValues = z.infer<typeof notificationsSchema>;
 
 // Mock fetch settings
 const fetchSettings = async () => {
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/settings/notifications`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     // Fallback if endpoint doesn't exist yet
     if (!res.ok && res.status === 404) {
@@ -75,13 +74,10 @@ export default function NotificationsSettingsPage() {
 
     const saveMutation = useMutation({
         mutationFn: async (values: NotificationsValues) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/settings/notifications`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(values)
             });
             if (!res.ok) throw new Error("Не удалось сохранить настройки");
@@ -98,13 +94,10 @@ export default function NotificationsSettingsPage() {
 
     const sendPushMutation = useMutation({
         mutationFn: async (data: { title: string, body: string, topic?: string }) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/notifications/push`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     target: data.topic || 'all',
                     title: data.title,

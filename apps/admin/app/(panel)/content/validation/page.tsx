@@ -25,9 +25,8 @@ type ValidationIssue = {
 
 const fetchIssues = async (): Promise<ValidationIssue[]> => {
     // throw removed for build
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/content/issues`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error("Не удалось загрузить проблемы");
     return res.json();

@@ -56,10 +56,9 @@ type User = {
 };
 
 const fetchUsers = async (search: string = "") => {
-    const token = localStorage.getItem('admin_token');
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     const res = await fetch(`${API_URL}/admin/users${query}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error("Не удалось загрузить пользователей");
     return res.json();
@@ -91,13 +90,10 @@ export default function UsersPage() {
 
     const updateMutation = useMutation({
         mutationFn: async ({ id, data }: { id: string, data: any }) => {
-            const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/users/${id}`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
             if (!res.ok) throw new Error("Не удалось обновить пользователя");

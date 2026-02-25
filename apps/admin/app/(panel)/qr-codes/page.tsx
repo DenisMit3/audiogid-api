@@ -47,9 +47,8 @@ type QRMapping = {
 
 const fetchQRs = async ({ page, search }: { page: number, search: string }) => {
     const params = new URLSearchParams({ page: page.toString(), search });
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/qr?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error("Не удалось загрузить QR-коды");
     return res.json();
@@ -76,10 +75,8 @@ export default function QRManagementPage() {
         mutationFn: async () => {
             const res = await fetch(`${API_URL}/admin/qr`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     target_type: targetType,
                     target_id: targetId, // User must copy paste ID for now or implement search combo
@@ -101,7 +98,7 @@ export default function QRManagementPage() {
         mutationFn: async () => {
             const res = await fetch(`${API_URL}/admin/qr/bulk_generate`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error("Не удалось сгенерировать массово");
             return res.json();

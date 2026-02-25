@@ -57,9 +57,8 @@ type AnalyticsData = {
 }
 
 const fetchAnalytics = async (): Promise<AnalyticsData> => {
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/analytics/overview`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error("Не удалось загрузить аналитику");
     return res.json();

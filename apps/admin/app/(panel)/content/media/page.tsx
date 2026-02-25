@@ -50,20 +50,17 @@ const fetchMedia = async ({ page, search, type }: { page: number, search: string
     if (search) params.append('search', search);
     if (type && type !== 'all') params.append('type', type);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-
     const res = await fetch(`${API_URL}/admin/media?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error('Не удалось загрузить медиа');
     return res.json();
 };
 
 const deleteMedia = async ({ id, entity_type }: { id: string, entity_type: string }) => {
-    const token = localStorage.getItem('admin_token');
     const res = await fetch(`${API_URL}/admin/media/${id}?entity_type=${entity_type}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include'
     });
     if (!res.ok) throw new Error('Не удалось удалить медиа');
     return res.json();

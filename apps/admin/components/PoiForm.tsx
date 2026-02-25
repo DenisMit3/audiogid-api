@@ -114,16 +114,13 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
 
     const mutation = useMutation({
         mutationFn: async (values: PoiFormValues) => {
-            const token = localStorage.getItem('admin_token');
             const url = poi ? `${API_URL}/admin/pois/${poi.id}` : `${API_URL}/admin/pois`;
             const method = poi ? 'PATCH' : 'POST';
 
             const res = await fetch(url, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(values)
             });
 
@@ -151,7 +148,7 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
         mutationFn: async (action: 'publish' | 'unpublish') => {
             const res = await fetch(`${API_URL}/admin/pois/${poi!.id}/${action}`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                credentials: 'include'
             });
             if (!res.ok) throw new Error(`${action} не удалось`);
             return res.json();

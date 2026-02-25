@@ -1,5 +1,12 @@
 from logging.config import fileConfig
 import os
+from pathlib import Path
+
+# Load .env file before importing app config
+from dotenv import load_dotenv
+env_path = Path(__file__).parent.parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool

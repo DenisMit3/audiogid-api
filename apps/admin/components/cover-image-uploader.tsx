@@ -20,8 +20,6 @@ export function CoverImageUploader({ value, onChange, entityType = 'tours', enti
     const [preview, setPreview] = useState<string | null>(value || null);
 
     const uploadFile = async (file: File): Promise<string> => {
-        const token = localStorage.getItem('admin_token');
-        
         const formData = new FormData();
         formData.append('file', file);
         formData.append('entity_type', entityType);
@@ -29,17 +27,16 @@ export function CoverImageUploader({ value, onChange, entityType = 'tours', enti
             formData.append('entity_id', entityId);
         }
 
-        const res = await fetch(`${API_URL}/admin/media/upload`, {
+        // Use server-side upload proxy (same as audio upload)
+        const res = await fetch('/api/upload-image', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
+            body: formData,
+            credentials: 'include' // Ensure cookies are sent
         });
 
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.detail || 'Ошибка загрузки');
+            throw new Error(errData.detail || errData.error || 'Ошибка загрузки');
         }
 
         const data = await res.json();

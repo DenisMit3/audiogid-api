@@ -137,7 +137,7 @@ class TourItem(SQLModel, table=True):
     poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id")
     order_index: int = Field(default=0)
     transition_text_ru: Optional[str] = None
-    # transition_audio_url: Optional[str] = None  # Column not in DB - needs manual ALTER by DB owner
+    transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None  # Recommended stay time
     tour: Optional[Tour] = Relationship(back_populates="items")
     poi: Optional[Poi] = Relationship(back_populates="tour_items")

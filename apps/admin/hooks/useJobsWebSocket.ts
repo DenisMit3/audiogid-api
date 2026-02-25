@@ -17,9 +17,8 @@ export const useJobsWebSocket = (onUpdate?: (update: JobUpdate) => void) => {
 
     useEffect(() => {
         if (!WS_URL) return; // or throw if strictly needed at runtime
-        const token = localStorage.getItem('admin_token');
         const socketInstance = io(WS_URL, {
-            query: { token },
+            withCredentials: true, // Send cookies with WebSocket connection
             transports: ['websocket'],
             path: '/v1/admin/jobs/ws' // Path must match API router
         });

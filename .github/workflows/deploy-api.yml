@@ -39,9 +39,10 @@ jobs:
             . venv/bin/activate && \
             pip install -q -r requirements.txt"
           
-          # Run database migrations
+          # Run database migrations (load .env first)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
             . venv/bin/activate && \
+            set -a && source .env && set +a && \
             alembic upgrade head"
           
           # Restart API service

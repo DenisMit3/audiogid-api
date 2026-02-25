@@ -437,6 +437,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                 <RouteBuilder
                                     items={items}
                                     citySlug={tour.city_slug}
+                                    tourId={tour.id}
                                     onReorder={handleReorder}
                                     onAddItem={handleAddItem}
                                     onRemoveItem={(id) => removeItemMutation.mutate(id)}

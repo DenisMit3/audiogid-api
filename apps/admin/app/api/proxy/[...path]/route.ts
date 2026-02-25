@@ -31,10 +31,17 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
     
     // Also check for x-admin-token header (used by route-builder)
     const adminTokenHeader = request.headers.get('x-admin-token');
+    
+    // Check if this is a file upload (multipart/form-data)
+    const contentType = request.headers.get('content-type') || '';
+    const isMultipart = contentType.includes('multipart/form-data');
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    };
+    const headers: Record<string, string> = {};
+    
+    // Only set Content-Type for JSON requests, let fetch set it for multipart
+    if (!isMultipart) {
+        headers['Content-Type'] = 'application/json';
+    }
     
     // Forward x-admin-token header directly to backend (required by publish.py routes)
     if (adminTokenHeader) {
@@ -45,7 +52,18 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
     }
 
     try {
-        const body = (method !== 'GET' && method !== 'HEAD') ? await request.text() : undefined;
+        let body: BodyInit | undefined;
+        
+        if (method !== 'GET' && method !== 'HEAD') {
+            if (isMultipart) {
+                // For file uploads, pass the request body as-is
+                body = await request.arrayBuffer();
+                // Preserve the original content-type with boundary
+                headers['Content-Type'] = contentType;
+            } else {
+                body = await request.text();
+            }
+        }
 
         // Forward query params
         const url = new URL(request.url);

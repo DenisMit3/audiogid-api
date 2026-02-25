@@ -18,7 +18,7 @@ import {
     useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash, MapPin, Plus, Clock, FileText, Edit2, Navigation, Mic, MousePointer2, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { GripVertical, Trash, MapPin, Plus, Clock, FileText, Edit2, Navigation, Mic, MousePointer2, Search, Maximize2, Minimize2, Eye, EyeOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,7 +98,13 @@ function DistanceIndicator({ fromItem, toItem }: { fromItem: TourItem, toItem: T
 }
 
 // --- Sortable Item Component ---
-function SortableItem({ item, onRemove, onEdit }: { item: TourItem, onRemove: (id: string) => void, onEdit: (item: TourItem) => void }) {
+function SortableItem({ item, onRemove, onEdit, onTogglePublish, isPublishing }: { 
+    item: TourItem, 
+    onRemove: (id: string) => void, 
+    onEdit: (item: TourItem) => void,
+    onTogglePublish?: (item: TourItem) => void,
+    isPublishing?: boolean
+}) {
     const {
         attributes,
         listeners,
@@ -114,6 +120,8 @@ function SortableItem({ item, onRemove, onEdit }: { item: TourItem, onRemove: (i
         zIndex: isDragging ? 50 : 'auto',
         opacity: isDragging ? 0.3 : 1
     };
+
+    const isPoiPublished = !!item.poi_published_at;
 
     return (
         <div
@@ -131,6 +139,9 @@ function SortableItem({ item, onRemove, onEdit }: { item: TourItem, onRemove: (i
                         {item.order_index + 1}
                     </span>
                     <span className="truncate">{item.poi_title || "Неизвестная точка"}</span>
+                    {!isPoiPublished && (
+                        <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">черновик</span>
+                    )}
                 </div>
 
                 <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
@@ -165,6 +176,22 @@ function SortableItem({ item, onRemove, onEdit }: { item: TourItem, onRemove: (i
             </div>
 
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* POI Publish toggle */}
+                {onTogglePublish && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => onTogglePublish(item)}
+                        disabled={isPublishing}
+                        title={isPoiPublished ? 'Снять POI с публикации' : 'Опубликовать POI'}
+                    >
+                        {isPoiPublished ? (
+                            <Eye className="w-4 h-4 text-green-600" />
+                        ) : (
+                            <EyeOff className="w-4 h-4 text-orange-500" />
+                        )}
+                    </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
                     <Edit2 className="w-4 h-4 text-slate-500" />
                 </Button>
@@ -185,6 +212,7 @@ type TourItem = {
     poi_title?: string;
     poi_lat?: number;
     poi_lon?: number;
+    poi_published_at?: string;
     transition_text_ru?: string;
     transition_audio_url?: string;
     duration_seconds?: number;
@@ -193,16 +221,18 @@ type TourItem = {
 type Props = {
     items: TourItem[];
     citySlug?: string;
+    tourId?: string;
     onReorder: (items: TourItem[]) => void;
     onAddItem: (poiId: string, poiTitle: string) => void;
     onRemoveItem: (id: string) => void;
     onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number, transition_audio_url?: string }) => void;
     onAddNewPoi?: (lat: number, lon: number, title: string) => Promise<string | null>;
+    onPoiPublishChange?: () => void;
 };
 
 const API_URL = '/api/proxy';
 
-export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveItem, onUpdateItem, onAddNewPoi }: Props) {
+export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, onRemoveItem, onUpdateItem, onAddNewPoi, onPoiPublishChange }: Props) {
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -217,6 +247,62 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
     const [newPointDialog, setNewPointDialog] = useState<{ lat: number, lon: number } | null>(null);
     const [newPointTitle, setNewPointTitle] = useState('');
     const queryClient = useQueryClient();
+
+    // POI Publish/Unpublish mutation
+    const togglePoiPublishMutation = useMutation({
+        mutationFn: async ({ poiId, action }: { poiId: string, action: 'publish' | 'unpublish' }) => {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${API_URL}/admin/pois/${poiId}/${action}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                
+                // Извлекаем сообщение об ошибке
+                let errorMsg = '';
+                if (typeof data.detail === 'string') {
+                    errorMsg = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    // Pydantic validation errors
+                    errorMsg = data.detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+                } else if (typeof data.message === 'string') {
+                    errorMsg = data.message;
+                } else if (data.detail?.msg) {
+                    errorMsg = data.detail.msg;
+                }
+                
+                // Формируем понятное сообщение на русском
+                if (errorMsg.includes('Description too short')) {
+                    errorMsg = 'Описание POI слишком короткое (минимум 10 символов)';
+                } else if (errorMsg.includes('Missing coordinates')) {
+                    errorMsg = 'У POI не заданы координаты';
+                } else if (errorMsg.includes('Field required')) {
+                    errorMsg = 'Не все обязательные поля POI заполнены';
+                } else if (!errorMsg) {
+                    errorMsg = `Не удалось ${action === 'publish' ? 'опубликовать' : 'снять с публикации'} POI`;
+                }
+                throw new Error(errorMsg);
+            }
+            return res.json();
+        },
+        onSuccess: () => {
+            // Обновляем данные тура чтобы получить новый статус POI
+            if (tourId) {
+                queryClient.invalidateQueries({ queryKey: ['tour', tourId] });
+            }
+            onPoiPublishChange?.();
+        },
+        onError: (error: Error) => {
+            alert(error.message || 'Произошла ошибка');
+        }
+    });
+
+    const handleTogglePoiPublish = useCallback((item: TourItem) => {
+        if (!item.poi_id) return;
+        const action = item.poi_published_at ? 'unpublish' : 'publish';
+        togglePoiPublishMutation.mutate({ poiId: item.poi_id, action });
+    }, [togglePoiPublishMutation]);
 
     // Create new POI mutation
     const createPoiMutation = useMutation({
@@ -418,7 +504,13 @@ export function RouteBuilder({ items, citySlug, onReorder, onAddItem, onRemoveIt
                             )}
                             {sortedItems.map((item, idx) => (
                                 <div key={item.id}>
-                                    <SortableItem item={item} onRemove={onRemoveItem} onEdit={handleEditClick} />
+                                    <SortableItem 
+                                        item={item} 
+                                        onRemove={onRemoveItem} 
+                                        onEdit={handleEditClick}
+                                        onTogglePublish={handleTogglePoiPublish}
+                                        isPublishing={togglePoiPublishMutation.isPending}
+                                    />
                                     {idx < sortedItems.length - 1 && (
                                         <DistanceIndicator fromItem={item} toItem={sortedItems[idx + 1]} />
                                     )}

@@ -51,6 +51,7 @@ class TourItemRead(BaseModel):
     poi_title: Optional[str] # enriched
     poi_lat: Optional[float]
     poi_lon: Optional[float]
+    poi_published_at: Optional[str] # enriched - POI publication status
     transition_text_ru: Optional[str]
     transition_audio_url: Optional[str]
     duration_seconds: Optional[int]
@@ -193,6 +194,7 @@ def get_tour(
             "poi_title": poi_title,
             "poi_lat": item.poi.lat if item.poi else None,
             "poi_lon": item.poi.lon if item.poi else None,
+            "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
             "transition_text_ru": item.transition_text_ru,
             "transition_audio_url": item.transition_audio_url,
             "duration_seconds": item.duration_seconds
@@ -323,6 +325,7 @@ def update_tour_item(
         "poi_title": poi_title,
         "poi_lat": item.poi.lat if item.poi else None,
         "poi_lon": item.poi.lon if item.poi else None,
+        "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
         "transition_text_ru": item.transition_text_ru,
         "transition_audio_url": item.transition_audio_url,
         "duration_seconds": item.duration_seconds

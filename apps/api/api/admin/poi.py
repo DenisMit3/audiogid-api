@@ -516,6 +516,15 @@ def get_presigned_url(
             ExpiresIn=900  # 15 minutes
         )
         
+        # If S3_PUBLIC_URL is set, replace internal endpoint with public URL in presigned URL
+        # This is needed when MinIO runs on localhost but needs to be accessed from browser
+        if settings.S3_PUBLIC_URL and settings.S3_ENDPOINT_URL:
+            # Extract base URL from S3_PUBLIC_URL (e.g., http://82.202.159.64:9000/audiogid -> http://82.202.159.64:9000)
+            public_base = settings.S3_PUBLIC_URL.rstrip('/')
+            if f"/{settings.S3_BUCKET_NAME}" in public_base:
+                public_base = public_base.rsplit(f"/{settings.S3_BUCKET_NAME}", 1)[0]
+            upload_url = upload_url.replace(settings.S3_ENDPOINT_URL.rstrip('/'), public_base)
+        
         # Public URL for accessing the file
         if settings.S3_PUBLIC_URL:
             final_url = f"{settings.S3_PUBLIC_URL.rstrip('/')}/{pathname}"

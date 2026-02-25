@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ColumnDef,
     flexRender,
@@ -12,7 +12,7 @@ import {
     getSortedRowModel,
     SortingState
 } from '@tanstack/react-table';
-import { Plus, Search, MoreHorizontal, Edit, Trash, Map, Clock } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Clock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,15 @@ import {
     TableRow
 } from "@/components/ui/table";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
 const API_URL = '/api/proxy';
@@ -66,12 +69,81 @@ export default function TourListPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [page, setPage] = useState(1);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [tourToDelete, setTourToDelete] = useState<Tour | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const queryClient = useQueryClient();
 
     const { data, isLoading } = useQuery({
         queryKey: ['tours', page, search, statusFilter],
         queryFn: () => fetchTours({ page, search, status: statusFilter }),
         placeholderData: (prev) => prev
     });
+
+    // Delete mutation
+    const deleteMutation = useMutation({
+        mutationFn: async (tourId: string) => {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${API_URL}/admin/tours/${tourId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Не удалось удалить тур');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tours'] });
+            setDeleteDialogOpen(false);
+            setTourToDelete(null);
+        }
+    });
+
+    // Publish/Unpublish mutation
+    const togglePublishMutation = useMutation({
+        mutationFn: async ({ tourId, action }: { tourId: string, action: 'publish' | 'unpublish' }) => {
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch(`${API_URL}/admin/tours/${tourId}/${action}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                // Формируем понятное сообщение об ошибке
+                if (data.error === 'TOUR_PUBLISH_BLOCKED' && data.issues && data.issues.length > 0) {
+                    // issues - это массив строк
+                    const issueMessages = data.issues.join(', ');
+                    throw new Error(issueMessages);
+                }
+                throw new Error(data.message || `Не удалось ${action === 'publish' ? 'опубликовать' : 'снять с публикации'}`);
+            }
+            return data;
+        },
+        onSuccess: () => {
+            setErrorMessage(null);
+            queryClient.invalidateQueries({ queryKey: ['tours'] });
+        },
+        onError: (error) => {
+            setErrorMessage(error.message);
+            // Автоматически скрыть через 5 секунд
+            setTimeout(() => setErrorMessage(null), 5000);
+        }
+    });
+
+    const handleDelete = (tour: Tour) => {
+        setTourToDelete(tour);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (tourToDelete) {
+            deleteMutation.mutate(tourToDelete.id);
+        }
+    };
+
+    const handleTogglePublish = (tour: Tour) => {
+        const action = tour.published_at ? 'unpublish' : 'publish';
+        togglePublishMutation.mutate({ tourId: tour.id, action });
+    };
 
     const columns: ColumnDef<Tour>[] = [
         {
@@ -107,28 +179,46 @@ export default function TourListPage() {
         },
         {
             id: "actions",
+            header: "",
             cell: ({ row }) => {
                 const tour = row.original;
+                const isPublished = !!tour.published_at;
                 return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Открыть меню</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                                <Link href={`/content/tours/${tour.id}`}>
-                                    <Edit className="mr-2 h-4 w-4" /> Редактировать
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(tour.id)}>
-                                Копировать ID
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-1">
+                        {/* Edit button */}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Редактировать" asChild>
+                            <Link href={`/content/tours/${tour.id}`}>
+                                <Edit className="h-4 w-4 text-slate-500" />
+                            </Link>
+                        </Button>
+
+                        {/* Publish/Unpublish toggle */}
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            title={isPublished ? 'Скрыть в приложении' : 'Показать в приложении'}
+                            onClick={() => handleTogglePublish(tour)}
+                            disabled={togglePublishMutation.isPending}
+                        >
+                            {isPublished ? (
+                                <Eye className="h-4 w-4 text-green-600" />
+                            ) : (
+                                <EyeOff className="h-4 w-4 text-slate-400" />
+                            )}
+                        </Button>
+
+                        {/* Delete button */}
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Удалить тур"
+                            onClick={() => handleDelete(tour)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
                 );
             },
         },
@@ -158,6 +248,19 @@ export default function TourListPage() {
                     </Button>
                 </Link>
             </div>
+
+            {/* Error message */}
+            {errorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+                    <span className="block sm:inline">{errorMessage}</span>
+                    <button 
+                        className="absolute top-0 bottom-0 right-0 px-4 py-3"
+                        onClick={() => setErrorMessage(null)}
+                    >
+                        <span className="text-red-500">×</span>
+                    </button>
+                </div>
+            )}
 
             <div className="flex items-center gap-2">
                 <div className="relative flex-1 max-w-sm">
@@ -243,6 +346,29 @@ export default function TourListPage() {
                     Вперёд
                 </Button>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить тур?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Вы уверены, что хотите удалить тур "{tourToDelete?.title_ru}"? 
+                            Это действие нельзя отменить.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={deleteMutation.isPending}
+                        >
+                            {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -78,6 +78,15 @@ async def presign_media_upload(
             ExpiresIn=3600  # 1 hour
         )
         
+        # If S3_PUBLIC_URL is set, replace internal endpoint with public URL in presigned URL
+        # This is needed when MinIO runs on localhost but needs to be accessed from browser
+        if config.S3_PUBLIC_URL and config.S3_ENDPOINT_URL:
+            # Extract base URL from S3_PUBLIC_URL (e.g., http://82.202.159.64:9000/audiogid -> http://82.202.159.64:9000)
+            public_base = config.S3_PUBLIC_URL.rstrip('/')
+            if f"/{config.S3_BUCKET_NAME}" in public_base:
+                public_base = public_base.rsplit(f"/{config.S3_BUCKET_NAME}", 1)[0]
+            upload_url = upload_url.replace(config.S3_ENDPOINT_URL.rstrip('/'), public_base)
+        
         # Public URL for accessing the file after upload
         if config.S3_PUBLIC_URL:
             final_url = f"{config.S3_PUBLIC_URL.rstrip('/')}/{object_key}"
@@ -99,7 +108,7 @@ class UploadResponse(BaseModel):
     size: int
 
 
-@router.post("/media/upload", response_model=UploadResponse)
+@router.post("/admin/media/upload", response_model=UploadResponse)
 async def upload_media_file(
     file: UploadFile = File(...),
     entity_type: str = Form(default="uploads"),
@@ -116,13 +125,17 @@ async def upload_media_file(
     if not s3:
         raise HTTPException(500, "Storage not configured. Set S3_ENDPOINT_URL, S3_ACCESS_KEY, S3_SECRET_KEY")
     
-    # Validate file type
-    allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    # Validate file type - images and audio
+    allowed_types = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg'
+    ]
     if file.content_type not in allowed_types:
         raise HTTPException(400, f"Invalid file type: {file.content_type}. Allowed: {allowed_types}")
     
-    # Limit file size (10MB)
-    max_size = 10 * 1024 * 1024
+    # Limit file size (50MB for audio, 10MB for images)
+    is_audio = file.content_type.startswith('audio/')
+    max_size = 50 * 1024 * 1024 if is_audio else 10 * 1024 * 1024
     contents = await file.read()
     if len(contents) > max_size:
         raise HTTPException(400, f"File too large. Max size: {max_size // 1024 // 1024}MB")

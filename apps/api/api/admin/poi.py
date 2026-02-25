@@ -186,7 +186,7 @@ def create_poi(
             description_ru=db_poi.description_ru,
             lat=db_poi.lat,
             lon=db_poi.lon,
-            full_snapshot_json=db_poi.json()
+            full_snapshot_json=db_poi.json(exclude={'geo'})
     )
     session.add(v)
     
@@ -280,7 +280,7 @@ def update_poi(
          description_ru=poi.description_ru,
          lat=poi.lat,
          lon=poi.lon,
-         full_snapshot_json=poi.json()
+         full_snapshot_json=poi.json(exclude={'geo'})
     )
     session.add(v)
     

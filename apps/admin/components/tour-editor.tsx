@@ -63,6 +63,7 @@ type TourData = TourFormValues & {
     can_publish: boolean;
     publish_issues: string[];
     published_at?: string;
+    unpublished_poi_ids?: string[];
 };
 
 export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuccess?: (id: string) => void }) {

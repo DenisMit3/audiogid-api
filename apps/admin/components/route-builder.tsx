@@ -254,11 +254,14 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
             const token = localStorage.getItem('admin_token');
             const res = await fetch(`${API_URL}/admin/pois/${poiId}/${action}`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'x-admin-token': 'temp-admin-key-2026'
+                }
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                
+
                 // Извлекаем сообщение об ошибке
                 let errorMsg = '';
                 if (typeof data.detail === 'string') {

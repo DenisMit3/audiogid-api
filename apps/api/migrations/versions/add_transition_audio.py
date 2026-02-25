@@ -16,7 +16,12 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('tour_items', sa.Column('transition_audio_url', sa.String(), nullable=True))
+    # Check if column exists before adding
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [c['name'] for c in inspector.get_columns('tour_items')]
+    if 'transition_audio_url' not in columns:
+        op.add_column('tour_items', sa.Column('transition_audio_url', sa.String(), nullable=True))
 
 
 def downgrade():

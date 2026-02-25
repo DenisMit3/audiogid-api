@@ -255,18 +255,12 @@ export default function PoiListPage() {
                             if (!confirm("Вы уверены?")) return;
                             const selectedRows = table.getFilteredSelectedRowModel().rows;
                             const ids = selectedRows.map(row => row.original.id);
-                            // #region agent log
-                            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'02b84c'},body:JSON.stringify({sessionId:'02b84c',location:'pois/page.tsx:bulk-delete',message:'bulk-delete IDs being sent',data:{ids,selectedRowsCount:selectedRows.length},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-                            // #endregion
-                            const res = await fetch(`${API_URL}/admin/pois/bulk-delete`, {
+                            await fetch(`${API_URL}/admin/pois/bulk-delete`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 credentials: 'include',
                                 body: JSON.stringify({ ids })
                             });
-                            // #region agent log
-                            fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'02b84c'},body:JSON.stringify({sessionId:'02b84c',location:'pois/page.tsx:bulk-delete-response',message:'bulk-delete response',data:{status:res.status,ok:res.ok},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-                            // #endregion
                             queryClient.invalidateQueries({ queryKey: ['pois'] });
                             setRowSelection({});
                         }}

@@ -44,7 +44,13 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
     }
     
     // Forward x-admin-token header directly to backend (required by publish.py routes)
-    if (adminTokenHeader) {
+    // Priority: 1) Authorization header from request, 2) x-admin-token header, 3) token cookie
+    const authHeader = request.headers.get('authorization');
+    
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+        // Use Authorization header from request (sent by frontend components)
+        headers['Authorization'] = authHeader;
+    } else if (adminTokenHeader) {
         headers['x-admin-token'] = adminTokenHeader;
         headers['Authorization'] = `Bearer ${adminTokenHeader}`;
     } else if (token) {

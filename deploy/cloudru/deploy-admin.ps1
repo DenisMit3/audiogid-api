@@ -56,38 +56,13 @@ if ($LASTEXITCODE -ne 0) {
 
 # 4. Deploy on server
 Write-Host "`n[4/4] Deploying on server..." -ForegroundColor Yellow
-$deployScript = @'
-set -e
-ADMIN_DIR=/opt/audiogid/admin
 
-# Backup current version
-if [ -d "$ADMIN_DIR/.next" ]; then
-    sudo mv $ADMIN_DIR/.next $ADMIN_DIR/.next.backup 2>/dev/null || true
-fi
+# Upload deploy script
+$deployScriptPath = "$PSScriptRoot\deploy-admin-remote.sh"
+scp -i $SSH_KEY $deployScriptPath "${USER}@${SERVER}:/tmp/deploy-admin.sh"
 
-# Extract new version
-sudo mkdir -p $ADMIN_DIR
-cd $ADMIN_DIR
-sudo tar -xzvf /tmp/admin-build.tar.gz
-sudo chown -R user1:user1 $ADMIN_DIR
-
-# Install production dependencies
-cd $ADMIN_DIR
-pnpm install --prod
-
-# Restart service
-sudo systemctl restart audiogid-admin || echo "Service not configured yet"
-
-# Cleanup
-rm /tmp/admin-build.tar.gz
-sudo rm -rf $ADMIN_DIR/.next.backup 2>/dev/null || true
-
-echo ""
-echo "=== Admin deployed successfully ==="
-echo "URL: http://82.202.159.64:3080"
-'@
-
-ssh -i $SSH_KEY "${USER}@${SERVER}" $deployScript
+# Execute deploy script
+ssh -i $SSH_KEY "${USER}@${SERVER}" "chmod +x /tmp/deploy-admin.sh && /tmp/deploy-admin.sh && rm /tmp/deploy-admin.sh"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Deploy failed!" -ForegroundColor Red

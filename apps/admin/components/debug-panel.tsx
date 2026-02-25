@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger, LogEntry, LogLevel } from '@/lib/debug-logger';
-import { X, Trash2, Bug, ChevronDown, ChevronUp, Copy, Filter, Eye, EyeOff } from 'lucide-react';
+import { X, Trash2, Bug, ChevronDown, ChevronUp, Copy, Filter, Eye, EyeOff, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const COLORS: Record<LogLevel, string> = {
@@ -19,6 +19,38 @@ const ICONS: Record<LogLevel, string> = {
     info: 'ℹ️', warn: '⚠️', error: '❌', success: '✅', api: '🔌', auth: '🔐', nav: '🧭'
 };
 
+// Универсальная функция копирования с fallback для HTTP
+async function copyToClipboard(text: string): Promise<boolean> {
+    // Попробуем современный API (работает только на HTTPS/localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.warn('Clipboard API failed:', err);
+        }
+    }
+    
+    // Fallback для HTTP через execCommand
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '-9999px';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const success = document.execCommand('copy');
+        textarea.remove();
+        return success;
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        return false;
+    }
+}
+
 export function DebugPanel() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +58,8 @@ export function DebugPanel() {
     const [filter, setFilter] = useState<LogLevel | 'all'>('all');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [enabled, setEnabled] = useState(true);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [copiedAll, setCopiedAll] = useState(false);
 
     useEffect(() => {
         setLogs(logger.getLogs());
@@ -38,19 +72,23 @@ export function DebugPanel() {
     const errorCount = logs.filter(l => l.level === 'error').length;
     const warnCount = logs.filter(l => l.level === 'warn').length;
 
-    const copyLog = useCallback((log: LogEntry) => {
+    const copyLog = useCallback(async (log: LogEntry) => {
         const text = `[${log.level.toUpperCase()}] ${log.timestamp.toISOString()}\n${log.message}${log.data ? '\n' + JSON.stringify(log.data, null, 2) : ''}${log.stack ? '\n\nStack:\n' + log.stack : ''}`;
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(text).catch(() => {});
+        const success = await copyToClipboard(text);
+        if (success) {
+            setCopiedId(log.id);
+            setTimeout(() => setCopiedId(null), 1500);
         }
     }, []);
 
-    const copyAll = useCallback(() => {
+    const copyAll = useCallback(async () => {
         const text = filteredLogs.map(l => 
-            `[${l.level.toUpperCase()}] ${l.timestamp.toISOString()} - ${l.message}`
-        ).join('\n');
-        if (navigator.clipboard?.writeText) {
-            navigator.clipboard.writeText(text).catch(() => {});
+            `[${l.level.toUpperCase()}] ${l.timestamp.toISOString()} - ${l.message}${l.data ? ' | Data: ' + JSON.stringify(l.data) : ''}${l.stack ? '\nStack: ' + l.stack : ''}`
+        ).join('\n\n');
+        const success = await copyToClipboard(text);
+        if (success) {
+            setCopiedAll(true);
+            setTimeout(() => setCopiedAll(false), 1500);
         }
     }, [filteredLogs]);
 
@@ -140,7 +178,7 @@ export function DebugPanel() {
                             {enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                         </button>
                         <button onClick={copyAll} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Копировать все">
-                            <Copy className="h-3.5 w-3.5" />
+                            {copiedAll ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                         <button onClick={() => logger.clear()} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Очистить">
                             <Trash2 className="h-3.5 w-3.5" />
@@ -178,7 +216,7 @@ export function DebugPanel() {
                                             onClick={(e) => { e.stopPropagation(); copyLog(log); }}
                                             className="p-0.5 rounded hover:bg-black/10 opacity-50 hover:opacity-100"
                                         >
-                                            <Copy className="h-3 w-3" />
+                                            {copiedId === log.id ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                                         </button>
                                     </div>
                                     

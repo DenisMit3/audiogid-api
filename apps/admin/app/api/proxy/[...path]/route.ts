@@ -61,7 +61,14 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
                 // Preserve the original content-type with boundary
                 headers['Content-Type'] = contentType;
             } else {
-                body = await request.text();
+                const textBody = await request.text();
+                // Only set body and Content-Type if there's actual content
+                if (textBody && textBody.length > 0) {
+                    body = textBody;
+                } else {
+                    // Don't send Content-Type for empty body requests (like publish/unpublish)
+                    delete headers['Content-Type'];
+                }
             }
         }
 

@@ -47,22 +47,7 @@ jobs:
           # Ensure critical columns exist (fix for missing migrations)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \
             . venv/bin/activate && \
-            python -c \"
-import os
-from dotenv import load_dotenv
-load_dotenv()
-from sqlalchemy import create_engine, text
-engine = create_engine(os.environ['DATABASE_URL'])
-with engine.connect() as conn:
-    # Add transition_audio_url if missing
-    result = conn.execute(text(\\\"SELECT column_name FROM information_schema.columns WHERE table_name='tour_items' AND column_name='transition_audio_url'\\\"))
-    if not result.fetchone():
-        conn.execute(text('ALTER TABLE tour_items ADD COLUMN transition_audio_url VARCHAR'))
-        conn.commit()
-        print('Added transition_audio_url column')
-    else:
-        print('Column transition_audio_url already exists')
-\""
+            python scripts/fix_missing_columns.py"
           
           # Restart API service
           ssh ${USER}@${SERVER} "sudo systemctl restart audiogid-api"

@@ -48,11 +48,34 @@
 ### Auth API
 | Endpoint | Метод | Описание |
 |----------|-------|----------|
+| `/auth/login/email` | POST | Вход по email и паролю |
 | `/auth/login/sms/init` | POST | Инициация SMS авторизации |
 | `/auth/login/sms/verify` | POST | Верификация SMS кода |
 | `/auth/login/telegram` | POST | Telegram Login Widget |
+| `/auth/login/dev-admin` | POST | Dev-режим входа (secret) |
 | `/auth/refresh` | POST | Обновление токенов |
 | `/auth/logout` | POST | Выход |
+| `/auth/me` | GET | Текущий пользователь |
+
+#### Вход по email (Admin Panel)
+```bash
+POST /v1/auth/login/email
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+Ответ:
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "bearer"
+}
+```
 
 ### Billing API
 | Endpoint | Метод | Описание |

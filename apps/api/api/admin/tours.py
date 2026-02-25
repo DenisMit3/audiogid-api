@@ -386,8 +386,14 @@ def duplicate_tour(tour_id: uuid.UUID, session: Session = Depends(get_session), 
     new_tour = Tour(
         city_slug=tour.city_slug,
         title_ru=f"{tour.title_ru} (Copy)",
+        title_en=tour.title_en,
         description_ru=tour.description_ru,
-        duration_minutes=tour.duration_minutes
+        description_en=tour.description_en,
+        duration_minutes=tour.duration_minutes,
+        distance_km=tour.distance_km,
+        tour_type=tour.tour_type,
+        difficulty=tour.difficulty,
+        cover_image=tour.cover_image
     )
     session.add(new_tour)
     session.flush() # get ID

@@ -47,6 +47,7 @@ const tourSchema = z.object({
     description_ru: z.string().optional(),
     description_en: z.string().optional(),
     duration_minutes: z.coerce.number().min(0).optional(),
+    distance_km: z.coerce.number().min(0).optional(),
     tour_type: z.string().default('walking'),
     difficulty: z.string().default('easy'),
     cover_image: z.string().optional(),
@@ -99,6 +100,7 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
             description_ru: tour?.description_ru || '',
             description_en: tour?.description_en || '',
             duration_minutes: tour?.duration_minutes || 0,
+            distance_km: tour?.distance_km || 0,
             tour_type: tour?.tour_type || 'walking',
             difficulty: tour?.difficulty || 'easy',
             cover_image: tour?.cover_image || '',
@@ -400,6 +402,20 @@ export default function TourEditor({ tour, onSuccess }: { tour?: TourData, onSuc
                                                         </FormItem>
                                                     )}
                                                 />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="distance_km"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Дистанция (км)</FormLabel>
+                                                            <FormControl><Input type="number" step="0.1" {...field} /></FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-4">
                                                 <FormField
                                                     control={form.control}
                                                     name="cover_image"

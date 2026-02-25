@@ -120,10 +120,10 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                     tours.where((t) => (t.durationMinutes ?? 0) < 60).toList();
               } else if (_selectedFilter == 'walking') {
                 tours =
-                    tours.where((t) => t.transportType == 'walking').toList();
+                    tours.where((t) => t.tourType == 'walking').toList();
               } else if (_selectedFilter == 'driving') {
                 tours =
-                    tours.where((t) => t.transportType == 'driving').toList();
+                    tours.where((t) => t.tourType == 'driving').toList();
               }
 
               // Empty state
@@ -547,9 +547,9 @@ class _TourCard extends StatelessWidget {
                                 TextBadge.distance(tour.distanceKm!),
                                 const SizedBox(width: AppSpacing.sm),
                               ],
-                              if (tour.transportType != null) ...[
+                              if (tour.tourType != null) ...[
                                 Icon(
-                                  tour.transportType == 'walking'
+                                  tour.tourType == 'walking'
                                       ? Icons.directions_walk
                                       : Icons.directions_car,
                                   size: 16,
@@ -557,7 +557,7 @@ class _TourCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 LabelText(
-                                  tour.transportType == 'walking'
+                                  tour.tourType == 'walking'
                                       ? 'Пешком'
                                       : 'На машине',
                                 ),

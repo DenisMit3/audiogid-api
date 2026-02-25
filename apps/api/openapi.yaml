@@ -597,7 +597,12 @@ components:
         id: { type: string, format: uuid }
         city_slug: { type: string }
         title_ru: { type: string }
-        duration_minutes: { type: integer }
+        description_ru: { type: string, nullable: true }
+        cover_image: { type: string, nullable: true }
+        duration_minutes: { type: integer, nullable: true }
+        distance_km: { type: number, nullable: true }
+        tour_type: { type: string }
+        difficulty: { type: string }
 
     PoiDetail:
       type: object

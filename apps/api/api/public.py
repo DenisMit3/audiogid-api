@@ -320,7 +320,7 @@ def get_city_pois(response: Response, request: Request, slug: str, page: int = 1
 @router.get("/public/cities/{slug}/tours")
 def get_city_tours(response: Response, request: Request, slug: str, session: Session = Depends(get_session)):
     tours = session.exec(select(Tour).where(Tour.city_slug == slug, Tour.published_at != None)).all()
-    return [t.model_dump(include={'id', 'title_ru', 'description_ru', 'cover_image', 'duration_minutes', 'tour_type'}) for t in tours]
+    return [t.model_dump(include={'id', 'title_ru', 'description_ru', 'cover_image', 'duration_minutes', 'tour_type', 'difficulty', 'distance_km'}) for t in tours]
 
 @router.get("/public/cities/{slug}/offline-manifest")
 def get_city_offline_manifest(

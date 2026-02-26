@@ -39,8 +39,44 @@ jobs:
             . venv/bin/activate && \
             pip install -q -r requirements.txt"
           
-          # Apply critical SQL migrations directly
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && python scripts/apply_override_coords.py || echo 'Migration skipped'"
+          # Apply critical SQL migrations directly using alembic's env loading
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && python -c \"
+import sys
+sys.stdout.flush()
+print('Starting migration...')
+sys.stdout.flush()
+
+# Use same env loading as alembic
+from pathlib import Path
+from dotenv import load_dotenv
+env_path = Path('.env')
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f'Loaded .env')
+else:
+    print(f'.env not found at {env_path.absolute()}')
+
+import os
+db_url = os.environ.get('DATABASE_URL')
+if not db_url:
+    print('No DATABASE_URL')
+    sys.exit(0)
+
+from sqlalchemy import create_engine, text, inspect
+engine = create_engine(db_url)
+with engine.connect() as conn:
+    inspector = inspect(conn)
+    cols = [c['name'] for c in inspector.get_columns('tour_items')]
+    print(f'Columns: {cols}')
+    if 'override_lat' not in cols:
+        conn.execute(text('ALTER TABLE tour_items ADD COLUMN override_lat FLOAT'))
+        print('Added override_lat')
+    if 'override_lon' not in cols:
+        conn.execute(text('ALTER TABLE tour_items ADD COLUMN override_lon FLOAT'))
+        print('Added override_lon')
+    conn.commit()
+print('Done')
+\" 2>&1 || echo 'Migration script failed'"
           
           # Run database migrations (stamp if upgrade fails due to existing columns)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \

@@ -4,6 +4,9 @@ import os
 import sys
 from pathlib import Path
 
+print(f'Script started, __file__={__file__}')
+print(f'CWD={os.getcwd()}')
+
 # Load .env from multiple possible locations
 from dotenv import load_dotenv
 
@@ -16,14 +19,16 @@ possible_paths = [
 ]
 
 for env_path in possible_paths:
+    print(f'Checking: {env_path} exists={env_path.exists()}')
     if env_path.exists():
         print(f'Loading .env from: {env_path}')
         load_dotenv(env_path)
         break
 else:
-    print(f'No .env found in: {[str(p) for p in possible_paths]}')
+    print(f'No .env found in any location')
 
 db_url = os.environ.get('DATABASE_URL')
+print(f'DATABASE_URL present: {bool(db_url)}')
 if not db_url:
     print('DATABASE_URL not found, skipping migration')
     sys.exit(0)

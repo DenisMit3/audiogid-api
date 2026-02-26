@@ -196,8 +196,11 @@ def get_tour(
         poi_lat = item.poi.lat if item.poi else None
         poi_lon = item.poi.lon if item.poi else None
         # Effective coordinates: use override if set, otherwise use POI coordinates
-        effective_lat = item.override_lat if item.override_lat is not None else poi_lat
-        effective_lon = item.override_lon if item.override_lon is not None else poi_lon
+        # Use getattr for backward compatibility if columns don't exist yet
+        override_lat = getattr(item, 'override_lat', None)
+        override_lon = getattr(item, 'override_lon', None)
+        effective_lat = override_lat if override_lat is not None else poi_lat
+        effective_lon = override_lon if override_lon is not None else poi_lon
         items_read.append({
             "id": item.id,
             "poi_id": item.poi_id,
@@ -205,8 +208,8 @@ def get_tour(
             "poi_title": poi_title,
             "poi_lat": poi_lat,
             "poi_lon": poi_lon,
-            "override_lat": item.override_lat,
-            "override_lon": item.override_lon,
+            "override_lat": override_lat,
+            "override_lon": override_lon,
             "effective_lat": effective_lat,
             "effective_lon": effective_lon,
             "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
@@ -335,8 +338,11 @@ def update_tour_item(
     poi_title = item.poi.title_ru if item.poi else "Deleted POI"
     poi_lat = item.poi.lat if item.poi else None
     poi_lon = item.poi.lon if item.poi else None
-    effective_lat = item.override_lat if item.override_lat is not None else poi_lat
-    effective_lon = item.override_lon if item.override_lon is not None else poi_lon
+    # Use getattr for backward compatibility
+    override_lat = getattr(item, 'override_lat', None)
+    override_lon = getattr(item, 'override_lon', None)
+    effective_lat = override_lat if override_lat is not None else poi_lat
+    effective_lon = override_lon if override_lon is not None else poi_lon
     return {
         "id": item.id,
         "poi_id": item.poi_id,
@@ -344,8 +350,8 @@ def update_tour_item(
         "poi_title": poi_title,
         "poi_lat": poi_lat,
         "poi_lon": poi_lon,
-        "override_lat": item.override_lat,
-        "override_lon": item.override_lon,
+        "override_lat": override_lat,
+        "override_lon": override_lon,
         "effective_lat": effective_lat,
         "effective_lon": effective_lon,
         "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,

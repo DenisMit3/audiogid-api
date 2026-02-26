@@ -122,15 +122,18 @@ def get_tour_manifest(
         if item.poi:
             p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
             # Include override coordinates and effective coordinates
+            # Use getattr for backward compatibility if columns don't exist yet
             poi_lat = item.poi.lat
             poi_lon = item.poi.lon
-            effective_lat = item.override_lat if item.override_lat is not None else poi_lat
-            effective_lon = item.override_lon if item.override_lon is not None else poi_lon
+            override_lat = getattr(item, 'override_lat', None)
+            override_lon = getattr(item, 'override_lon', None)
+            effective_lat = override_lat if override_lat is not None else poi_lat
+            effective_lon = override_lon if override_lon is not None else poi_lon
             pois_data.append({
                 "order_index": item.order_index, 
                 **p,
-                "override_lat": item.override_lat,
-                "override_lon": item.override_lon,
+                "override_lat": override_lat,
+                "override_lon": override_lon,
                 "effective_lat": effective_lat,
                 "effective_lon": effective_lon
             })

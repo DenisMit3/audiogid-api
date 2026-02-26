@@ -31,13 +31,21 @@ class TourItemEntity {
   final String tourId;
   final String poiId;
   final int orderIndex;
+  final double? overrideLat;
+  final double? overrideLon;
   final Poi? poi;
+
+  // Computed: use override if set, otherwise use POI coordinates
+  double? get effectiveLat => overrideLat ?? poi?.lat;
+  double? get effectiveLon => overrideLon ?? poi?.lon;
 
   TourItemEntity({
     required this.id,
     required this.tourId,
     required this.poiId,
     required this.orderIndex,
+    this.overrideLat,
+    this.overrideLon,
     this.poi,
   });
 }

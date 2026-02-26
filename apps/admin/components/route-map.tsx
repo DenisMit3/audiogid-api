@@ -52,6 +52,10 @@ type RouteItem = {
     poi_title?: string;
     poi_lat?: number;
     poi_lon?: number;
+    override_lat?: number;
+    override_lon?: number;
+    effective_lat?: number;
+    effective_lon?: number;
 };
 
 type Props = {
@@ -73,8 +77,11 @@ function MapBounds({ items }: { items: RouteItem[] }) {
         const bounds = L.latLngBounds([]);
         let valid = false;
         items.forEach(i => {
-            if (i.poi_lat && i.poi_lon) {
-                bounds.extend([i.poi_lat, i.poi_lon]);
+            // Use effective coordinates
+            const lat = i.effective_lat ?? i.override_lat ?? i.poi_lat;
+            const lon = i.effective_lon ?? i.override_lon ?? i.poi_lon;
+            if (lat && lon) {
+                bounds.extend([lat, lon]);
                 valid = true;
             }
         });
@@ -113,13 +120,19 @@ function DraggableMarker({
     onDrag?: (itemId: string, lat: number, lon: number) => void;
     isSelected?: boolean;
 }) {
-    const [position, setPosition] = useState<[number, number]>([item.poi_lat!, item.poi_lon!]);
+    // Use effective coordinates
+    const effectiveLat = item.effective_lat ?? item.override_lat ?? item.poi_lat;
+    const effectiveLon = item.effective_lon ?? item.override_lon ?? item.poi_lon;
+    const [position, setPosition] = useState<[number, number]>([effectiveLat!, effectiveLon!]);
+    const hasOverride = item.override_lat !== undefined && item.override_lat !== null;
 
     useEffect(() => {
-        if (item.poi_lat && item.poi_lon) {
-            setPosition([item.poi_lat, item.poi_lon]);
+        const lat = item.effective_lat ?? item.override_lat ?? item.poi_lat;
+        const lon = item.effective_lon ?? item.override_lon ?? item.poi_lon;
+        if (lat && lon) {
+            setPosition([lat, lon]);
         }
-    }, [item.poi_lat, item.poi_lon]);
+    }, [item.effective_lat, item.effective_lon, item.override_lat, item.override_lon, item.poi_lat, item.poi_lon]);
 
     const eventHandlers = useMemo(() => ({
         dragend: (e: L.DragEndEvent) => {
@@ -132,7 +145,7 @@ function DraggableMarker({
         }
     }), [item.id, onDrag]);
 
-    if (!item.poi_lat || !item.poi_lon) return null;
+    if (!effectiveLat || !effectiveLon) return null;
 
     return (
         <Marker 
@@ -144,9 +157,14 @@ function DraggableMarker({
             <Popup>
                 <div className="min-w-[150px]">
                     <div className="font-bold text-sm mb-2">{index + 1}. {item.poi_title || 'Точка маршрута'}</div>
-                    <div className="text-xs text-gray-500 mb-2">
+                    <div className="text-xs text-gray-500 mb-1">
                         {position[0].toFixed(5)}, {position[1].toFixed(5)}
                     </div>
+                    {hasOverride && (
+                        <div className="text-xs text-blue-600 mb-2 bg-blue-50 px-2 py-1 rounded">
+                            📍 Координаты изменены для этого тура
+                        </div>
+                    )}
                     {onRemove && (
                         <Button 
                             variant="destructive" 
@@ -249,9 +267,17 @@ export function RouteMap({
 
     const polylinePositions = useMemo(() => {
         return items
-            .filter(i => i.poi_lat && i.poi_lon)
+            .filter(i => {
+                const lat = i.effective_lat ?? i.override_lat ?? i.poi_lat;
+                const lon = i.effective_lon ?? i.override_lon ?? i.poi_lon;
+                return lat && lon;
+            })
             .sort((a, b) => a.order_index - b.order_index)
-            .map(i => [i.poi_lat!, i.poi_lon!] as [number, number]);
+            .map(i => {
+                const lat = i.effective_lat ?? i.override_lat ?? i.poi_lat;
+                const lon = i.effective_lon ?? i.override_lon ?? i.poi_lon;
+                return [lat!, lon!] as [number, number];
+            });
     }, [items]);
 
     // Центр карты - Калининград по умолчанию
@@ -285,7 +311,11 @@ export function RouteMap({
                 }} />
 
                 {items
-                    .filter(item => item.poi_lat && item.poi_lon)
+                    .filter(item => {
+                        const lat = item.effective_lat ?? item.override_lat ?? item.poi_lat;
+                        const lon = item.effective_lon ?? item.override_lon ?? item.poi_lon;
+                        return lat && lon;
+                    })
                     .sort((a, b) => a.order_index - b.order_index)
                     .map((item, idx) => (
                         <DraggableMarker

@@ -79,6 +79,8 @@ class OfflineTourRepository implements TourRepository {
                   tourId: i.item.tourId,
                   poiId: i.item.poiId,
                   orderIndex: i.item.orderIndex,
+                  overrideLat: i.item.overrideLat,
+                  overrideLon: i.item.overrideLon,
                   poi: i.poi != null
                       ? domain.Poi(
                           id: i.poi!.id,
@@ -235,13 +237,17 @@ class OfflineTourRepository implements TourRepository {
         );
         await _db.poiDao.upsertPoiBasic(poiComp);
 
-        // Upsert TourItem
+        // Upsert TourItem with override coordinates
         final itemId = const Uuid().v4();
+        final overrideLat = (poiData['override_lat'] as num?)?.toDouble();
+        final overrideLon = (poiData['override_lon'] as num?)?.toDouble();
         final itemComp = TourItemsCompanion(
           id: Value(itemId),
           tourId: Value(id),
           poiId: Value(poiId),
           orderIndex: Value(orderIndex),
+          overrideLat: Value(overrideLat),
+          overrideLon: Value(overrideLon),
         );
         await _db.tourDao.upsertTourItem(itemComp);
       }

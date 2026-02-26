@@ -204,11 +204,17 @@ class TourModeService extends _$TourModeService {
       if (!state.isActive || state.currentPoi == null) return;
 
       final target = state.currentPoi!;
+      final currentItem = state.activeTour?.items?[state.currentStepIndex];
+      
+      // Use effective coordinates (override if set, otherwise POI)
+      final targetLat = currentItem?.effectiveLat ?? target.lat;
+      final targetLon = currentItem?.effectiveLon ?? target.lon;
+      
       final distance = locationService.calculateDistance(
         position.latitude,
         position.longitude,
-        target.lat,
-        target.lon,
+        targetLat,
+        targetLon,
       );
 
       // ETA Calculation

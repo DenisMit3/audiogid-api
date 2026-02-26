@@ -51,6 +51,10 @@ class TourItemRead(BaseModel):
     poi_title: Optional[str] # enriched
     poi_lat: Optional[float]
     poi_lon: Optional[float]
+    override_lat: Optional[float]  # custom coordinates for this tour
+    override_lon: Optional[float]  # custom coordinates for this tour
+    effective_lat: Optional[float]  # computed: override or poi
+    effective_lon: Optional[float]  # computed: override or poi
     poi_published_at: Optional[str] # enriched - POI publication status
     transition_text_ru: Optional[str]
     transition_audio_url: Optional[str]
@@ -88,6 +92,8 @@ class TourItemUpdate(BaseModel):
     transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None
     order_index: Optional[int] = None
+    override_lat: Optional[float] = None
+    override_lon: Optional[float] = None
 
 class ReorderItemsReq(BaseModel):
     item_ids: List[uuid.UUID]
@@ -187,13 +193,22 @@ def get_tour(
     items_read = []
     for item in tour.items:
         poi_title = item.poi.title_ru if item.poi else "Deleted POI"
+        poi_lat = item.poi.lat if item.poi else None
+        poi_lon = item.poi.lon if item.poi else None
+        # Effective coordinates: use override if set, otherwise use POI coordinates
+        effective_lat = item.override_lat if item.override_lat is not None else poi_lat
+        effective_lon = item.override_lon if item.override_lon is not None else poi_lon
         items_read.append({
             "id": item.id,
             "poi_id": item.poi_id,
             "order_index": item.order_index,
             "poi_title": poi_title,
-            "poi_lat": item.poi.lat if item.poi else None,
-            "poi_lon": item.poi.lon if item.poi else None,
+            "poi_lat": poi_lat,
+            "poi_lon": poi_lon,
+            "override_lat": item.override_lat,
+            "override_lon": item.override_lon,
+            "effective_lat": effective_lat,
+            "effective_lon": effective_lon,
             "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
             "transition_text_ru": item.transition_text_ru,
             "transition_audio_url": item.transition_audio_url,
@@ -318,13 +333,21 @@ def update_tour_item(
     
     # Return read model
     poi_title = item.poi.title_ru if item.poi else "Deleted POI"
+    poi_lat = item.poi.lat if item.poi else None
+    poi_lon = item.poi.lon if item.poi else None
+    effective_lat = item.override_lat if item.override_lat is not None else poi_lat
+    effective_lon = item.override_lon if item.override_lon is not None else poi_lon
     return {
         "id": item.id,
         "poi_id": item.poi_id,
         "order_index": item.order_index,
         "poi_title": poi_title,
-        "poi_lat": item.poi.lat if item.poi else None,
-        "poi_lon": item.poi.lon if item.poi else None,
+        "poi_lat": poi_lat,
+        "poi_lon": poi_lon,
+        "override_lat": item.override_lat,
+        "override_lon": item.override_lon,
+        "effective_lat": effective_lat,
+        "effective_lon": effective_lon,
         "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
         "transition_text_ru": item.transition_text_ru,
         "transition_audio_url": item.transition_audio_url,

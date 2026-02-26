@@ -121,7 +121,19 @@ def get_tour_manifest(
     for item in sorted(tour.items, key=lambda i: i.order_index):
         if item.poi:
             p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
-            pois_data.append({"order_index": item.order_index, **p})
+            # Include override coordinates and effective coordinates
+            poi_lat = item.poi.lat
+            poi_lon = item.poi.lon
+            effective_lat = item.override_lat if item.override_lat is not None else poi_lat
+            effective_lon = item.override_lon if item.override_lon is not None else poi_lon
+            pois_data.append({
+                "order_index": item.order_index, 
+                **p,
+                "override_lat": item.override_lat,
+                "override_lon": item.override_lon,
+                "effective_lat": effective_lat,
+                "effective_lon": effective_lon
+            })
             for n in item.poi.narrations:
                 assets.append({"url": sign_asset_url(n.url), "type": "audio", "owner_id": str(item.poi.id), "locale": n.locale, "duration": n.duration_seconds})
             for m in item.poi.media:

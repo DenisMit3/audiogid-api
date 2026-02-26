@@ -77,11 +77,17 @@ function estimateWalkingTime(km: number): number {
 
 // --- Distance indicator between items ---
 function DistanceIndicator({ fromItem, toItem }: { fromItem: TourItem, toItem: TourItem }) {
-    if (!fromItem.poi_lat || !fromItem.poi_lon || !toItem.poi_lat || !toItem.poi_lon) {
+    // Use effective coordinates (override if set, otherwise POI)
+    const fromLat = fromItem.effective_lat ?? fromItem.override_lat ?? fromItem.poi_lat;
+    const fromLon = fromItem.effective_lon ?? fromItem.override_lon ?? fromItem.poi_lon;
+    const toLat = toItem.effective_lat ?? toItem.override_lat ?? toItem.poi_lat;
+    const toLon = toItem.effective_lon ?? toItem.override_lon ?? toItem.poi_lon;
+    
+    if (!fromLat || !fromLon || !toLat || !toLon) {
         return null;
     }
     
-    const distance = calculateDistance(fromItem.poi_lat, fromItem.poi_lon, toItem.poi_lat, toItem.poi_lon);
+    const distance = calculateDistance(fromLat, fromLon, toLat, toLon);
     const walkTime = estimateWalkingTime(distance);
     
     return (
@@ -212,6 +218,10 @@ type TourItem = {
     poi_title?: string;
     poi_lat?: number;
     poi_lon?: number;
+    override_lat?: number;
+    override_lon?: number;
+    effective_lat?: number;
+    effective_lon?: number;
     poi_published_at?: string;
     transition_text_ru?: string;
     transition_audio_url?: string;
@@ -225,7 +235,7 @@ type Props = {
     onReorder: (items: TourItem[]) => void;
     onAddItem: (poiId: string, poiTitle: string) => void;
     onRemoveItem: (id: string) => void;
-    onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number, transition_audio_url?: string }) => void;
+    onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number, transition_audio_url?: string, override_lat?: number, override_lon?: number }) => void;
     onAddNewPoi?: (lat: number, lon: number, title: string) => Promise<string | null>;
     onPoiPublishChange?: () => void;
 };
@@ -351,6 +361,14 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
         });
     };
 
+    // Handle marker drag - save override coordinates
+    const handleMarkerDrag = useCallback((itemId: string, lat: number, lon: number) => {
+        onUpdateItem(itemId, {
+            override_lat: lat,
+            override_lon: lon
+        } as any);
+    }, [onUpdateItem]);
+
     // Calculate total route stats
     const routeStats = useMemo(() => {
         let totalDistance = 0;
@@ -360,8 +378,13 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
         for (let i = 0; i < sortedItems.length - 1; i++) {
             const from = sortedItems[i];
             const to = sortedItems[i + 1];
-            if (from.poi_lat && from.poi_lon && to.poi_lat && to.poi_lon) {
-                const dist = calculateDistance(from.poi_lat, from.poi_lon, to.poi_lat, to.poi_lon);
+            // Use effective coordinates
+            const fromLat = from.effective_lat ?? from.override_lat ?? from.poi_lat;
+            const fromLon = from.effective_lon ?? from.override_lon ?? from.poi_lon;
+            const toLat = to.effective_lat ?? to.override_lat ?? to.poi_lat;
+            const toLon = to.effective_lon ?? to.override_lon ?? to.poi_lon;
+            if (fromLat && fromLon && toLat && toLon) {
+                const dist = calculateDistance(fromLat, fromLon, toLat, toLon);
                 totalDistance += dist;
                 totalWalkTime += estimateWalkingTime(dist);
             }
@@ -570,6 +593,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
                         items={sortedItems} 
                         onRemoveItem={onRemoveItem}
                         onMapClick={handleMapClick}
+                        onMarkerDrag={handleMarkerDrag}
                         selectedItemId={selectedItemId}
                         isAddMode={isAddMode}
                     />

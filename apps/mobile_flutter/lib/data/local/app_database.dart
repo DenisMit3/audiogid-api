@@ -48,6 +48,9 @@ class TourItems extends Table {
   TextColumn get poiId =>
       text().references(Pois, #id, onDelete: KeyAction.cascade)();
   IntColumn get orderIndex => integer()();
+  // Override coordinates - if set, used instead of POI coordinates for this tour
+  RealColumn get overrideLat => real().nullable()();
+  RealColumn get overrideLon => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

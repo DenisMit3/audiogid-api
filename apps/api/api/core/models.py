@@ -139,9 +139,9 @@ class TourItem(SQLModel, table=True):
     transition_text_ru: Optional[str] = None
     transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None  # Recommended stay time
-    # Override coordinates - if set, used instead of POI coordinates for this tour
-    override_lat: Optional[float] = Field(default=None)
-    override_lon: Optional[float] = Field(default=None)
+    # Override coordinates - TEMPORARILY COMMENTED until migration is applied manually
+    # override_lat: Optional[float] = Field(default=None)
+    # override_lon: Optional[float] = Field(default=None)
     tour: Optional[Tour] = Relationship(back_populates="items")
     poi: Optional[Poi] = Relationship(back_populates="tour_items")
 

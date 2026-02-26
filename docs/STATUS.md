@@ -2,7 +2,7 @@
 
 Living document tracking the implementation status of features defined in `PRODUCT.md` and `FIX_DEPLOY_PLAN.md`.
 
-**Последнее обновление:** 2026-02-24
+**Последнее обновление:** 2026-02-25
 
 ## Legend
 - ✅ **Done**: Implemented, tested, and merged.
@@ -76,6 +76,15 @@ Living document tracking the implementation status of features defined in `PRODU
 3. **Analytics**: Verify data events in Firebase/PostHog.
 
 ---
+
+## Recent Changes (2026-02-25)
+- ✅ Исправлена авторизация в админ-панели - переход с localStorage на HttpOnly cookies
+- ✅ Исправлены bulk-операции POI (публикация, снятие, удаление)
+- ✅ Исправлена сериализация GeoAlchemy2 в PoiVersion
+- ✅ Исправлена загрузка медиа (source_page_url теперь опционален)
+- ✅ Удалены дублирующие API роуты с x-admin-token
+- ✅ Улучшены сообщения валидации публикации (русский язык, конкретные подсказки)
+- ✅ Исправлено модальное окно публикации POI
 
 ## Recent Changes (2026-02-24)
 - ✅ Route Builder улучшен с расчетом расстояний и drag-n-drop маркерами

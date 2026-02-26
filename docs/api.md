@@ -5,8 +5,8 @@
 ## Каноническая спецификация
 Файл [openapi.yaml](../apps/api/openapi.yaml) является единственным источником истины.
 
-**Текущая версия API:** 1.14.0  
-**Production Server:** http://82.202.159.64:8000/v1
+**Текущая версия API:** 1.15.0  
+**Production Server:** http://82.202.159.64/v1 (через nginx proxy)
 
 ## Политика кеширования (Caching Safety)
 Для обеспечения производительности и безопасности в Serverless среде применяются следующие правила:
@@ -103,11 +103,54 @@ ALTER TABLE tour_items ADD COLUMN transition_audio_url VARCHAR;
 | `/admin/tours` | GET | Список туров (с пагинацией) |
 | `/admin/tours/{id}` | GET | Детали тура с items |
 | `/admin/tours` | POST | Создание тура |
-| `/admin/tours/{id}` | PUT | Обновление тура |
+| `/admin/tours/{id}` | PATCH | Обновление тура |
 | `/admin/tours/{id}` | DELETE | Удаление тура |
 | `/admin/tours/{id}/items` | POST | Добавление POI в тур |
-| `/admin/tours/{id}/items/{item_id}` | PUT | Обновление item тура |
+| `/admin/tours/{id}/items/{item_id}` | PATCH | Обновление item тура |
 | `/admin/tours/{id}/items/{item_id}` | DELETE | Удаление item из тура |
+| `/admin/tours/{id}/publish` | POST | Публикация тура |
+| `/admin/tours/{id}/unpublish` | POST | Снятие с публикации |
+| `/admin/pois` | GET | Список POI (с пагинацией) |
+| `/admin/pois` | POST | Создание POI |
+| `/admin/pois/{id}` | GET | Детали POI |
+| `/admin/pois/{id}` | PATCH | Обновление POI |
+| `/admin/pois/{id}` | DELETE | Удаление POI (soft delete) |
+| `/admin/pois/{id}/publish` | POST | Публикация POI |
+| `/admin/pois/{id}/unpublish` | POST | Снятие с публикации |
+| `/admin/pois/{id}/media` | POST | Добавление медиа |
+| `/admin/pois/{id}/sources` | POST | Добавление источника |
+| `/admin/pois/{id}/narrations` | POST | Добавление озвучки |
+| `/admin/pois/bulk-publish` | POST | Массовая публикация |
+| `/admin/pois/bulk-unpublish` | POST | Массовое снятие |
+| `/admin/pois/bulk-delete` | POST | Массовое удаление |
+| `/admin/cities` | GET | Список городов |
+| `/admin/cities/{id}` | GET | Детали города |
+| `/admin/cities/{id}` | PATCH | Обновление города |
+| `/admin/media/presign` | POST | Presigned URL для загрузки |
+
+## Требования для публикации
+
+### POI (Точка интереса)
+Для публикации POI необходимо:
+- Название (RU) - минимум 3 символа
+- Описание (RU) - минимум 10 символов
+- Координаты (lat, lon) - выбрать точку на карте
+- Город - должен быть выбран
+
+### Тур
+Для публикации тура необходимо:
+- Название (RU) - минимум 3 символа
+- Город - должен быть выбран
+- Минимум одна точка в маршруте
+- Все точки маршрута должны быть опубликованы
+- Не должно быть удаленных точек в маршруте
+
+## Авторизация Admin API
+
+Все `/admin/*` endpoints используют JWT авторизацию через HttpOnly cookie `token`.
+- Cookie устанавливается при логине через `/auth/login/email`
+- Фронтенд использует `credentials: 'include'` для передачи cookie
+- Прокси (`/api/proxy/*`) извлекает токен из cookie и передает в `Authorization: Bearer` заголовке
 
 ### Ops API
 | Endpoint | Метод | Описание |

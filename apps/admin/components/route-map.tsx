@@ -306,25 +306,46 @@ export function RouteMap({
     isAddMode = false
 }: Props) {
     const [mounted, setMounted] = useState(false);
+    // Track marker positions locally for polyline updates
+    const [markerPositions, setMarkerPositions] = useState<Record<string, [number, number]>>({});
     
     useEffect(() => {
         setMounted(true);
     }, []);
 
+    // Initialize marker positions from items
+    useEffect(() => {
+        const positions: Record<string, [number, number]> = {};
+        items.forEach(item => {
+            const lat = item.effective_lat ?? item.override_lat ?? item.poi_lat;
+            const lon = item.effective_lon ?? item.override_lon ?? item.poi_lon;
+            if (lat && lon) {
+                positions[item.id] = [lat, lon];
+            }
+        });
+        setMarkerPositions(positions);
+    }, [items]);
+
+    // Handle marker position update (called when marker is dragged and saved)
+    const handleMarkerPositionUpdate = useCallback((itemId: string, lat: number, lon: number) => {
+        setMarkerPositions(prev => ({
+            ...prev,
+            [itemId]: [lat, lon]
+        }));
+        if (onMarkerDrag) {
+            onMarkerDrag(itemId, lat, lon);
+        }
+    }, [onMarkerDrag]);
+
     const polylinePositions = useMemo(() => {
         return items
             .filter(i => {
-                const lat = i.effective_lat ?? i.override_lat ?? i.poi_lat;
-                const lon = i.effective_lon ?? i.override_lon ?? i.poi_lon;
-                return lat && lon;
+                const pos = markerPositions[i.id];
+                return pos && pos[0] && pos[1];
             })
             .sort((a, b) => a.order_index - b.order_index)
-            .map(i => {
-                const lat = i.effective_lat ?? i.override_lat ?? i.poi_lat;
-                const lon = i.effective_lon ?? i.override_lon ?? i.poi_lon;
-                return [lat!, lon!] as [number, number];
-            });
-    }, [items]);
+            .map(i => markerPositions[i.id]);
+    }, [items, markerPositions]);
 
     // Центр карты - Калининград по умолчанию
     const center: [number, number] = polylinePositions.length > 0 ? polylinePositions[0] : [54.71, 20.51];
@@ -369,7 +390,7 @@ export function RouteMap({
                             item={item}
                             index={idx}
                             onRemove={onRemoveItem}
-                            onDrag={onMarkerDrag}
+                            onDrag={handleMarkerPositionUpdate}
                             isSelected={item.id === selectedItemId}
                         />
                     ))

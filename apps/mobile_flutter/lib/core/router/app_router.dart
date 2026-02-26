@@ -21,6 +21,7 @@ import 'package:mobile_flutter/presentation/screens/itinerary_screen.dart';
 import 'package:mobile_flutter/presentation/screens/itinerary_create_screen.dart';
 import 'package:mobile_flutter/presentation/screens/itinerary_viewer_screen.dart';
 import 'package:mobile_flutter/presentation/screens/free_walking_mode/free_walking_mode_screen.dart';
+import 'package:mobile_flutter/presentation/screens/settings_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/analytics/analytics_observer.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -184,6 +185,10 @@ GoRouter router(Ref ref) {
           }
           return const Scaffold(body: Center(child: Text("Invalid Link")));
         },
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
 
       // Deep Link Redirects

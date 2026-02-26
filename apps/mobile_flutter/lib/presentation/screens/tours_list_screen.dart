@@ -226,6 +226,11 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
           tooltip: 'Сменить город',
           onPressed: () => ref.read(selectedCityProvider.notifier).clear(),
         ),
+        AccessibleIconButton(
+          icon: Icons.settings_outlined,
+          tooltip: 'Настройки',
+          onPressed: () => context.push('/settings'),
+        ),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(110),

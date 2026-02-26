@@ -144,19 +144,17 @@ class OfflineTourRepository implements TourRepository {
             '[DEBUG f46abe] syncTours: first tour coverImage=${first.coverImage}, descriptionRu=${first.descriptionRu}');
       }
       // #endregion
-      
+
       // Получаем ID туров с сервера
-      final serverTourIds = tours
-          .cast<api.TourSnippet>()
-          .map((t) => t.id!)
-          .toSet();
-      
+      final serverTourIds =
+          tours.cast<api.TourSnippet>().map((t) => t.id!).toSet();
+
       // Удаляем туры из локальной БД, которых нет на сервере
       await _db.tourDao.deleteToursNotIn(citySlug, serverTourIds.toList());
       // #region agent log
       print('[DEBUG f46abe] syncTours: deleted tours not in server list');
       // #endregion
-      
+
       final companions = tours
           .cast<api.TourSnippet>()
           .map((t) => ToursCompanion(
@@ -265,11 +263,12 @@ class OfflineTourRepository implements TourRepository {
         final externalLinksRaw = poiData['external_links'];
         String? externalLinksStr;
         if (externalLinksRaw is List) {
-          externalLinksStr = externalLinksRaw.isNotEmpty ? externalLinksRaw.join(',') : null;
+          externalLinksStr =
+              externalLinksRaw.isNotEmpty ? externalLinksRaw.join(',') : null;
         } else if (externalLinksRaw is String) {
           externalLinksStr = externalLinksRaw;
         }
-        
+
         final poiComp = PoisCompanion(
           id: Value(poiId),
           citySlug: Value(citySlug),

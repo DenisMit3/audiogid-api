@@ -23,12 +23,12 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
 
       final tour = rows.first.readTable(tours);
       final items = <TourItemWithPoi>[];
-      
+
       for (final row in rows) {
         final item = row.readTableOrNull(tourItems);
         final poi = row.readTableOrNull(pois);
         if (item == null) continue;
-        
+
         // Load narrations for this POI
         List<Narration> poiNarrations = [];
         List<MediaData> poiMedia = [];
@@ -36,11 +36,10 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
           poiNarrations = await (select(narrations)
                 ..where((n) => n.poiId.equals(poi.id)))
               .get();
-          poiMedia = await (select(media)
-                ..where((m) => m.poiId.equals(poi.id)))
-              .get();
+          poiMedia =
+              await (select(media)..where((m) => m.poiId.equals(poi.id))).get();
         }
-        
+
         items.add(TourItemWithPoi(item, poi, poiNarrations, poiMedia));
       }
 
@@ -80,8 +79,7 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
       return;
     }
     await (delete(tours)
-          ..where((t) =>
-              t.citySlug.equals(citySlug) & t.id.isNotIn(serverIds)))
+          ..where((t) => t.citySlug.equals(citySlug) & t.id.isNotIn(serverIds)))
         .go();
   }
 

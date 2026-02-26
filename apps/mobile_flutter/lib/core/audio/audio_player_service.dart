@@ -23,8 +23,9 @@ class AudioPlayerService {
     required List<TourItemEntity> items,
     required int initialIndex,
   }) async {
-    print('[DEBUG AUDIO] loadPlaylist called: tourId=$tourId, items=${items.length}, initialIndex=$initialIndex');
-    
+    print(
+        '[DEBUG AUDIO] loadPlaylist called: tourId=$tourId, items=${items.length}, initialIndex=$initialIndex');
+
     // 1. Check entitlements
     final grantsStream = _ref.read(entitlementGrantsProvider);
     final grants = grantsStream.value ?? <EntitlementGrant>[];
@@ -49,17 +50,18 @@ class AudioPlayerService {
     for (final item in items) {
       final poi = item.poi;
       if (poi == null) continue;
-      
+
       final narration = poi.narrations.isNotEmpty ? poi.narrations.first : null;
       String? audioUrl;
 
-      print('[DEBUG AUDIO] POI: ${poi.titleRu}, narrations=${poi.narrations.length}, transitionAudioUrl=${item.transitionAudioUrl}');
+      print(
+          '[DEBUG AUDIO] POI: ${poi.titleRu}, narrations=${poi.narrations.length}, transitionAudioUrl=${item.transitionAudioUrl}');
 
       // Audio selection logic:
       // 1. If has full access AND narration exists -> use narration
       // 2. If transitionAudioUrl exists -> use it (always available, it's tour content)
       // 3. If no access and previewAudioUrl exists -> use preview
-      
+
       if (hasAccess && narration != null) {
         // Full access with narration
         if (kidsMode && narration.kidsUrl != null) {
@@ -130,7 +132,7 @@ class AudioPlayerService {
     } else {
       await _handler.skipToQueueItem(0);
     }
-    
+
     // Auto-play
     await _handler.play();
     print('[DEBUG AUDIO] Play started');

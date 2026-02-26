@@ -1,0 +1,117 @@
+﻿{
+    "tour":  {
+                 "id":  "db086913-97cd-4716-8f7e-1d14f31f40af",
+                 "city_slug":  "nizhny_novgorod",
+                 "title_ru":  "ÐÐ¸Ð¼Ð¿Ð¾Ð¿Ð¾",
+                 "duration_minutes":  90,
+                 "description_ru":  "ÐÐ¾Ð¾Ð¿Ð°ÑÐº Â«ÐÐ¸Ð¼Ð¿Ð¾Ð¿Ð¾Â» â ÑÐ²Ð»ÐµÐºÐ°ÑÐµÐ»ÑÐ½Ð¾Ðµ Ð¿ÑÑÐµÑÐµÑÑÐ²Ð¸Ðµ Ð² Ð¼Ð¸Ñ Ð¶Ð¸Ð²Ð¾ÑÐ½ÑÑ\u0085 Ð² ÑÐ°Ð¼Ð¾Ð¼ ÑÐµÑÐ´ÑÐµ ÐÐ¸Ð¶Ð½ÐµÐ³Ð¾ ÐÐ¾Ð²Ð³Ð¾ÑÐ¾Ð´Ð°!\nÐÑÐ¸Ð³Ð»Ð°ÑÐ°ÐµÐ¼ Ð²Ð°Ñ Ð¿Ð¾Ð·Ð½Ð°ÐºÐ¾Ð¼Ð¸ÑÑÑÑ Ñ Ð±Ð¾Ð»ÐµÐµ ÑÐµÐ¼ 200 Ð²Ð¸Ð´Ð°Ð¼Ð¸ Ð¶Ð¸Ð²Ð¾ÑÐ½ÑÑ\u0085 ÑÐ¾ Ð²ÑÐµÑ\u0085 ÑÐ³Ð¾Ð»ÐºÐ¾Ð² Ð¿Ð»Ð°Ð½ÐµÑÑ. ÐÐ´ÐµÑÑ Ð²Ñ ÑÐ²Ð¸Ð´Ð¸ÑÐµ ÑÐµÐ´ÐºÐ¸Ñ\u0085 Ð±ÐµÐ»ÑÑ\u0085 Ð»ÑÐ²Ð¾Ð², Ð³ÑÐ°ÑÐ¸Ð¾Ð·Ð½ÑÑ\u0085 Ð¶Ð¸ÑÐ°ÑÐ¾Ð², Ð·Ð°Ð±Ð°Ð²Ð½ÑÑ\u0085 Ð»ÐµÐ¼ÑÑÐ¾Ð² Ð¸ Ð¼Ð½Ð¾Ð³Ð¸Ñ\u0085 Ð´ÑÑÐ³Ð¸Ñ\u0085 Ð¾Ð±Ð¸ÑÐ°ÑÐµÐ»ÐµÐ¹ ÑÐ°Ð²Ð°Ð½Ð½Ñ Ð¸ ÑÑÐ¾Ð¿Ð¸ÐºÐ¾Ð².",
+                 "published_at":  "2026-02-26T11:15:47.560809"
+             },
+    "pois":  [
+                 {
+                     "order_index":  0,
+                     "lat":  54.728238483724006,
+                     "id":  "9c96732c-8c47-4108-b217-f712c0789b42",
+                     "lon":  20.462667496764666,
+                     "category":  "landmark",
+                     "osm_id":  null,
+                     "address":  "",
+                     "wikidata_id":  null,
+                     "cover_image":  "",
+                     "opening_hours":  null,
+                     "preview_audio_url":  null,
+                     "title_ru":  "666",
+                     "external_links":  [
+
+                                        ],
+                     "description_ru":  "ÐºÐ°ÑÑÐ° ÐºÐ°ÑÑÐ° ÐºÐ°ÑÑÐ°",
+                     "override_lat":  54.70754980484942,
+                     "override_lon":  20.477159727899522,
+                     "effective_lat":  54.70754980484942,
+                     "effective_lon":  20.477159727899522,
+                     "transition_text_ru":  "ÑÑÑÑÑÑÑÑÑÑÑÑÑÑ",
+                     "transition_audio_url":  "http://82.202.159.64:9000/audiogid/tour/977ff23e-1485-49ed-92d2-54c780bd47c4/7bfbca9a-efa9-44ae-a340-285702a4fc31.mp3",
+                     "narrations":  [
+
+                                    ],
+                     "media":  [
+
+                               ]
+                 },
+                 {
+                     "order_index":  1,
+                     "lat":  54.71693645575415,
+                     "id":  "6c2018e9-cf5d-49ab-9cf9-b21567e4213c",
+                     "lon":  20.48379991214686,
+                     "category":  "landmark",
+                     "osm_id":  null,
+                     "address":  "",
+                     "wikidata_id":  null,
+                     "cover_image":  "",
+                     "opening_hours":  null,
+                     "preview_audio_url":  null,
+                     "title_ru":  "ÑÑÑ",
+                     "external_links":  [
+
+                                        ],
+                     "description_ru":  "Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸Ð¸ ÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑÑ",
+                     "override_lat":  null,
+                     "override_lon":  null,
+                     "effective_lat":  54.71693645575415,
+                     "effective_lon":  20.48379991214686,
+                     "transition_text_ru":  "ÐÑÐ¾Ð¹Ð´Ð¸ÑÐµ 50 Ð¼ÐµÑÑÐ¾Ð² Ð½Ð°Ð¿ÑÐ°Ð²Ð¾",
+                     "transition_audio_url":  "http://82.202.159.64:9000/audiogid/tour/461940eb-9594-4223-bcb9-cf75162863bc/948cbdda-d3e1-40fb-a77f-3dbd00ce2c0a_Sherlock_BBC_-_Zvuk_SMS_SHerloka_ston_Iren_Adler_75190375.mp3",
+                     "narrations":  [
+
+                                    ],
+                     "media":  [
+
+                               ]
+                 },
+                 {
+                     "order_index":  2,
+                     "lat":  54.71445751951559,
+                     "id":  "f54ce23e-b85a-48eb-89e0-68b36a605de2",
+                     "lon":  20.45409496642691,
+                     "category":  "landmark",
+                     "osm_id":  null,
+                     "address":  "ÐÐ°Ð»Ð¸Ð½Ð¸Ð½Ð³ÑÐ°Ð´, Ð¡Ð¢ ÐÐ°ÑÐ¸Ð»ÑÐº, Ð¦ÐµÐ½ÑÑÐ°Ð»ÑÐ½Ð°Ñ ÑÐ»Ð¸ÑÐ°, 60",
+                     "wikidata_id":  null,
+                     "cover_image":  "",
+                     "opening_hours":  null,
+                     "preview_audio_url":  null,
+                     "title_ru":  "ÐÐ¾Ð³Ð¸Ð»Ð° ÐÐ°Ð½ÑÐ°",
+                     "external_links":  [
+
+                                        ],
+                     "description_ru":  "Ð¿ÑÑÐµÑÐµÑÑÐ²Ð¸Ðµ Ð² Ð¼Ð¸Ñ Ð¶Ð¸Ð²Ð¾ÑÐ½ÑÑ\u0085 Ð² ÑÐ°Ð¼Ð¾Ð¼ ÑÐµÑÐ´ÑÐµ ÐÐ¸Ð¶Ð½ÐµÐ³Ð¾ ",
+                     "override_lat":  54.71748403288878,
+                     "override_lon":  20.459811368235943,
+                     "effective_lat":  54.71748403288878,
+                     "effective_lon":  20.459811368235943,
+                     "transition_text_ru":  "ÐÑÐµ ÑÑÑÑ ÑÑÑÑ Ð½ÑÐ¶Ð½Ð¾ Ð¿ÑÐ¾Ð¹ÑÐ¸ Ð²Ð¿ÑÐ°Ð²Ð¾",
+                     "transition_audio_url":  "http://82.202.159.64:9000/audiogid/tour/0024e78c-3008-4df6-9444-aeaeb2aae4c0/e4e0daad-b9f0-42f5-be11-1236b2b0d481.mp3",
+                     "narrations":  [
+                                        {
+                                            "id":  "0c4975c9-f338-4978-ac82-0cbc8bd7c7e3",
+                                            "url":  "http://82.202.159.64:9000/audiogid/poi/f54ce23e-b85a-48eb-89e0-68b36a605de2/7a15cec0-25dd-404b-af11-181f412d8a09_Sherlock_BBC_-_Zvuk_SMS_SHerloka_ston_Iren_Adler_75190375.mp3",
+                                            "locale":  "ru",
+                                            "duration_seconds":  8.071837,
+                                            "transcript":  "Ð¾ÑÐ¾ÑÐ´"
+                                        }
+                                    ],
+                     "media":  [
+
+                               ]
+                 }
+             ],
+    "assets":  [
+                   {
+                       "url":  "http://82.202.159.64:9000/audiogid/poi/f54ce23e-b85a-48eb-89e0-68b36a605de2/7a15cec0-25dd-404b-af11-181f412d8a09_Sherlock_BBC_-_Zvuk_SMS_SHerloka_ston_Iren_Adler_75190375.mp3",
+                       "type":  "audio",
+                       "owner_id":  "f54ce23e-b85a-48eb-89e0-68b36a605de2",
+                       "locale":  "ru",
+                       "duration":  8.071837
+                   }
+               ]
+}

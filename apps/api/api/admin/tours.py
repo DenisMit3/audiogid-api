@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from ..core.models import (
     Tour, TourBase, TourSource, TourMedia, TourItem, Poi, AuditLog, User, TourVersion, 
-    ContentValidationIssue, AppEvent, PoiBase
+    ContentValidationIssue, AppEvent, PoiBase, Entitlement
 )
 from ..auth.deps import get_current_admin, get_session, require_permission
 
@@ -575,3 +575,80 @@ def bulk_unpublish_tours(
              count += 1
     if count: session.commit()
     return {"count": count, "status": "unpublished"}
+
+@router.post("/admin/tours/{tour_id}/make-free")
+def make_tour_free(
+    tour_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(require_permission('tour:write'))
+):
+    """Создает бесплатный entitlement для тура (доступ без покупки)"""
+    tour = session.get(Tour, tour_id)
+    if not tour or tour.is_deleted:
+        raise HTTPException(404, "Tour not found")
+    
+    # Проверяем, есть ли уже бесплатный entitlement
+    existing = session.exec(
+        select(Entitlement).where(
+            Entitlement.scope == "tour",
+            Entitlement.ref == str(tour_id),
+            Entitlement.price_amount == 0
+        )
+    ).first()
+    
+    if existing:
+        return {"status": "already_free", "entitlement_id": str(existing.id)}
+    
+    # Создаем бесплатный entitlement
+    entitlement = Entitlement(
+        slug=f"tour_{tour_id}_free",
+        scope="tour",
+        ref=str(tour_id),
+        title_ru=f"Бесплатный доступ: {tour.title_ru}",
+        price_amount=0,
+        price_currency="RUB",
+        is_active=True
+    )
+    session.add(entitlement)
+    
+    audit = AuditLog(
+        action="MAKE_TOUR_FREE", 
+        target_id=tour_id, 
+        actor_type="admin_user", 
+        actor_fingerprint=str(user.id)
+    )
+    session.add(audit)
+    session.commit()
+    
+    return {"status": "created", "entitlement_id": str(entitlement.id)}
+
+@router.delete("/admin/tours/{tour_id}/make-free")
+def remove_tour_free_access(
+    tour_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    user: User = Depends(require_permission('tour:write'))
+):
+    """Удаляет бесплатный entitlement для тура"""
+    entitlement = session.exec(
+        select(Entitlement).where(
+            Entitlement.scope == "tour",
+            Entitlement.ref == str(tour_id),
+            Entitlement.price_amount == 0
+        )
+    ).first()
+    
+    if not entitlement:
+        raise HTTPException(404, "Free entitlement not found")
+    
+    session.delete(entitlement)
+    
+    audit = AuditLog(
+        action="REMOVE_TOUR_FREE", 
+        target_id=tour_id, 
+        actor_type="admin_user", 
+        actor_fingerprint=str(user.id)
+    )
+    session.add(audit)
+    session.commit()
+    
+    return {"status": "removed"}

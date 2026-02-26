@@ -60,6 +60,19 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
     return (delete(tours)..where((t) => t.citySlug.equals(citySlug))).go();
   }
 
+  /// Удаляет туры города, которых нет в списке serverIds
+  Future<void> deleteToursNotIn(String citySlug, List<String> serverIds) async {
+    if (serverIds.isEmpty) {
+      // Если сервер вернул пустой список - удаляем все туры города
+      await deleteToursByCity(citySlug);
+      return;
+    }
+    await (delete(tours)
+          ..where((t) =>
+              t.citySlug.equals(citySlug) & t.id.isNotIn(serverIds)))
+        .go();
+  }
+
   /// Upsert одного TourItem (для инкрементального обновления)
   Future<void> upsertTourItem(TourItemsCompanion item) async {
     await into(tourItems).insertOnConflictUpdate(item);

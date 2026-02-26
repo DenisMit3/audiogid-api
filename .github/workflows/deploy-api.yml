@@ -40,7 +40,7 @@ jobs:
             pip install -q -r requirements.txt"
           
           # Apply critical SQL migrations directly (bypass Alembic permission issues)
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && python -c 'from api.core.database import engine; from sqlalchemy import text; conn = engine.connect(); conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT\")); conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT\")); conn.commit(); print(\"Migration applied\")' || echo 'Migration skipped'"
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && set -a && . .env && set +a && python -c 'from api.core.database import engine; from sqlalchemy import text; conn = engine.connect(); conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT\")); conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT\")); conn.commit(); print(\"Migration applied\")' || echo 'Migration skipped'"
           
           # Run database migrations (stamp if upgrade fails due to existing columns)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \

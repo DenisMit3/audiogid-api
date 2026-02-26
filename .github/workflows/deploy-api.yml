@@ -37,6 +37,9 @@ jobs:
           # Install dependencies on server
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && pip install -q -r requirements.txt"
           
+          # Apply override coords migration via script
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && python scripts/apply_override_coords.py" || echo "Migration skipped"
+          
           # Run database migrations (stamp if upgrade fails due to existing columns)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && alembic upgrade head 2>&1 || (echo 'Upgrade failed, stamping head...' && alembic stamp head)"
           
@@ -48,33 +51,3 @@ jobs:
           curl -f http://${SERVER}/v1/ops/health || exit 1
           
           echo "API deployed successfully!"
-
-      - name: Apply override coords migration
-        env:
-          SERVER: 82.202.159.64
-          USER: user1
-          APP_DIR: /opt/audiogid
-        run: |
-          ssh ${USER}@${SERVER} 'cd /opt/audiogid/api && . venv/bin/activate && python -c "
-from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv(Path(\".env\"))
-import os
-db_url = os.environ.get(\"DATABASE_URL\")
-if db_url:
-    from sqlalchemy import create_engine, text, inspect
-    engine = create_engine(db_url)
-    with engine.connect() as conn:
-        cols = [c[\"name\"] for c in inspect(conn).get_columns(\"tour_items\")]
-        print(f\"Columns: {cols}\")
-        if \"override_lat\" not in cols:
-            conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN override_lat FLOAT\"))
-            print(\"Added override_lat\")
-        if \"override_lon\" not in cols:
-            conn.execute(text(\"ALTER TABLE tour_items ADD COLUMN override_lon FLOAT\"))
-            print(\"Added override_lon\")
-        conn.commit()
-        print(\"Migration done\")
-else:
-    print(\"No DATABASE_URL\")
-"' || echo "Migration skipped"

@@ -128,12 +128,12 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
     final existing = await (select(narrations)
           ..where((t) => t.id.equals(narration.id.value)))
         .getSingleOrNull();
-    
+
     var toInsert = narration;
     if (existing?.localPath != null && !narration.localPath.present) {
       toInsert = narration.copyWith(localPath: Value(existing!.localPath));
     }
-    
+
     await into(narrations).insertOnConflictUpdate(toInsert);
   }
 

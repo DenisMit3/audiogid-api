@@ -37,8 +37,8 @@ jobs:
           # Install dependencies on server
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && pip install -q -r requirements.txt"
           
-          # Apply override coords migration via script
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && python scripts/apply_override_coords.py" || echo "Migration skipped"
+          # Apply override coords migration via psql (needs owner privileges)
+          ssh ${USER}@${SERVER} "sudo -u postgres psql -d audiogid -c 'ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT; ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT;'" || echo "Migration skipped"
           
           # Run database migrations (stamp if upgrade fails due to existing columns)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && alembic upgrade head 2>&1 || (echo 'Upgrade failed, stamping head...' && alembic stamp head)"

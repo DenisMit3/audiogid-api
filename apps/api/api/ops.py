@@ -1,39 +1,29 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Header
 from sqlmodel import Session, text, select
 from .core.database import engine
+import logging
 
 router = APIRouter()
-
-# Минимальные версии приложений для работы
-# Формат: "platform": {"min_version": "x.y.z", "store_url": "..."}
-APP_VERSIONS = {
-    "android": {
-        "min_version": "1.0.0",
-        "current_version": "1.0.0",
-        "store_url": "https://play.google.com/store/apps/details?id=app.audiogid.mobile_flutter",
-        "force_update": False,  # Если True - блокирует приложение
-    },
-    "ios": {
-        "min_version": "1.0.0",
-        "current_version": "1.0.0",
-        "store_url": "https://apps.apple.com/app/audiogid/id000000000",
-        "force_update": False,
-    }
-}
+logger = logging.getLogger(__name__)
 
 def get_session():
     with Session(engine) as session:
         yield session
 
 @router.get("/ops/app-version")
-def check_app_version(platform: str = "android", version: str = "1.0.0"):
+def check_app_version(
+    platform: str = "android",
+    version: str = "1.0.0",
+    device_id: str = None  # Опционально для аналитики
+):
     """
     Проверка версии приложения.
-    Возвращает информацию о необходимости обновления.
+    Читает конфигурацию из ENV переменных.
     
     Args:
         platform: "android" или "ios"
         version: текущая версия приложения (например "1.0.0")
+        device_id: идентификатор устройства (опционально, для аналитики)
     
     Returns:
         - update_required: bool - требуется ли обновление
@@ -43,15 +33,25 @@ def check_app_version(platform: str = "android", version: str = "1.0.0"):
         - store_url: str - ссылка на магазин приложений
         - message_ru: str - сообщение для пользователя
     """
+    from .core.config import config
+    
     platform = platform.lower()
-    if platform not in APP_VERSIONS:
+    if platform not in ["android", "ios"]:
         platform = "android"
     
-    config = APP_VERSIONS[platform]
-    min_version = config["min_version"]
-    current_version = config["current_version"]
+    # Читаем из config (ENV)
+    if platform == "android":
+        min_version = config.APP_MIN_VERSION_ANDROID
+        current_version = config.APP_CURRENT_VERSION_ANDROID
+        force_update_enabled = config.APP_FORCE_UPDATE_ANDROID
+        store_url = config.APP_STORE_URL_ANDROID
+    else:
+        min_version = config.APP_MIN_VERSION_IOS
+        current_version = config.APP_CURRENT_VERSION_IOS
+        force_update_enabled = config.APP_FORCE_UPDATE_IOS
+        store_url = config.APP_STORE_URL_IOS
     
-    # Сравниваем версии
+    # Парсинг версий
     def parse_version(v: str) -> tuple:
         try:
             parts = v.split(".")
@@ -66,19 +66,35 @@ def check_app_version(platform: str = "android", version: str = "1.0.0"):
     update_required = user_ver < min_ver
     update_available = user_ver < current_ver
     
-    message_ru = None
-    if update_required:
-        message_ru = "Ваша версия приложения устарела. Пожалуйста, обновите приложение для продолжения работы."
-    elif update_available:
-        message_ru = "Доступна новая версия приложения. Рекомендуем обновить для лучшей работы."
+    # Логирование для аналитики
+    logger.info(
+        "app_version_check",
+        extra={
+            "platform": platform,
+            "user_version": version,
+            "min_version": min_version,
+            "current_version": current_version,
+            "update_required": update_required,
+            "update_available": update_available,
+            "device_id": device_id,
+        }
+    )
+    
+    # Сообщение
+    message_ru = config.APP_UPDATE_MESSAGE_RU or None
+    if not message_ru:
+        if update_required:
+            message_ru = "Ваша версия приложения устарела. Пожалуйста, обновите приложение для продолжения работы."
+        elif update_available:
+            message_ru = "Доступна новая версия приложения с улучшениями и исправлениями."
     
     return {
         "update_required": update_required,
         "update_available": update_available,
-        "force_update": config["force_update"] and update_required,
+        "force_update": force_update_enabled and update_required,
         "min_version": min_version,
         "current_version": current_version,
-        "store_url": config["store_url"],
+        "store_url": store_url,
         "message_ru": message_ru
     }
 

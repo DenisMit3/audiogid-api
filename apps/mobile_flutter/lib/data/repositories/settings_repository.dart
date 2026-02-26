@@ -10,6 +10,8 @@ class SettingsRepository {
   static const _tourProgressKey = 'tour_progress';
   static const _onboardingCompletedKey = 'onboarding_completed';
   static const _locationPermissionAskedKey = 'location_permission_asked';
+  static const _playbackSpeedKey = 'playback_speed';
+  static const _lastUpdatePromptKey = 'last_update_prompt_date';
 
   SettingsRepository(this._prefs);
 
@@ -89,6 +91,32 @@ class SettingsRepository {
 
   Future<void> setLocationPermissionAsked(bool asked) async {
     await _prefs.setBool(_locationPermissionAskedKey, asked);
+  }
+
+  // Playback Speed
+  double getPlaybackSpeed() {
+    return _prefs.getDouble(_playbackSpeedKey) ?? 1.0;
+  }
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    await _prefs.setDouble(_playbackSpeedKey, speed);
+  }
+
+  // Update Prompt (Soft Update Banner)
+  DateTime? getLastUpdatePromptDate() {
+    final ms = _prefs.getInt(_lastUpdatePromptKey);
+    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  }
+
+  Future<void> setLastUpdatePromptDate(DateTime date) async {
+    await _prefs.setInt(_lastUpdatePromptKey, date.millisecondsSinceEpoch);
+  }
+
+  bool shouldShowUpdatePrompt() {
+    final lastPrompt = getLastUpdatePromptDate();
+    if (lastPrompt == null) return true;
+    // Показывать не чаще 1 раза в сутки
+    return DateTime.now().difference(lastPrompt).inHours >= 24;
   }
 }
 

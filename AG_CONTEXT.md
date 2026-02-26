@@ -30,7 +30,7 @@ API и Mobile готовы к релизу. Инфраструктура миг�
 - **Ops**: Structured Logs, Health Checks, Fail-fast Config
 - **Security**: HMAC Signing, Gating, Idempotency
 - **Offline**: Manifest endpoint для ресурсов города
-- **Versioning**: Endpoint проверки версии приложения
+- **Versioning**: Dynamic App Versioning via ENV (force update + soft reminder)
 
 ## 4. Source of Truth
 - **Spec**: `apps/api/openapi.yaml`

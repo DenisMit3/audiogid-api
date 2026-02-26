@@ -72,8 +72,23 @@ class AppConfig:
         # Redis (Optional, used for shared rate limiting)
         self.REDIS_URL = os.getenv("REDIS_URL")
 
+        # App Versioning (Dynamic via ENV)
+        self.APP_MIN_VERSION_ANDROID = os.getenv("APP_MIN_VERSION_ANDROID", "1.0.0").strip()
+        self.APP_MIN_VERSION_IOS = os.getenv("APP_MIN_VERSION_IOS", "1.0.0").strip()
+        self.APP_CURRENT_VERSION_ANDROID = os.getenv("APP_CURRENT_VERSION_ANDROID", "1.0.0").strip()
+        self.APP_CURRENT_VERSION_IOS = os.getenv("APP_CURRENT_VERSION_IOS", "1.0.0").strip()
+        self.APP_FORCE_UPDATE_ANDROID = os.getenv("APP_FORCE_UPDATE_ANDROID", "false").lower() == "true"
+        self.APP_FORCE_UPDATE_IOS = os.getenv("APP_FORCE_UPDATE_IOS", "false").lower() == "true"
+        self.APP_STORE_URL_ANDROID = os.getenv(
+            "APP_STORE_URL_ANDROID",
+            "https://play.google.com/store/apps/details?id=app.audiogid.mobile_flutter"
+        ).strip()
+        self.APP_STORE_URL_IOS = os.getenv(
+            "APP_STORE_URL_IOS",
+            "https://apps.apple.com/app/audiogid/id000000000"
+        ).strip()
+        self.APP_UPDATE_MESSAGE_RU = os.getenv("APP_UPDATE_MESSAGE_RU", "").strip()
 
-            
     def _get_required(self, key: str) -> str:
         value = os.getenv(key)
         if not value:

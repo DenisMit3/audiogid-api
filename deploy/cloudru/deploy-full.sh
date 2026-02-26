@@ -33,6 +33,17 @@ S3_SECRET_KEY=minioadmin
 S3_BUCKET_NAME=audiogid
 S3_PUBLIC_URL=http://82.202.159.64:9000/audiogid
 PUBLIC_URL=http://82.202.159.64:8000
+
+# App Versioning
+APP_MIN_VERSION_ANDROID=1.0.0
+APP_CURRENT_VERSION_ANDROID=1.0.0
+APP_FORCE_UPDATE_ANDROID=false
+APP_MIN_VERSION_IOS=1.0.0
+APP_CURRENT_VERSION_IOS=1.0.0
+APP_FORCE_UPDATE_IOS=false
+APP_STORE_URL_ANDROID=https://play.google.com/store/apps/details?id=app.audiogid.mobile_flutter
+APP_STORE_URL_IOS=https://apps.apple.com/app/audiogid/id000000000
+APP_UPDATE_MESSAGE_RU=
 EOF
 
 # 3. Install Python dependencies

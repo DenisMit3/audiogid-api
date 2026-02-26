@@ -121,6 +121,26 @@ class PoiDao extends DatabaseAccessor<AppDatabase> with _$PoiDaoMixin {
   Future<void> upsertPoiBasic(PoisCompanion poi) async {
     await into(pois).insertOnConflictUpdate(poi);
   }
+
+  /// Upsert одну narration (сохраняет localPath если уже есть)
+  Future<void> upsertNarration(NarrationsCompanion narration) async {
+    // Preserve local path if exists
+    final existing = await (select(narrations)
+          ..where((t) => t.id.equals(narration.id.value)))
+        .getSingleOrNull();
+    
+    var toInsert = narration;
+    if (existing?.localPath != null && !narration.localPath.present) {
+      toInsert = narration.copyWith(localPath: Value(existing!.localPath));
+    }
+    
+    await into(narrations).insertOnConflictUpdate(toInsert);
+  }
+
+  /// Upsert один media файл
+  Future<void> upsertMedia(MediaCompanion mediaItem) async {
+    await into(media).insertOnConflictUpdate(mediaItem);
+  }
 }
 
 class PoiWithDetails {

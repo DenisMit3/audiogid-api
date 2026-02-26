@@ -120,23 +120,50 @@ def get_tour_manifest(
     for m in tour.media: assets.append({"url": sign_asset_url(m.url), "type": m.media_type, "owner_id": str(tour.id)})
     for item in sorted(tour.items, key=lambda i: i.order_index):
         if item.poi:
-            p = item.poi.model_dump(include={'id', 'title_ru', 'description_ru', 'lat', 'lon'})
+            p = item.poi.model_dump(include={
+                'id', 'title_ru', 'description_ru', 'lat', 'lon',
+                'category', 'address', 'cover_image', 'opening_hours',
+                'external_links', 'wikidata_id', 'osm_id', 'preview_audio_url'
+            })
             # Include override coordinates and effective coordinates
-            # Use getattr for backward compatibility if columns don't exist yet
             poi_lat = item.poi.lat
             poi_lon = item.poi.lon
             override_lat = getattr(item, 'override_lat', None)
             override_lon = getattr(item, 'override_lon', None)
             effective_lat = override_lat if override_lat is not None else poi_lat
             effective_lon = override_lon if override_lon is not None else poi_lon
+            
+            # Include narrations and media inline for sync
+            narrations_data = [
+                {
+                    "id": str(n.id),
+                    "url": sign_asset_url(n.url),
+                    "locale": n.locale,
+                    "duration_seconds": n.duration_seconds,
+                    "transcript": n.transcript
+                }
+                for n in item.poi.narrations
+            ]
+            media_data = [
+                {
+                    "id": str(m.id),
+                    "url": sign_asset_url(m.url),
+                    "type": m.media_type
+                }
+                for m in item.poi.media
+            ]
+            
             pois_data.append({
                 "order_index": item.order_index, 
                 **p,
                 "override_lat": override_lat,
                 "override_lon": override_lon,
                 "effective_lat": effective_lat,
-                "effective_lon": effective_lon
+                "effective_lon": effective_lon,
+                "narrations": narrations_data,
+                "media": media_data
             })
+            # Also add to assets for backward compatibility
             for n in item.poi.narrations:
                 assets.append({"url": sign_asset_url(n.url), "type": "audio", "owner_id": str(item.poi.id), "locale": n.locale, "duration": n.duration_seconds})
             for m in item.poi.media:

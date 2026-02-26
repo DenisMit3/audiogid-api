@@ -226,7 +226,7 @@ class OfflineTourRepository implements TourRepository {
             '[DEBUG f46abe] syncTourDetail: processing POI $i: id=$poiId, title=${poiData['title_ru']}');
         // #endregion
 
-        // Upsert POI
+        // Upsert POI with all fields
         final poiComp = PoisCompanion(
           id: Value(poiId),
           citySlug: Value(citySlug),
@@ -234,8 +234,40 @@ class OfflineTourRepository implements TourRepository {
           descriptionRu: Value(poiData['description_ru']),
           lat: Value((poiData['lat'] as num?)?.toDouble() ?? 0.0),
           lon: Value((poiData['lon'] as num?)?.toDouble() ?? 0.0),
+          category: Value(poiData['category']),
+          openingHours: Value(poiData['opening_hours']),
+          externalLinks: Value(poiData['external_links']),
+          wikidataId: Value(poiData['wikidata_id']),
+          osmId: Value(poiData['osm_id']),
+          previewAudioUrl: Value(poiData['preview_audio_url']),
         );
         await _db.poiDao.upsertPoiBasic(poiComp);
+
+        // Upsert Narrations
+        final narrationsData = poiData['narrations'] as List<dynamic>? ?? [];
+        for (final n in narrationsData) {
+          final narrComp = NarrationsCompanion(
+            id: Value(n['id'] as String),
+            poiId: Value(poiId),
+            url: Value(n['url'] as String? ?? ''),
+            locale: Value(n['locale'] as String? ?? 'ru'),
+            durationSeconds: Value((n['duration_seconds'] as num?)?.toDouble()),
+            transcript: Value(n['transcript'] as String?),
+          );
+          await _db.poiDao.upsertNarration(narrComp);
+        }
+
+        // Upsert Media
+        final mediaData = poiData['media'] as List<dynamic>? ?? [];
+        for (final m in mediaData) {
+          final mediaComp = MediaCompanion(
+            id: Value(m['id'] as String),
+            poiId: Value(poiId),
+            url: Value(m['url'] as String? ?? ''),
+            mediaType: Value(m['type'] as String? ?? 'image'),
+          );
+          await _db.poiDao.upsertMedia(mediaComp);
+        }
 
         // Upsert TourItem with override coordinates
         final itemId = const Uuid().v4();

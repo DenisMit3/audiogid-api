@@ -39,22 +39,8 @@ jobs:
             . venv/bin/activate && \
             pip install -q -r requirements.txt"
           
-          # Apply critical SQL migrations directly using psql
-          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && python -c \"
-import os
-from dotenv import load_dotenv
-load_dotenv()
-db_url = os.getenv('DATABASE_URL', '')
-print(f'DB URL found: {bool(db_url)}')
-if db_url:
-    from sqlalchemy import create_engine, text
-    engine = create_engine(db_url)
-    with engine.connect() as conn:
-        conn.execute(text('ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT'))
-        conn.execute(text('ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT'))
-        conn.commit()
-        print('Migration applied: override_lat/lon columns added')
-\" || echo 'Migration skipped'"
+          # Apply critical SQL migrations directly
+          ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && source venv/bin/activate && python scripts/apply_override_coords.py || echo 'Migration skipped'"
           
           # Run database migrations (stamp if upgrade fails due to existing columns)
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && \

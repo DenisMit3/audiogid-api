@@ -3,7 +3,7 @@ import '../app_database.dart';
 
 part 'tour_dao.g.dart';
 
-@DriftAccessor(tables: [Tours, TourItems, Pois])
+@DriftAccessor(tables: [Tours, TourItems, Pois, Narrations, Media])
 class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
   TourDao(AppDatabase db) : super(db);
 
@@ -18,19 +18,31 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
     ])
       ..where(tours.id.equals(tourId));
 
-    return query.watch().map((rows) {
+    return query.watch().asyncMap((rows) async {
       if (rows.isEmpty) return null;
 
       final tour = rows.first.readTable(tours);
-      final items = rows
-          .map((row) {
-            final item = row.readTableOrNull(tourItems);
-            final poi = row.readTableOrNull(pois);
-            if (item == null) return null;
-            return TourItemWithPoi(item, poi);
-          })
-          .whereType<TourItemWithPoi>()
-          .toList();
+      final items = <TourItemWithPoi>[];
+      
+      for (final row in rows) {
+        final item = row.readTableOrNull(tourItems);
+        final poi = row.readTableOrNull(pois);
+        if (item == null) continue;
+        
+        // Load narrations for this POI
+        List<Narration> poiNarrations = [];
+        List<MediaData> poiMedia = [];
+        if (poi != null) {
+          poiNarrations = await (select(narrations)
+                ..where((n) => n.poiId.equals(poi.id)))
+              .get();
+          poiMedia = await (select(media)
+                ..where((m) => m.poiId.equals(poi.id)))
+              .get();
+        }
+        
+        items.add(TourItemWithPoi(item, poi, poiNarrations, poiMedia));
+      }
 
       items.sort((a, b) => a.item.orderIndex.compareTo(b.item.orderIndex));
 
@@ -73,6 +85,11 @@ class TourDao extends DatabaseAccessor<AppDatabase> with _$TourDaoMixin {
         .go();
   }
 
+  /// Удаляет все TourItems для указанного тура
+  Future<void> deleteTourItems(String tourId) {
+    return (delete(tourItems)..where((t) => t.tourId.equals(tourId))).go();
+  }
+
   /// Upsert одного TourItem (для инкрементального обновления)
   Future<void> upsertTourItem(TourItemsCompanion item) async {
     await into(tourItems).insertOnConflictUpdate(item);
@@ -88,5 +105,7 @@ class TourWithItems {
 class TourItemWithPoi {
   final TourItem item;
   final Poi? poi;
-  TourItemWithPoi(this.item, this.poi);
+  final List<Narration> narrations;
+  final List<MediaData> media;
+  TourItemWithPoi(this.item, this.poi, this.narrations, this.media);
 }

@@ -6,6 +6,7 @@ import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/core/location/location_service.dart';
 import 'package:mobile_flutter/data/repositories/poi_repository.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/data/services/notification_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -182,9 +183,17 @@ class FreeWalkingService extends _$FreeWalkingService {
   }
 
   Future<void> _playPoi(Poi poi) async {
+    // Create a temporary TourItemEntity for single POI playback
+    final tempItem = TourItemEntity(
+      id: 'temp_${poi.id}',
+      tourId: 'free_walking',
+      poiId: poi.id,
+      orderIndex: 0,
+      poi: poi,
+    );
     await ref.read(audioPlayerServiceProvider).loadPlaylist(
         tourId: 'free_walking', // Pseudo ID
-        pois: [poi],
+        items: [tempItem],
         initialIndex: 0);
     await ref.read(audioPlayerServiceProvider).play();
   }

@@ -81,8 +81,7 @@ class Pois extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {citySlug, osmId}, // Composite unique
-        {citySlug, category}, // Index hint
+        {citySlug, osmId}, // Composite unique for OSM imported POIs
       ];
 }
 
@@ -197,7 +196,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -266,6 +265,15 @@ class AppDatabase extends _$AppDatabase {
           if (from < 15) {
             await m.addColumn(tourItems, tourItems.transitionTextRu);
             await m.addColumn(tourItems, tourItems.transitionAudioUrl);
+          }
+          if (from < 16) {
+            // Remove incorrect unique constraint on (city_slug, category)
+            // SQLite doesn't support DROP CONSTRAINT, so we recreate the table
+            // For simplicity, just drop the unique index if it exists
+            await customStatement(
+                'DROP INDEX IF EXISTS sqlite_autoindex_pois_2');
+            await customStatement(
+                'DROP INDEX IF EXISTS pois_city_slug_category_unique');
           }
         },
       );

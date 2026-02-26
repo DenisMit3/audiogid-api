@@ -441,13 +441,12 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                       onPressed: () {
                         final validItems =
                             items.where((i) => i.poi != null).toList();
-                        final poiList = validItems.map((i) => i.poi!).toList();
                         // Find the actual index in the filtered list
                         final targetIndex = validItems.indexOf(item);
 
                         ref.read(audioPlayerServiceProvider).loadPlaylist(
                               tourId: tour.id,
-                              pois: poiList,
+                              items: validItems,
                               initialIndex: targetIndex,
                             );
                       },

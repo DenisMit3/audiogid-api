@@ -4,14 +4,14 @@ from .core.database import engine
 
 router = APIRouter()
 
-# РњРёРЅРёРјР°Р»СЊРЅС‹Рµ РІРµСЂСЃРёРё РїСЂРёР»РѕР¶РµРЅРёР№ РґР»СЏ СЂР°Р±РѕС‚С‹
-# Р¤РѕСЂРјР°С‚: "platform": {"min_version": "x.y.z", "store_url": "..."}
+# Минимальные версии приложений для работы
+# Формат: "platform": {"min_version": "x.y.z", "store_url": "..."}
 APP_VERSIONS = {
     "android": {
         "min_version": "1.0.0",
         "current_version": "1.0.0",
         "store_url": "https://play.google.com/store/apps/details?id=app.audiogid.mobile_flutter",
-        "force_update": False,  # Р•СЃР»Рё True - Р±Р»РѕРєРёСЂСѓРµС‚ РїСЂРёР»РѕР¶РµРЅРёРµ
+        "force_update": False,  # Если True - блокирует приложение
     },
     "ios": {
         "min_version": "1.0.0",
@@ -28,20 +28,20 @@ def get_session():
 @router.get("/ops/app-version")
 def check_app_version(platform: str = "android", version: str = "1.0.0"):
     """
-    РџСЂРѕРІРµСЂРєР° РІРµСЂСЃРёРё РїСЂРёР»РѕР¶РµРЅРёСЏ.
-    Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РѕР±РЅРѕРІР»РµРЅРёСЏ.
+    Проверка версии приложения.
+    Возвращает информацию о необходимости обновления.
     
     Args:
-        platform: "android" РёР»Рё "ios"
-        version: С‚РµРєСѓС‰Р°СЏ РІРµСЂСЃРёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ (РЅР°РїСЂРёРјРµСЂ "1.0.0")
+        platform: "android" или "ios"
+        version: текущая версия приложения (например "1.0.0")
     
     Returns:
-        - update_required: bool - С‚СЂРµР±СѓРµС‚СЃСЏ Р»Рё РѕР±РЅРѕРІР»РµРЅРёРµ
-        - force_update: bool - Р±Р»РѕРєРёСЂРѕРІР°С‚СЊ Р»Рё РїСЂРёР»РѕР¶РµРЅРёРµ Р±РµР· РѕР±РЅРѕРІР»РµРЅРёСЏ
-        - min_version: str - РјРёРЅРёРјР°Р»СЊРЅР°СЏ РїРѕРґРґРµСЂР¶РёРІР°РµРјР°СЏ РІРµСЂСЃРёСЏ
-        - current_version: str - РїРѕСЃР»РµРґРЅСЏСЏ РґРѕСЃС‚СѓРїРЅР°СЏ РІРµСЂСЃРёСЏ
-        - store_url: str - СЃСЃС‹Р»РєР° РЅР° РјР°РіР°Р·РёРЅ РїСЂРёР»РѕР¶РµРЅРёР№
-        - message_ru: str - СЃРѕРѕР±С‰РµРЅРёРµ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+        - update_required: bool - требуется ли обновление
+        - force_update: bool - блокировать ли приложение без обновления
+        - min_version: str - минимальная поддерживаемая версия
+        - current_version: str - последняя доступная версия
+        - store_url: str - ссылка на магазин приложений
+        - message_ru: str - сообщение для пользователя
     """
     platform = platform.lower()
     if platform not in APP_VERSIONS:
@@ -51,7 +51,7 @@ def check_app_version(platform: str = "android", version: str = "1.0.0"):
     min_version = config["min_version"]
     current_version = config["current_version"]
     
-    # РЎСЂР°РІРЅРёРІР°РµРј РІРµСЂСЃРёРё
+    # Сравниваем версии
     def parse_version(v: str) -> tuple:
         try:
             parts = v.split(".")
@@ -68,9 +68,9 @@ def check_app_version(platform: str = "android", version: str = "1.0.0"):
     
     message_ru = None
     if update_required:
-        message_ru = "Р’Р°С€Р° РІРµСЂСЃРёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ СѓСЃС‚Р°СЂРµР»Р°. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РѕР±РЅРѕРІРёС‚Рµ РїСЂРёР»РѕР¶РµРЅРёРµ РґР»СЏ РїСЂРѕРґРѕР»Р¶РµРЅРёСЏ СЂР°Р±РѕС‚С‹."
+        message_ru = "Ваша версия приложения устарела. Пожалуйста, обновите приложение для продолжения работы."
     elif update_available:
-        message_ru = "Р”РѕСЃС‚СѓРїРЅР° РЅРѕРІР°СЏ РІРµСЂСЃРёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ. Р РµРєРѕРјРµРЅРґСѓРµРј РѕР±РЅРѕРІРёС‚СЊ РґР»СЏ Р»СѓС‡С€РµР№ СЂР°Р±РѕС‚С‹."
+        message_ru = "Доступна новая версия приложения. Рекомендуем обновить для лучшей работы."
     
     return {
         "update_required": update_required,
@@ -163,7 +163,7 @@ def init_skus(session: Session = Depends(get_session)):
             slug=slug,
             scope="city",
             ref="kaliningrad_city",
-            title_ru="Р”РѕСЃС‚СѓРї Рє РљР°Р»РёРЅРёРЅРіСЂР°РґСѓ (Р’СЃРµ С‚СѓСЂС‹)",
+            title_ru="Доступ к Калининграду (Все туры)",
             price_amount=499.0
         )
         session.add(ent)
@@ -186,7 +186,7 @@ def init_free_tour(tour_id: str, session: Session = Depends(get_session)):
         slug=slug,
         scope="tour",
         ref=tour_id,
-        title_ru="Р‘РµСЃРїР»Р°С‚РЅС‹Р№ РґРѕСЃС‚СѓРї Рє С‚СѓСЂСѓ",
+        title_ru="Бесплатный доступ к туру",
         price_amount=0,
         price_currency="RUB",
         is_active=True

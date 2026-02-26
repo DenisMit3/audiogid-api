@@ -94,20 +94,20 @@ class TourModeService extends _$TourModeService {
   void startTour(Tour tour, {int startIndex = 0}) {
     // Build mapping
     _itemToQueueIndex.clear();
-    final validPois = <Poi>[];
+    final validItems = <TourItemEntity>[];
 
     if (tour.items != null) {
       int queueIdx = 0;
       for (int i = 0; i < tour.items!.length; i++) {
         final item = tour.items![i];
         if (item.poi != null) {
-          validPois.add(item.poi!);
+          validItems.add(item);
           _itemToQueueIndex[i] = queueIdx;
           queueIdx++;
         }
       }
     }
-    _queueLength = validPois.length;
+    _queueLength = validItems.length;
     _lastAutoPlayPoiId = null;
     _lastOffRouteNotificationTime = null;
 
@@ -121,13 +121,13 @@ class TourModeService extends _$TourModeService {
     _listenToLocation();
     _listenToPlayback();
 
-    if (validPois.isNotEmpty) {
+    if (validItems.isNotEmpty) {
       // Find initial queue index
       final initialQueueIndex = _itemToQueueIndex[startIndex] ?? 0;
 
       ref.read(audioPlayerServiceProvider).loadPlaylist(
             tourId: tour.id,
-            pois: validPois,
+            items: validItems,
             initialIndex: initialQueueIndex,
           );
     }

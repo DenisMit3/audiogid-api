@@ -93,9 +93,25 @@ class OfflineTourRepository implements TourRepository {
                           lon: i.poi!.lon,
                           previewAudioUrl: i.poi!.previewAudioUrl,
                           hasAccess: i.poi!.hasAccess,
-                          narrations: [], // Not loaded here for simplicity
-                          media: [], // Not loaded here for simplicity
-                          sources: [], // Not loaded here for simplicity
+                          narrations: i.narrations
+                              .map((n) => domain.Narration(
+                                    id: n.id,
+                                    url: n.url,
+                                    locale: n.locale,
+                                    durationSeconds: n.durationSeconds,
+                                    transcript: n.transcript,
+                                    localPath: n.localPath,
+                                    kidsUrl: n.kidsUrl,
+                                  ))
+                              .toList(),
+                          media: i.media
+                              .map((m) => domain.Media(
+                                    id: m.id,
+                                    url: m.url,
+                                    mediaType: m.mediaType,
+                                  ))
+                              .toList(),
+                          sources: [],
                         )
                       : null,
                 ))
@@ -217,6 +233,9 @@ class OfflineTourRepository implements TourRepository {
       print('[DEBUG f46abe] syncTourDetail: poisData count=${poisData.length}');
       // #endregion
 
+      // Delete old tour items before inserting new ones to avoid duplicates
+      await _db.tourDao.deleteTourItems(id);
+
       // Обновляем тур
       final tourComp = ToursCompanion(
         id: Value(tourData['id']),
@@ -242,6 +261,15 @@ class OfflineTourRepository implements TourRepository {
         // #endregion
 
         // Upsert POI with all fields
+        // Handle external_links - API returns List, but DB expects String (JSON)
+        final externalLinksRaw = poiData['external_links'];
+        String? externalLinksStr;
+        if (externalLinksRaw is List) {
+          externalLinksStr = externalLinksRaw.isNotEmpty ? externalLinksRaw.join(',') : null;
+        } else if (externalLinksRaw is String) {
+          externalLinksStr = externalLinksRaw;
+        }
+        
         final poiComp = PoisCompanion(
           id: Value(poiId),
           citySlug: Value(citySlug),
@@ -251,7 +279,7 @@ class OfflineTourRepository implements TourRepository {
           lon: Value((poiData['lon'] as num?)?.toDouble() ?? 0.0),
           category: Value(poiData['category']),
           openingHours: Value(poiData['opening_hours']),
-          externalLinks: Value(poiData['external_links']),
+          externalLinks: Value(externalLinksStr),
           wikidataId: Value(poiData['wikidata_id']),
           osmId: Value(poiData['osm_id']),
           previewAudioUrl: Value(poiData['preview_audio_url']),

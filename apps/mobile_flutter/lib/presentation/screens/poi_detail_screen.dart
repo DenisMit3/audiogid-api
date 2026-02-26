@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
@@ -602,11 +603,19 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
   }
 
   void _playAudio(Poi poi) {
+    // Create a temporary TourItemEntity for single POI playback
+    final tempItem = TourItemEntity(
+      id: 'temp_${poi.id}',
+      tourId: 'single_poi',
+      poiId: poi.id,
+      orderIndex: 0,
+      poi: poi,
+    );
     ref
         .read(audioPlayerServiceProvider)
         .loadPlaylist(
           tourId: 'single_poi',
-          pois: [poi],
+          items: [tempItem],
           initialIndex: 0,
         )
         .then((_) {

@@ -6,6 +6,7 @@ import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
+import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/domain/entities/entitlement_grant.dart';
 
 class AudioPlayerService {
@@ -14,16 +15,20 @@ class AudioPlayerService {
 
   AudioPlayerService(this._handler, this._ref);
 
-  /// Loads a playlist for a tour using the provided POIs.
+  /// Loads a playlist for a tour using the provided TourItems.
   /// Handles entitlement checking (Preview vs Full).
+  /// Uses narrations if available, falls back to transitionAudioUrl.
   Future<void> loadPlaylist({
     required String tourId,
-    required List<Poi> pois,
+    required List<TourItemEntity> items,
     required int initialIndex,
   }) async {
+    print('[DEBUG AUDIO] loadPlaylist called: tourId=$tourId, items=${items.length}, initialIndex=$initialIndex');
+    
     // 1. Check entitlements
     final grantsStream = _ref.read(entitlementGrantsProvider);
     final grants = grantsStream.value ?? <EntitlementGrant>[];
+    final pois = items.where((i) => i.poi != null).map((i) => i.poi!).toList();
     final hasAccess = grants.any((g) =>
         g.isActive &&
         ((g.scope == 'tour' && g.ref == tourId) ||
@@ -32,6 +37,8 @@ class AudioPlayerService {
                 g.ref == pois.first.citySlug) ||
             g.scope == 'all_access'));
 
+    print('[DEBUG AUDIO] hasAccess=$hasAccess, grants=${grants.length}');
+
     // Check Kids Mode
     final settingsAsync = _ref.read(settingsRepositoryProvider);
     final kidsMode = settingsAsync.value?.getKidsModeEnabled() ?? false;
@@ -39,29 +46,39 @@ class AudioPlayerService {
     final queue = <MediaItem>[];
 
     // 2. Build Queue
-    for (final poi in pois) {
+    for (final item in items) {
+      final poi = item.poi;
+      if (poi == null) continue;
+      
       final narration = poi.narrations.isNotEmpty ? poi.narrations.first : null;
       String? audioUrl;
 
-      // Gating Logic
-      if (hasAccess) {
-        // Full access: prioritize local file
-        if (narration != null) {
-          if (kidsMode && narration.kidsUrl != null) {
-            // Kids mode enabled and available
-            audioUrl = narration.kidsUrl;
-          } else if (narration.localPath != null &&
-              File(narration.localPath!).existsSync()) {
-            audioUrl = Uri.file(narration.localPath!).toString();
-          } else {
-            audioUrl = narration.url;
-          }
+      print('[DEBUG AUDIO] POI: ${poi.titleRu}, narrations=${poi.narrations.length}, transitionAudioUrl=${item.transitionAudioUrl}');
+
+      // Audio selection logic:
+      // 1. If has full access AND narration exists -> use narration
+      // 2. If transitionAudioUrl exists -> use it (always available, it's tour content)
+      // 3. If no access and previewAudioUrl exists -> use preview
+      
+      if (hasAccess && narration != null) {
+        // Full access with narration
+        if (kidsMode && narration.kidsUrl != null) {
+          audioUrl = narration.kidsUrl;
+        } else if (narration.localPath != null &&
+            File(narration.localPath!).existsSync()) {
+          audioUrl = Uri.file(narration.localPath!).toString();
+        } else {
+          audioUrl = narration.url;
         }
-      } else {
-        // Restricted: Use preview if available
-        if (poi.previewAudioUrl != null) {
-          audioUrl = poi.previewAudioUrl;
-        }
+        print('[DEBUG AUDIO] Using narration: $audioUrl');
+      } else if (item.transitionAudioUrl != null) {
+        // Transition audio is always available (it's part of tour, not gated)
+        audioUrl = item.transitionAudioUrl;
+        print('[DEBUG AUDIO] Using transitionAudioUrl: $audioUrl');
+      } else if (!hasAccess && poi.previewAudioUrl != null) {
+        // Fallback to preview for restricted users
+        audioUrl = poi.previewAudioUrl;
+        print('[DEBUG AUDIO] Using previewAudioUrl: $audioUrl');
       }
 
       if (audioUrl != null) {
@@ -78,29 +95,45 @@ class AudioPlayerService {
             'isPreview': !hasAccess && (audioUrl == poi.previewAudioUrl),
           },
         ));
+      } else {
+        print('[DEBUG AUDIO] No audio URL for POI: ${poi.titleRu}');
       }
     }
 
-    if (queue.isEmpty) return;
+    print('[DEBUG AUDIO] Queue built: ${queue.length} items');
+
+    if (queue.isEmpty) {
+      print('[DEBUG AUDIO] Queue is empty, returning');
+      return;
+    }
 
     await _handler.stop();
     await _handler.updateQueue(queue);
+    print('[DEBUG AUDIO] Queue updated, starting playback');
 
     // 3. Find correct start index
-    if (initialIndex >= 0 && initialIndex < pois.length) {
-      final startPoiId = pois[initialIndex].id;
-      final indexInQueue =
-          queue.indexWhere((item) => item.extras?['poiId'] == startPoiId);
+    if (initialIndex >= 0 && initialIndex < items.length) {
+      final startPoiId = items[initialIndex].poi?.id;
+      if (startPoiId != null) {
+        final indexInQueue =
+            queue.indexWhere((item) => item.extras?['poiId'] == startPoiId);
 
-      if (indexInQueue != -1) {
-        await _handler.skipToQueueItem(indexInQueue);
+        if (indexInQueue != -1) {
+          await _handler.skipToQueueItem(indexInQueue);
+          print('[DEBUG AUDIO] Skipped to queue item: $indexInQueue');
+        } else {
+          await _handler.skipToQueueItem(0);
+        }
       } else {
-        // Fallback to first if filtered out
         await _handler.skipToQueueItem(0);
       }
     } else {
       await _handler.skipToQueueItem(0);
     }
+    
+    // Auto-play
+    await _handler.play();
+    print('[DEBUG AUDIO] Play started');
   }
 
   Future<void> play() => _handler.play();

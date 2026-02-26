@@ -1073,7 +1073,6 @@ class $PoisTable extends Pois with TableInfo<$PoisTable, Poi> {
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
         {citySlug, osmId},
-        {citySlug, category},
       ];
   @override
   Poi map(Map<String, dynamic> data, {String? tablePrefix}) {

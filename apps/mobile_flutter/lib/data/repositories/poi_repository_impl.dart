@@ -21,67 +21,73 @@ class PoiRepositoryImpl implements PoiRepository {
 
   @override
   Future<void> syncPoi(String id, String citySlug) async {
-    final response = await api.publicPoiPoiIdGet(id, citySlug);
-    if (response != null) {
-      // Map API DTO to Drift Companions
-      final p = response;
+    try {
+      final response = await api.publicPoiPoiIdGet(id, citySlug);
+      if (response != null) {
+        // Map API DTO to Drift Companions
+        final p = response;
 
-      final mainComp = PoisCompanion(
-        id: Value(p.id ?? id),
-        citySlug: Value(citySlug),
-        titleRu: Value(p.titleRu ?? ''),
-        descriptionRu: Value(p.descriptionRu),
-        lat: Value(p.lat?.toDouble() ?? 0.0),
-        lon: Value(p.lon?.toDouble() ?? 0.0),
-        previewAudioUrl: Value(p.previewAudioUrl),
-        hasAccess: Value(p.hasAccess ?? false),
-        category: Value(p.category),
-        // isFavorite preserved? Upsert usually overwrites.
-        // We should check existing and preserve.
-        // actually insertOnConflictUpdate might overwrite isFavorite if we don't set it?
-        // Drift default is insert. On conflict update replacing...
-        // We better read existing isFavorite.
-      );
+        final mainComp = PoisCompanion(
+          id: Value(p.id ?? id),
+          citySlug: Value(citySlug),
+          titleRu: Value(p.titleRu ?? ''),
+          descriptionRu: Value(p.descriptionRu),
+          lat: Value(p.lat?.toDouble() ?? 0.0),
+          lon: Value(p.lon?.toDouble() ?? 0.0),
+          previewAudioUrl: Value(p.previewAudioUrl),
+          hasAccess: Value(p.hasAccess ?? false),
+          category: Value(p.category),
+          // isFavorite preserved? Upsert usually overwrites.
+          // We should check existing and preserve.
+          // actually insertOnConflictUpdate might overwrite isFavorite if we don't set it?
+          // Drift default is insert. On conflict update replacing...
+          // We better read existing isFavorite.
+        );
 
-      // Simple implementation: Use DAO upsert
-      // Need to map children
-      final nars = p.narrations
-          .map((n) => NarrationsCompanion(
-                id: Value(n.id ?? ''),
-                poiId: Value(p.id ?? id),
-                url: Value(n.url ?? ''),
-                locale: Value(n.locale ?? 'ru'),
-                durationSeconds: Value(n.durationSeconds?.toDouble()),
-                transcript: Value(n.transcript),
-                // kidsUrl might not be present in generated client yet if not regenerated
-                // Using dynamic cast for safety during transition if needed,
-                // but ideally client is updated. Assuming updated client:
-                kidsUrl: Value((n as dynamic).kidsUrl as String?),
-              ))
-          .toList();
+        // Simple implementation: Use DAO upsert
+        // Need to map children
+        final nars = p.narrations
+            .map((n) => NarrationsCompanion(
+                  id: Value(n.id ?? ''),
+                  poiId: Value(p.id ?? id),
+                  url: Value(n.url ?? ''),
+                  locale: Value(n.locale ?? 'ru'),
+                  durationSeconds: Value(n.durationSeconds?.toDouble()),
+                  transcript: Value(n.transcript),
+                  // kidsUrl might not be present in generated client yet if not regenerated
+                  // Using dynamic cast for safety during transition if needed,
+                  // but ideally client is updated. Assuming updated client:
+                  kidsUrl: Value((n as dynamic).kidsUrl as String?),
+                ))
+            .toList();
 
-      final meds = p.media
-          .map((m) => MediaCompanion(
-                id: Value(m.id ?? ''),
-                poiId: Value(p.id ?? id),
-                url: Value(m.url ?? ''),
-                mediaType: Value(m.mediaType ?? 'image'),
-                author: Value(m.author),
-                sourcePageUrl: Value(m.sourcePageUrl),
-                licenseType: Value(m.licenseType),
-              ))
-          .toList();
+        final meds = p.media
+            .map((m) => MediaCompanion(
+                  id: Value(m.id ?? ''),
+                  poiId: Value(p.id ?? id),
+                  url: Value(m.url ?? ''),
+                  mediaType: Value(m.mediaType ?? 'image'),
+                  author: Value(m.author),
+                  sourcePageUrl: Value(m.sourcePageUrl),
+                  licenseType: Value(m.licenseType),
+                ))
+            .toList();
 
-      final srcs = p.sources
-          .map((s) => PoiSourcesCompanion(
-                id: Value(s.id ?? ''),
-                poiId: Value(p.id ?? id),
-                name: Value(s.name ?? ''),
-                url: Value(s.url),
-              ))
-          .toList();
+        final srcs = p.sources
+            .map((s) => PoiSourcesCompanion(
+                  id: Value(s.id ?? ''),
+                  poiId: Value(p.id ?? id),
+                  name: Value(s.name ?? ''),
+                  url: Value(s.url),
+                ))
+            .toList();
 
-      await db.poiDao.upsertPoi(mainComp, nars, meds, srcs);
+        await db.poiDao.upsertPoi(mainComp, nars, meds, srcs);
+      }
+    } catch (e) {
+      // POI might not be published separately - this is OK if it's part of a tour
+      // The POI data was already synced via tour manifest
+      print('[DEBUG] syncPoi failed for $id: $e - using cached data from tour');
     }
   }
 

@@ -51,6 +51,9 @@ class TourItems extends Table {
   // Override coordinates - if set, used instead of POI coordinates for this tour
   RealColumn get overrideLat => real().nullable()();
   RealColumn get overrideLon => real().nullable()();
+  // Transition content between POIs
+  TextColumn get transitionTextRu => text().nullable()();
+  TextColumn get transitionAudioUrl => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -194,7 +197,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -259,6 +262,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 14) {
             await m.addColumn(tours, tours.descriptionRu);
             await m.addColumn(tours, tours.coverImage);
+          }
+          if (from < 15) {
+            await m.addColumn(tourItems, tourItems.transitionTextRu);
+            await m.addColumn(tourItems, tourItems.transitionAudioUrl);
           }
         },
       );

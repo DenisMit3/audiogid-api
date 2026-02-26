@@ -160,6 +160,8 @@ def get_tour_manifest(
                 "override_lon": override_lon,
                 "effective_lat": effective_lat,
                 "effective_lon": effective_lon,
+                "transition_text_ru": item.transition_text_ru,
+                "transition_audio_url": item.transition_audio_url,
                 "narrations": narrations_data,
                 "media": media_data
             })
@@ -429,7 +431,18 @@ def get_city_offline_manifest(
     
     for tour in tours:
         tour_dict = tour.model_dump(include={'id', 'title_ru', 'description_ru', 'duration_minutes', 'tour_type', 'cover_image', 'distance_km'})
-        tour_dict['item_ids'] = [str(item.poi_id) for item in sorted(tour.items, key=lambda i: i.order_index) if item.poi_id]
+        tour_dict['items'] = [
+            {
+                'poi_id': str(item.poi_id),
+                'order_index': item.order_index,
+                'override_lat': item.override_lat,
+                'override_lon': item.override_lon,
+                'transition_text_ru': item.transition_text_ru,
+                'transition_audio_url': item.transition_audio_url,
+            }
+            for item in sorted(tour.items, key=lambda i: i.order_index)
+            if item.poi_id
+        ]
         tours_data.append(tour_dict)
         
         # Медиа тура

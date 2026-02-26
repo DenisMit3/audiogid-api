@@ -33,6 +33,8 @@ class TourItemEntity {
   final int orderIndex;
   final double? overrideLat;
   final double? overrideLon;
+  final String? transitionTextRu;
+  final String? transitionAudioUrl;
   final Poi? poi;
 
   // Computed: use override if set, otherwise use POI coordinates
@@ -46,6 +48,8 @@ class TourItemEntity {
     required this.orderIndex,
     this.overrideLat,
     this.overrideLon,
+    this.transitionTextRu,
+    this.transitionAudioUrl,
     this.poi,
   });
 }

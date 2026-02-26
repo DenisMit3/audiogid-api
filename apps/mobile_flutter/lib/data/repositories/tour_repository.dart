@@ -81,6 +81,8 @@ class OfflineTourRepository implements TourRepository {
                   orderIndex: i.item.orderIndex,
                   overrideLat: i.item.overrideLat,
                   overrideLon: i.item.overrideLon,
+                  transitionTextRu: i.item.transitionTextRu,
+                  transitionAudioUrl: i.item.transitionAudioUrl,
                   poi: i.poi != null
                       ? domain.Poi(
                           id: i.poi!.id,
@@ -273,6 +275,8 @@ class OfflineTourRepository implements TourRepository {
         final itemId = const Uuid().v4();
         final overrideLat = (poiData['override_lat'] as num?)?.toDouble();
         final overrideLon = (poiData['override_lon'] as num?)?.toDouble();
+        final transitionTextRu = poiData['transition_text_ru'] as String?;
+        final transitionAudioUrl = poiData['transition_audio_url'] as String?;
         final itemComp = TourItemsCompanion(
           id: Value(itemId),
           tourId: Value(id),
@@ -280,6 +284,8 @@ class OfflineTourRepository implements TourRepository {
           orderIndex: Value(orderIndex),
           overrideLat: Value(overrideLat),
           overrideLon: Value(overrideLon),
+          transitionTextRu: Value(transitionTextRu),
+          transitionAudioUrl: Value(transitionAudioUrl),
         );
         await _db.tourDao.upsertTourItem(itemComp);
       }

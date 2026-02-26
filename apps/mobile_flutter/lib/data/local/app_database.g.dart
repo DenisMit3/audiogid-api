@@ -1634,8 +1634,41 @@ class $TourItemsTable extends TourItems
   late final GeneratedColumn<int> orderIndex = GeneratedColumn<int>(
       'order_index', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _overrideLatMeta =
+      const VerificationMeta('overrideLat');
   @override
-  List<GeneratedColumn> get $columns => [id, tourId, poiId, orderIndex];
+  late final GeneratedColumn<double> overrideLat = GeneratedColumn<double>(
+      'override_lat', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _overrideLonMeta =
+      const VerificationMeta('overrideLon');
+  @override
+  late final GeneratedColumn<double> overrideLon = GeneratedColumn<double>(
+      'override_lon', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _transitionTextRuMeta =
+      const VerificationMeta('transitionTextRu');
+  @override
+  late final GeneratedColumn<String> transitionTextRu = GeneratedColumn<String>(
+      'transition_text_ru', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _transitionAudioUrlMeta =
+      const VerificationMeta('transitionAudioUrl');
+  @override
+  late final GeneratedColumn<String> transitionAudioUrl =
+      GeneratedColumn<String>('transition_audio_url', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        tourId,
+        poiId,
+        orderIndex,
+        overrideLat,
+        overrideLon,
+        transitionTextRu,
+        transitionAudioUrl
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1671,6 +1704,30 @@ class $TourItemsTable extends TourItems
     } else if (isInserting) {
       context.missing(_orderIndexMeta);
     }
+    if (data.containsKey('override_lat')) {
+      context.handle(
+          _overrideLatMeta,
+          overrideLat.isAcceptableOrUnknown(
+              data['override_lat']!, _overrideLatMeta));
+    }
+    if (data.containsKey('override_lon')) {
+      context.handle(
+          _overrideLonMeta,
+          overrideLon.isAcceptableOrUnknown(
+              data['override_lon']!, _overrideLonMeta));
+    }
+    if (data.containsKey('transition_text_ru')) {
+      context.handle(
+          _transitionTextRuMeta,
+          transitionTextRu.isAcceptableOrUnknown(
+              data['transition_text_ru']!, _transitionTextRuMeta));
+    }
+    if (data.containsKey('transition_audio_url')) {
+      context.handle(
+          _transitionAudioUrlMeta,
+          transitionAudioUrl.isAcceptableOrUnknown(
+              data['transition_audio_url']!, _transitionAudioUrlMeta));
+    }
     return context;
   }
 
@@ -1688,6 +1745,14 @@ class $TourItemsTable extends TourItems
           .read(DriftSqlType.string, data['${effectivePrefix}poi_id'])!,
       orderIndex: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}order_index'])!,
+      overrideLat: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}override_lat']),
+      overrideLon: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}override_lon']),
+      transitionTextRu: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}transition_text_ru']),
+      transitionAudioUrl: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}transition_audio_url']),
     );
   }
 
@@ -1702,11 +1767,19 @@ class TourItem extends DataClass implements Insertable<TourItem> {
   final String tourId;
   final String poiId;
   final int orderIndex;
+  final double? overrideLat;
+  final double? overrideLon;
+  final String? transitionTextRu;
+  final String? transitionAudioUrl;
   const TourItem(
       {required this.id,
       required this.tourId,
       required this.poiId,
-      required this.orderIndex});
+      required this.orderIndex,
+      this.overrideLat,
+      this.overrideLon,
+      this.transitionTextRu,
+      this.transitionAudioUrl});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1714,6 +1787,18 @@ class TourItem extends DataClass implements Insertable<TourItem> {
     map['tour_id'] = Variable<String>(tourId);
     map['poi_id'] = Variable<String>(poiId);
     map['order_index'] = Variable<int>(orderIndex);
+    if (!nullToAbsent || overrideLat != null) {
+      map['override_lat'] = Variable<double>(overrideLat);
+    }
+    if (!nullToAbsent || overrideLon != null) {
+      map['override_lon'] = Variable<double>(overrideLon);
+    }
+    if (!nullToAbsent || transitionTextRu != null) {
+      map['transition_text_ru'] = Variable<String>(transitionTextRu);
+    }
+    if (!nullToAbsent || transitionAudioUrl != null) {
+      map['transition_audio_url'] = Variable<String>(transitionAudioUrl);
+    }
     return map;
   }
 
@@ -1723,6 +1808,18 @@ class TourItem extends DataClass implements Insertable<TourItem> {
       tourId: Value(tourId),
       poiId: Value(poiId),
       orderIndex: Value(orderIndex),
+      overrideLat: overrideLat == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideLat),
+      overrideLon: overrideLon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideLon),
+      transitionTextRu: transitionTextRu == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transitionTextRu),
+      transitionAudioUrl: transitionAudioUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transitionAudioUrl),
     );
   }
 
@@ -1734,6 +1831,11 @@ class TourItem extends DataClass implements Insertable<TourItem> {
       tourId: serializer.fromJson<String>(json['tourId']),
       poiId: serializer.fromJson<String>(json['poiId']),
       orderIndex: serializer.fromJson<int>(json['orderIndex']),
+      overrideLat: serializer.fromJson<double?>(json['overrideLat']),
+      overrideLon: serializer.fromJson<double?>(json['overrideLon']),
+      transitionTextRu: serializer.fromJson<String?>(json['transitionTextRu']),
+      transitionAudioUrl:
+          serializer.fromJson<String?>(json['transitionAudioUrl']),
     );
   }
   @override
@@ -1744,16 +1846,35 @@ class TourItem extends DataClass implements Insertable<TourItem> {
       'tourId': serializer.toJson<String>(tourId),
       'poiId': serializer.toJson<String>(poiId),
       'orderIndex': serializer.toJson<int>(orderIndex),
+      'overrideLat': serializer.toJson<double?>(overrideLat),
+      'overrideLon': serializer.toJson<double?>(overrideLon),
+      'transitionTextRu': serializer.toJson<String?>(transitionTextRu),
+      'transitionAudioUrl': serializer.toJson<String?>(transitionAudioUrl),
     };
   }
 
   TourItem copyWith(
-          {String? id, String? tourId, String? poiId, int? orderIndex}) =>
+          {String? id,
+          String? tourId,
+          String? poiId,
+          int? orderIndex,
+          Value<double?> overrideLat = const Value.absent(),
+          Value<double?> overrideLon = const Value.absent(),
+          Value<String?> transitionTextRu = const Value.absent(),
+          Value<String?> transitionAudioUrl = const Value.absent()}) =>
       TourItem(
         id: id ?? this.id,
         tourId: tourId ?? this.tourId,
         poiId: poiId ?? this.poiId,
         orderIndex: orderIndex ?? this.orderIndex,
+        overrideLat: overrideLat.present ? overrideLat.value : this.overrideLat,
+        overrideLon: overrideLon.present ? overrideLon.value : this.overrideLon,
+        transitionTextRu: transitionTextRu.present
+            ? transitionTextRu.value
+            : this.transitionTextRu,
+        transitionAudioUrl: transitionAudioUrl.present
+            ? transitionAudioUrl.value
+            : this.transitionAudioUrl,
       );
   TourItem copyWithCompanion(TourItemsCompanion data) {
     return TourItem(
@@ -1762,6 +1883,16 @@ class TourItem extends DataClass implements Insertable<TourItem> {
       poiId: data.poiId.present ? data.poiId.value : this.poiId,
       orderIndex:
           data.orderIndex.present ? data.orderIndex.value : this.orderIndex,
+      overrideLat:
+          data.overrideLat.present ? data.overrideLat.value : this.overrideLat,
+      overrideLon:
+          data.overrideLon.present ? data.overrideLon.value : this.overrideLon,
+      transitionTextRu: data.transitionTextRu.present
+          ? data.transitionTextRu.value
+          : this.transitionTextRu,
+      transitionAudioUrl: data.transitionAudioUrl.present
+          ? data.transitionAudioUrl.value
+          : this.transitionAudioUrl,
     );
   }
 
@@ -1771,13 +1902,18 @@ class TourItem extends DataClass implements Insertable<TourItem> {
           ..write('id: $id, ')
           ..write('tourId: $tourId, ')
           ..write('poiId: $poiId, ')
-          ..write('orderIndex: $orderIndex')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('overrideLat: $overrideLat, ')
+          ..write('overrideLon: $overrideLon, ')
+          ..write('transitionTextRu: $transitionTextRu, ')
+          ..write('transitionAudioUrl: $transitionAudioUrl')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tourId, poiId, orderIndex);
+  int get hashCode => Object.hash(id, tourId, poiId, orderIndex, overrideLat,
+      overrideLon, transitionTextRu, transitionAudioUrl);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1785,7 +1921,11 @@ class TourItem extends DataClass implements Insertable<TourItem> {
           other.id == this.id &&
           other.tourId == this.tourId &&
           other.poiId == this.poiId &&
-          other.orderIndex == this.orderIndex);
+          other.orderIndex == this.orderIndex &&
+          other.overrideLat == this.overrideLat &&
+          other.overrideLon == this.overrideLon &&
+          other.transitionTextRu == this.transitionTextRu &&
+          other.transitionAudioUrl == this.transitionAudioUrl);
 }
 
 class TourItemsCompanion extends UpdateCompanion<TourItem> {
@@ -1793,12 +1933,20 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
   final Value<String> tourId;
   final Value<String> poiId;
   final Value<int> orderIndex;
+  final Value<double?> overrideLat;
+  final Value<double?> overrideLon;
+  final Value<String?> transitionTextRu;
+  final Value<String?> transitionAudioUrl;
   final Value<int> rowid;
   const TourItemsCompanion({
     this.id = const Value.absent(),
     this.tourId = const Value.absent(),
     this.poiId = const Value.absent(),
     this.orderIndex = const Value.absent(),
+    this.overrideLat = const Value.absent(),
+    this.overrideLon = const Value.absent(),
+    this.transitionTextRu = const Value.absent(),
+    this.transitionAudioUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TourItemsCompanion.insert({
@@ -1806,6 +1954,10 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
     required String tourId,
     required String poiId,
     required int orderIndex,
+    this.overrideLat = const Value.absent(),
+    this.overrideLon = const Value.absent(),
+    this.transitionTextRu = const Value.absent(),
+    this.transitionAudioUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         tourId = Value(tourId),
@@ -1816,6 +1968,10 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
     Expression<String>? tourId,
     Expression<String>? poiId,
     Expression<int>? orderIndex,
+    Expression<double>? overrideLat,
+    Expression<double>? overrideLon,
+    Expression<String>? transitionTextRu,
+    Expression<String>? transitionAudioUrl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1823,6 +1979,11 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
       if (tourId != null) 'tour_id': tourId,
       if (poiId != null) 'poi_id': poiId,
       if (orderIndex != null) 'order_index': orderIndex,
+      if (overrideLat != null) 'override_lat': overrideLat,
+      if (overrideLon != null) 'override_lon': overrideLon,
+      if (transitionTextRu != null) 'transition_text_ru': transitionTextRu,
+      if (transitionAudioUrl != null)
+        'transition_audio_url': transitionAudioUrl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1832,12 +1993,20 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
       Value<String>? tourId,
       Value<String>? poiId,
       Value<int>? orderIndex,
+      Value<double?>? overrideLat,
+      Value<double?>? overrideLon,
+      Value<String?>? transitionTextRu,
+      Value<String?>? transitionAudioUrl,
       Value<int>? rowid}) {
     return TourItemsCompanion(
       id: id ?? this.id,
       tourId: tourId ?? this.tourId,
       poiId: poiId ?? this.poiId,
       orderIndex: orderIndex ?? this.orderIndex,
+      overrideLat: overrideLat ?? this.overrideLat,
+      overrideLon: overrideLon ?? this.overrideLon,
+      transitionTextRu: transitionTextRu ?? this.transitionTextRu,
+      transitionAudioUrl: transitionAudioUrl ?? this.transitionAudioUrl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1857,6 +2026,18 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
     if (orderIndex.present) {
       map['order_index'] = Variable<int>(orderIndex.value);
     }
+    if (overrideLat.present) {
+      map['override_lat'] = Variable<double>(overrideLat.value);
+    }
+    if (overrideLon.present) {
+      map['override_lon'] = Variable<double>(overrideLon.value);
+    }
+    if (transitionTextRu.present) {
+      map['transition_text_ru'] = Variable<String>(transitionTextRu.value);
+    }
+    if (transitionAudioUrl.present) {
+      map['transition_audio_url'] = Variable<String>(transitionAudioUrl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1870,6 +2051,10 @@ class TourItemsCompanion extends UpdateCompanion<TourItem> {
           ..write('tourId: $tourId, ')
           ..write('poiId: $poiId, ')
           ..write('orderIndex: $orderIndex, ')
+          ..write('overrideLat: $overrideLat, ')
+          ..write('overrideLon: $overrideLon, ')
+          ..write('transitionTextRu: $transitionTextRu, ')
+          ..write('transitionAudioUrl: $transitionAudioUrl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5481,6 +5666,10 @@ typedef $$TourItemsTableCreateCompanionBuilder = TourItemsCompanion Function({
   required String tourId,
   required String poiId,
   required int orderIndex,
+  Value<double?> overrideLat,
+  Value<double?> overrideLon,
+  Value<String?> transitionTextRu,
+  Value<String?> transitionAudioUrl,
   Value<int> rowid,
 });
 typedef $$TourItemsTableUpdateCompanionBuilder = TourItemsCompanion Function({
@@ -5488,6 +5677,10 @@ typedef $$TourItemsTableUpdateCompanionBuilder = TourItemsCompanion Function({
   Value<String> tourId,
   Value<String> poiId,
   Value<int> orderIndex,
+  Value<double?> overrideLat,
+  Value<double?> overrideLon,
+  Value<String?> transitionTextRu,
+  Value<String?> transitionAudioUrl,
   Value<int> rowid,
 });
 
@@ -5538,6 +5731,20 @@ class $$TourItemsTableFilterComposer
 
   ColumnFilters<int> get orderIndex => $composableBuilder(
       column: $table.orderIndex, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get overrideLat => $composableBuilder(
+      column: $table.overrideLat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get overrideLon => $composableBuilder(
+      column: $table.overrideLon, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get transitionTextRu => $composableBuilder(
+      column: $table.transitionTextRu,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get transitionAudioUrl => $composableBuilder(
+      column: $table.transitionAudioUrl,
+      builder: (column) => ColumnFilters(column));
 
   $$ToursTableFilterComposer get tourId {
     final $$ToursTableFilterComposer composer = $composerBuilder(
@@ -5595,6 +5802,20 @@ class $$TourItemsTableOrderingComposer
   ColumnOrderings<int> get orderIndex => $composableBuilder(
       column: $table.orderIndex, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get overrideLat => $composableBuilder(
+      column: $table.overrideLat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get overrideLon => $composableBuilder(
+      column: $table.overrideLon, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get transitionTextRu => $composableBuilder(
+      column: $table.transitionTextRu,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get transitionAudioUrl => $composableBuilder(
+      column: $table.transitionAudioUrl,
+      builder: (column) => ColumnOrderings(column));
+
   $$ToursTableOrderingComposer get tourId {
     final $$ToursTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -5650,6 +5871,18 @@ class $$TourItemsTableAnnotationComposer
 
   GeneratedColumn<int> get orderIndex => $composableBuilder(
       column: $table.orderIndex, builder: (column) => column);
+
+  GeneratedColumn<double> get overrideLat => $composableBuilder(
+      column: $table.overrideLat, builder: (column) => column);
+
+  GeneratedColumn<double> get overrideLon => $composableBuilder(
+      column: $table.overrideLon, builder: (column) => column);
+
+  GeneratedColumn<String> get transitionTextRu => $composableBuilder(
+      column: $table.transitionTextRu, builder: (column) => column);
+
+  GeneratedColumn<String> get transitionAudioUrl => $composableBuilder(
+      column: $table.transitionAudioUrl, builder: (column) => column);
 
   $$ToursTableAnnotationComposer get tourId {
     final $$ToursTableAnnotationComposer composer = $composerBuilder(
@@ -5719,6 +5952,10 @@ class $$TourItemsTableTableManager extends RootTableManager<
             Value<String> tourId = const Value.absent(),
             Value<String> poiId = const Value.absent(),
             Value<int> orderIndex = const Value.absent(),
+            Value<double?> overrideLat = const Value.absent(),
+            Value<double?> overrideLon = const Value.absent(),
+            Value<String?> transitionTextRu = const Value.absent(),
+            Value<String?> transitionAudioUrl = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TourItemsCompanion(
@@ -5726,6 +5963,10 @@ class $$TourItemsTableTableManager extends RootTableManager<
             tourId: tourId,
             poiId: poiId,
             orderIndex: orderIndex,
+            overrideLat: overrideLat,
+            overrideLon: overrideLon,
+            transitionTextRu: transitionTextRu,
+            transitionAudioUrl: transitionAudioUrl,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -5733,6 +5974,10 @@ class $$TourItemsTableTableManager extends RootTableManager<
             required String tourId,
             required String poiId,
             required int orderIndex,
+            Value<double?> overrideLat = const Value.absent(),
+            Value<double?> overrideLon = const Value.absent(),
+            Value<String?> transitionTextRu = const Value.absent(),
+            Value<String?> transitionAudioUrl = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TourItemsCompanion.insert(
@@ -5740,6 +5985,10 @@ class $$TourItemsTableTableManager extends RootTableManager<
             tourId: tourId,
             poiId: poiId,
             orderIndex: orderIndex,
+            overrideLat: overrideLat,
+            overrideLon: overrideLon,
+            transitionTextRu: transitionTextRu,
+            transitionAudioUrl: transitionAudioUrl,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

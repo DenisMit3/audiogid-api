@@ -51,6 +51,17 @@ except Exception as e:
     logger.error(f"Failed to import admin_tours router: {e}")
     admin_tours_router = None
 
+# Import ratings early to debug registration issue
+try:
+    from .admin.ratings import router as admin_ratings_router
+    logger.info("admin_ratings_router imported successfully (early import)")
+    print(f"[STARTUP] admin_ratings_router imported EARLY: {admin_ratings_router}, routes: {len(admin_ratings_router.routes)}")
+except Exception as e:
+    import traceback
+    logger.error(f"Failed to import admin_ratings router (early): {e}\n{traceback.format_exc()}")
+    print(f"[STARTUP] admin_ratings_router FAILED (early): {e}")
+    admin_ratings_router = None
+
 try:
     from .admin.poi import router as admin_pois_router # PR-59 New
 except Exception as e:
@@ -136,16 +147,6 @@ try:
 except Exception as e:
     logger.error(f"Failed to import admin_audit router: {e}")
     admin_audit_router = None
-
-try:
-    from .admin.ratings import router as admin_ratings_router
-    logger.info("admin_ratings_router imported successfully")
-    print(f"[STARTUP] admin_ratings_router imported: {admin_ratings_router}, routes: {len(admin_ratings_router.routes)}")
-except Exception as e:
-    import traceback
-    logger.error(f"Failed to import admin_ratings router: {e}\n{traceback.format_exc()}")
-    print(f"[STARTUP] admin_ratings_router FAILED: {e}")
-    admin_ratings_router = None
 
 try:
     from .purchases import router as purchases_router

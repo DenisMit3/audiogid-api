@@ -29,24 +29,42 @@ class MediaListResponse(BaseModel):
     total: int
     page: int
     per_page: int
+    pages: int
 
 @router.get("/admin/media", response_model=MediaListResponse)
 def list_media(
     page: int = Query(1, ge=1),
     per_page: int = Query(24, ge=1, le=100),
-    media_type: Optional[str] = Query(None),
+    type: Optional[str] = Query(None, alias="type"),  # frontend sends 'type'
+    media_type: Optional[str] = Query(None),  # also accept media_type
+    entity_type: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     session: Session = Depends(get_session),
     user: User = Depends(get_current_user)
 ):
     """List all media from POIs and Tours"""
     items = []
     
+    # Use 'type' if provided, otherwise use 'media_type'
+    filter_type = type or media_type
+    
     # Get POI media
     poi_media_query = select(PoiMedia)
     poi_media = session.exec(poi_media_query).all()
     for m in poi_media:
-        if media_type and m.media_type != media_type:
+        # Filter by media type
+        if filter_type and filter_type != 'all' and m.media_type != filter_type:
             continue
+        # Filter by entity type
+        if entity_type and entity_type != 'all' and entity_type != 'poi':
+            continue
+        # Filter by search (author or url)
+        if search:
+            search_lower = search.lower()
+            author_match = m.author and search_lower in m.author.lower()
+            url_match = m.url and search_lower in m.url.lower()
+            if not (author_match or url_match):
+                continue
         items.append(MediaItem(
             id=str(m.id),
             url=m.url,
@@ -57,23 +75,33 @@ def list_media(
             author=m.author
         ))
     
-    # Get Tour media
-    tour_media_query = select(TourMedia)
-    tour_media = session.exec(tour_media_query).all()
-    for m in tour_media:
-        if media_type and m.media_type != media_type:
-            continue
-        items.append(MediaItem(
-            id=str(m.id),
-            url=m.url,
-            media_type=m.media_type,
-            entity_type='tour',
-            entity_id=str(m.tour_id),
-            license_type=m.license_type,
-            author=m.author
-        ))
+    # Get Tour media (skip if entity_type filter is 'poi')
+    if not entity_type or entity_type == 'all' or entity_type == 'tour':
+        tour_media_query = select(TourMedia)
+        tour_media = session.exec(tour_media_query).all()
+        for m in tour_media:
+            # Filter by media type
+            if filter_type and filter_type != 'all' and m.media_type != filter_type:
+                continue
+            # Filter by search (author or url)
+            if search:
+                search_lower = search.lower()
+                author_match = m.author and search_lower in m.author.lower()
+                url_match = m.url and search_lower in m.url.lower()
+                if not (author_match or url_match):
+                    continue
+            items.append(MediaItem(
+                id=str(m.id),
+                url=m.url,
+                media_type=m.media_type,
+                entity_type='tour',
+                entity_id=str(m.tour_id),
+                license_type=m.license_type,
+                author=m.author
+            ))
     
     total = len(items)
+    pages = (total + per_page - 1) // per_page if total > 0 else 1
     start = (page - 1) * per_page
     end = start + per_page
     paginated_items = items[start:end]
@@ -82,7 +110,8 @@ def list_media(
         items=paginated_items,
         total=total,
         page=page,
-        per_page=per_page
+        per_page=per_page,
+        pages=pages
     )
 
 # S3-compatible storage client (MinIO, Yandex Object Storage, etc.)

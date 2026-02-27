@@ -46,6 +46,8 @@ class OfflinePoiRepository implements PoiRepository {
                   locale: n.locale,
                   durationSeconds: n.durationSeconds,
                   transcript: n.transcript,
+                  localPath: n.localPath,
+                  kidsUrl: n.kidsUrl,
                 ))
             .toList(),
         media: details.media

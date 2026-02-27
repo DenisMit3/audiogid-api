@@ -26,9 +26,9 @@ export default function TourEditPage({ params }: { params: { id: string } }) {
         </div>
     );
 
-    if (isError) return (
+    if (isError || !tourData?.tour) return (
         <div className="p-8 text-center text-red-500">
-            Не удалось загрузить тур
+            {isError ? 'Не удалось загрузить тур' : 'Данные тура не найдены'}
             <Button variant="outline" onClick={() => refetch()} className="ml-4"><RefreshCcw className="w-4 h-4 mr-2" /> Повторить</Button>
         </div>
     );
@@ -36,12 +36,12 @@ export default function TourEditPage({ params }: { params: { id: string } }) {
     // Flatten structure for Editor
     const editorData = {
         ...tourData.tour,
-        items: tourData.items,
-        sources: tourData.sources,
-        media: tourData.media,
-        can_publish: tourData.can_publish,
-        publish_issues: tourData.publish_issues,
-        unpublished_poi_ids: tourData.unpublished_poi_ids
+        items: tourData.items || [],
+        sources: tourData.sources || [],
+        media: tourData.media || [],
+        can_publish: tourData.can_publish ?? false,
+        publish_issues: tourData.publish_issues || [],
+        unpublished_poi_ids: tourData.unpublished_poi_ids || []
     };
 
     return (

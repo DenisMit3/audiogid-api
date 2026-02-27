@@ -20,9 +20,9 @@ export default function PoiEditPage({ params }: { params: { id: string } }) {
     });
 
     if (isLoading) return <div className="p-8 text-center">Загрузка данных точки...</div>;
-    if (isError) return (
+    if (isError || !data?.poi) return (
         <div className="p-8 text-center text-red-500">
-            Не удалось загрузить точку
+            {isError ? 'Не удалось загрузить точку' : 'Данные точки не найдены'}
             <Button variant="outline" onClick={() => refetch()} className="ml-4"><RefreshCcw className="w-4 h-4 mr-2" /> Повторить</Button>
         </div>
     );
@@ -32,11 +32,11 @@ export default function PoiEditPage({ params }: { params: { id: string } }) {
     // PoiForm expects { ...poiFields, sources: [], media: [], narrations: [], can_publish, publish_issues }
     const poiData = {
         ...data.poi,
-        sources: data.sources,
-        media: data.media,
-        narrations: data.narrations,
-        can_publish: data.can_publish,
-        publish_issues: data.publish_issues
+        sources: data.sources || [],
+        media: data.media || [],
+        narrations: data.narrations || [],
+        can_publish: data.can_publish ?? false,
+        publish_issues: data.publish_issues || []
     };
 
     return (

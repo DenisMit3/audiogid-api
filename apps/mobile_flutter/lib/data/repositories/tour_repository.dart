@@ -253,8 +253,10 @@ class OfflineTourRepository implements TourRepository {
         descriptionRu: Value(tourData['description_ru']),
         coverImage: Value(tourData['cover_image']),
         durationMinutes: Value(tourData['duration_minutes']),
+        distanceKm: Value((tourData['distance_km'] as num?)?.toDouble()),
         tourType: Value(tourData['tour_type'] ?? 'walking'),
         difficulty: Value(tourData['difficulty'] ?? 'easy'),
+        isFree: Value(tourData['is_free'] as bool? ?? false),
       );
       await _db.tourDao.upsertTours([tourComp]);
 

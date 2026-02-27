@@ -30,13 +30,13 @@ export default function EditCityPage() {
         );
     }
 
-    if (error) {
-        return <div className="p-8 text-red-500">Ошибка: {error.message}</div>;
+    if (error || !city) {
+        return <div className="p-8 text-red-500">Ошибка: {error?.message || 'Город не найден'}</div>;
     }
 
     return (
         <div className="space-y-4 p-8">
-            <h1 className="text-2xl font-bold tracking-tight">Редактировать город: {city.name_ru}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Редактировать город: {city.name_ru || 'Без названия'}</h1>
             <CityForm initialData={city} isEdit={true} />
         </div>
     );

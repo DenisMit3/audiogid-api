@@ -286,12 +286,15 @@ class HelperPlace(SQLModel, table=True):
     __tablename__ = "helper_places"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city_slug: str = Field(index=True)
-    type: str 
+    type: str
     lat: float = Field(index=True)
     lon: float = Field(index=True)
     geo: Any = Field(sa_column=Column(Geography("POINT", srid=4326, spatial_index=True)), default=None)
     name_ru: Optional[str] = None
+    name_en: Optional[str] = None
     osm_id: Optional[str] = None
+    address: Optional[str] = None
+    opening_hours: Optional[str] = None
 
 # --- Auth Models (PR-58) ---
 class User(SQLModel, table=True):

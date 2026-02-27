@@ -138,6 +138,7 @@ def get_tour_manifest(
                 {
                     "id": str(n.id),
                     "url": sign_asset_url(n.url),
+                    "kids_url": sign_asset_url(n.kids_url) if n.kids_url else None,
                     "locale": n.locale,
                     "duration_seconds": n.duration_seconds,
                     "transcript": n.transcript
@@ -311,7 +312,7 @@ def get_catalog(
     
     result = []
     for t in tours:
-        tour_data = t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes', 'cover_image', 'distance_km', 'tour_type', 'description_ru'})
+        tour_data = t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes', 'cover_image', 'distance_km', 'tour_type', 'description_ru', 'difficulty'})
         
         # Get price from entitlement
         entitlement = session.exec(
@@ -356,7 +357,7 @@ def get_helpers(response: Response, request: Request, city: str = Query(...), ca
     q = select(HelperPlace).where(HelperPlace.city_slug == city)
     if category: q = q.where(HelperPlace.type == category)
     helpers = session.exec(q).all()
-    return [h.model_dump(exclude={'geo'}) for h in helpers]
+    return [{**h.model_dump(exclude={'geo'}), 'title': h.name_ru or ''} for h in helpers]
 
 # --- Phase 5: Mobile Sync Expanded ---
 

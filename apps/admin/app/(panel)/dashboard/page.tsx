@@ -101,7 +101,7 @@ export default function Dashboard() {
         },
         { 
             title: 'Конверсия', 
-            value: `${(analytics?.kpis.conversion_rate * 100).toFixed(1)}%`, 
+            value: `${((analytics?.kpis?.conversion_rate ?? 0) * 100).toFixed(1)}%`, 
             change: '+0.5%', 
             up: true,
             icon: TrendingUp, 

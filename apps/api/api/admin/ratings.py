@@ -1,5 +1,6 @@
 """
 Admin Ratings API - управление отзывами о турах
+v1.0.1 - fixed router registration
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func

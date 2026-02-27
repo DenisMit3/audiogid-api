@@ -52,13 +52,15 @@ except Exception as e:
     admin_tours_router = None
 
 # Import ratings early to debug registration issue
+_ratings_import_error = None
 try:
     from .admin.ratings import router as admin_ratings_router
     logger.info("admin_ratings_router imported successfully (early import)")
     print(f"[STARTUP] admin_ratings_router imported EARLY: {admin_ratings_router}, routes: {len(admin_ratings_router.routes)}")
 except Exception as e:
     import traceback
-    logger.error(f"Failed to import admin_ratings router (early): {e}\n{traceback.format_exc()}")
+    _ratings_import_error = f"{e}\n{traceback.format_exc()}"
+    logger.error(f"Failed to import admin_ratings router (early): {_ratings_import_error}")
     print(f"[STARTUP] admin_ratings_router FAILED (early): {e}")
     admin_ratings_router = None
 

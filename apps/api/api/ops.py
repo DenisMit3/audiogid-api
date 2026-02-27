@@ -122,6 +122,7 @@ def check_ratings_import(request: Request):
     """Check if ratings router can be imported and is registered"""
     try:
         from .admin.ratings import router as ratings_router
+        from .index import _ratings_import_error
         # Check if ratings routes are in app
         ratings_paths = [r.path for r in request.app.routes if hasattr(r, 'path') and 'rating' in r.path]
         
@@ -134,14 +135,16 @@ def check_ratings_import(request: Request):
                 "routes_count": len(ratings_router.routes),
                 "ratings_in_app_before": ratings_paths,
                 "ratings_in_app_after": ratings_paths_after,
-                "ratings_router_routes": [r.path for r in ratings_router.routes]
+                "ratings_router_routes": [r.path for r in ratings_router.routes],
+                "startup_import_error": _ratings_import_error
             }
         
         return {
             "status": "ok", 
             "routes_count": len(ratings_router.routes),
             "ratings_in_app": ratings_paths,
-            "ratings_router_routes": [r.path for r in ratings_router.routes]
+            "ratings_router_routes": [r.path for r in ratings_router.routes],
+            "startup_import_error": _ratings_import_error
         }
     except Exception as e:
         import traceback

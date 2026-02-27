@@ -46,8 +46,8 @@ type RatingStats = {
 
 export default function RatingsPage() {
     const queryClient = useQueryClient();
-    const [filterTour, setFilterTour] = useState<string>('');
-    const [filterRating, setFilterRating] = useState<string>('');
+    const [filterTour, setFilterTour] = useState<string>('all');
+    const [filterRating, setFilterRating] = useState<string>('all');
     const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
 
     // Fetch ratings
@@ -55,8 +55,8 @@ export default function RatingsPage() {
         queryKey: ['ratings', filterTour, filterRating],
         queryFn: async () => {
             const params = new URLSearchParams();
-            if (filterTour) params.set('tour_id', filterTour);
-            if (filterRating) params.set('rating', filterRating);
+            if (filterTour && filterTour !== 'all') params.set('tour_id', filterTour);
+            if (filterRating && filterRating !== 'all') params.set('rating', filterRating);
             const res = await fetch(`${API_URL}/admin/ratings?${params}`, { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to fetch ratings');
             return res.json();
@@ -182,7 +182,7 @@ export default function RatingsPage() {
                         <SelectValue placeholder="Все туры" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Все туры</SelectItem>
+                        <SelectItem value="all">Все туры</SelectItem>
                         {stats.map((stat) => (
                             <SelectItem key={stat.tour_id} value={stat.tour_id}>
                                 {stat.tour_title}
@@ -196,7 +196,7 @@ export default function RatingsPage() {
                         <SelectValue placeholder="Все оценки" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Все оценки</SelectItem>
+                        <SelectItem value="all">Все оценки</SelectItem>
                         <SelectItem value="5">5 звёзд</SelectItem>
                         <SelectItem value="4">4 звезды</SelectItem>
                         <SelectItem value="3">3 звезды</SelectItem>

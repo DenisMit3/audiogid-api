@@ -1,15 +1,89 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import List, Optional
 import uuid
 import logging
 import io
 from ..core.config import config
-from ..auth.deps import get_current_user
-from ..core.models import User
+from ..auth.deps import get_current_user, get_session
+from ..core.models import User, PoiMedia, TourMedia
+from sqlmodel import Session, select, func
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# --- Media List Endpoint ---
+class MediaItem(BaseModel):
+    id: str
+    url: str
+    media_type: Optional[str] = None
+    entity_type: str  # 'poi' or 'tour'
+    entity_id: str
+    entity_title: Optional[str] = None
+    license_type: Optional[str] = None
+    author: Optional[str] = None
+
+class MediaListResponse(BaseModel):
+    items: List[MediaItem]
+    total: int
+    page: int
+    per_page: int
+
+@router.get("/admin/media", response_model=MediaListResponse)
+def list_media(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(24, ge=1, le=100),
+    media_type: Optional[str] = Query(None),
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user)
+):
+    """List all media from POIs and Tours"""
+    items = []
+    
+    # Get POI media
+    poi_media_query = select(PoiMedia)
+    poi_media = session.exec(poi_media_query).all()
+    for m in poi_media:
+        if media_type and m.media_type != media_type:
+            continue
+        items.append(MediaItem(
+            id=str(m.id),
+            url=m.url,
+            media_type=m.media_type,
+            entity_type='poi',
+            entity_id=str(m.poi_id),
+            license_type=m.license_type,
+            author=m.author
+        ))
+    
+    # Get Tour media
+    tour_media_query = select(TourMedia)
+    tour_media = session.exec(tour_media_query).all()
+    for m in tour_media:
+        if media_type and m.media_type != media_type:
+            continue
+        items.append(MediaItem(
+            id=str(m.id),
+            url=m.url,
+            media_type=m.media_type,
+            entity_type='tour',
+            entity_id=str(m.tour_id),
+            license_type=m.license_type,
+            author=m.author
+        ))
+    
+    total = len(items)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_items = items[start:end]
+    
+    return MediaListResponse(
+        items=paginated_items,
+        total=total,
+        page=page,
+        per_page=per_page
+    )
 
 # S3-compatible storage client (MinIO, Yandex Object Storage, etc.)
 _s3_client = None

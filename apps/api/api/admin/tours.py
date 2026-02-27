@@ -217,6 +217,7 @@ def get_tour(
             "effective_lon": effective_lon,
             "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
             "transition_text_ru": item.transition_text_ru,
+            "transition_text_en": getattr(item, 'transition_text_en', None),
             "transition_audio_url": item.transition_audio_url,
             "duration_seconds": item.duration_seconds
         })
@@ -359,6 +360,7 @@ def update_tour_item(
         "effective_lon": effective_lon,
         "poi_published_at": item.poi.published_at.isoformat() if item.poi and item.poi.published_at else None,
         "transition_text_ru": item.transition_text_ru,
+        "transition_text_en": getattr(item, 'transition_text_en', None),
         "transition_audio_url": item.transition_audio_url,
         "duration_seconds": item.duration_seconds
     }

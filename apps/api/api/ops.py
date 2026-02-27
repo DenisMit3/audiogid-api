@@ -117,6 +117,21 @@ def health_check():
 
     return {"status": status, "checks": checks, "error": error}
 
+@router.get("/ops/routes")
+def list_routes():
+    """List all registered routes for debugging"""
+    from .index import app
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods) if route.methods else []
+            })
+    # Filter admin routes
+    admin_routes = [r for r in routes if '/admin/' in r['path']]
+    return {"total": len(routes), "admin_routes": admin_routes}
+
 @router.get("/ops/commit")
 def get_commit():
     import os

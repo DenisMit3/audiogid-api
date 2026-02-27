@@ -139,8 +139,10 @@ except Exception as e:
 
 try:
     from .admin.ratings import router as admin_ratings_router
+    logger.info("admin_ratings_router imported successfully")
 except Exception as e:
-    logger.error(f"Failed to import admin_ratings router: {e}")
+    import traceback
+    logger.error(f"Failed to import admin_ratings router: {e}\n{traceback.format_exc()}")
     admin_ratings_router = None
 
 try:

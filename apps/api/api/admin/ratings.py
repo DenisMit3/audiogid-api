@@ -9,7 +9,6 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
-from ..core.database import engine
 from ..core.models import User, TourRating, Tour
 from ..auth.deps import get_session, require_permission
 

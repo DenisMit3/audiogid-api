@@ -141,7 +141,7 @@ class OfflineTourRepository implements TourRepository {
         '/public/catalog',
         queryParameters: {'city': citySlug},
       );
-      
+
       // #region agent log
       print('[DEBUG f46abe] syncTours: response status=${response.statusCode}');
       // #endregion

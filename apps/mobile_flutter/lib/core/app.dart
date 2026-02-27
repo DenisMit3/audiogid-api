@@ -143,7 +143,8 @@ class _UpdateBannerWrapper extends ConsumerStatefulWidget {
   const _UpdateBannerWrapper({required this.child});
 
   @override
-  ConsumerState<_UpdateBannerWrapper> createState() => _UpdateBannerWrapperState();
+  ConsumerState<_UpdateBannerWrapper> createState() =>
+      _UpdateBannerWrapperState();
 }
 
 class _UpdateBannerWrapperState extends ConsumerState<_UpdateBannerWrapper> {
@@ -161,8 +162,9 @@ class _UpdateBannerWrapperState extends ConsumerState<_UpdateBannerWrapper> {
       final settings = await ref.read(settingsRepositoryProvider.future);
       if (!settings.shouldShowUpdatePrompt()) return;
 
-      final updateInfo = await ref.read(appUpdateServiceProvider).checkForUpdate();
-      
+      final updateInfo =
+          await ref.read(appUpdateServiceProvider).checkForUpdate();
+
       if (updateInfo.updateAvailable && !updateInfo.forceUpdate) {
         setState(() {
           _showBanner = true;

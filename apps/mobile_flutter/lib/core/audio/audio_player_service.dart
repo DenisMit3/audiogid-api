@@ -137,7 +137,7 @@ class AudioPlayerService {
     // Auto-play
     await _handler.play();
     print('[DEBUG AUDIO] Play started');
-    
+
     // Apply saved playback speed
     final savedSpeed = settingsAsync.value?.getPlaybackSpeed() ?? 1.0;
     if (savedSpeed != 1.0 && _handler is AudiogidAudioHandler) {

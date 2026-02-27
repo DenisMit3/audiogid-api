@@ -374,8 +374,8 @@ class TextBadge extends StatelessWidget {
 
   /// Factory for price badge
   factory TextBadge.price(double amount, [String currency = 'RUB']) {
-    final formatted = currency == 'RUB' 
-        ? '${amount.toInt()} ₽' 
+    final formatted = currency == 'RUB'
+        ? '${amount.toInt()} ₽'
         : '${amount.toStringAsFixed(0)} $currency';
     return TextBadge(formatted, icon: Icons.sell);
   }

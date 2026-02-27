@@ -341,11 +341,13 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                     onPressed: poi.previewAudioUrl != null
                         ? () {
                             HapticFeedback.lightImpact();
-                            _playPreviewAudio(context, ref, poi.previewAudioUrl!);
+                            _playPreviewAudio(
+                                context, ref, poi.previewAudioUrl!);
                           }
                         : null,
                     icon: const Icon(Icons.preview_outlined),
-                    label: Text(poi.previewAudioUrl != null ? 'Превью' : 'Нет превью'),
+                    label: Text(
+                        poi.previewAudioUrl != null ? 'Превью' : 'Нет превью'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 52),
                     ),
@@ -621,9 +623,10 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
     });
   }
 
-  void _playPreviewAudio(BuildContext context, WidgetRef ref, String previewUrl) {
+  void _playPreviewAudio(
+      BuildContext context, WidgetRef ref, String previewUrl) {
     final audioHandler = ref.read(audioHandlerProvider);
-    
+
     // Create a MediaItem for the preview
     final previewItem = MediaItem(
       id: previewUrl,
@@ -631,11 +634,11 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
       artist: 'Аудиогид',
       duration: const Duration(seconds: 30),
     );
-    
+
     // Play the preview
     audioHandler.updateQueue([previewItem]);
     audioHandler.skipToQueueItem(0);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Воспроизведение превью (30 сек)...'),

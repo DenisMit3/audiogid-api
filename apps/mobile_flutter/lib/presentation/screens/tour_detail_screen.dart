@@ -346,7 +346,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
       }
     }
     final totalAudioMinutes = (totalAudioSeconds / 60).ceil();
-    
+
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -462,12 +462,16 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                       child: Text(poi.descriptionRu ?? '',
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
-                    if (poi.narrations.isNotEmpty && poi.narrations.first.durationSeconds != null) ...[
+                    if (poi.narrations.isNotEmpty &&
+                        poi.narrations.first.durationSeconds != null) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.headphones, size: 14, color: Theme.of(context).colorScheme.primary),
+                      Icon(Icons.headphones,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 4),
                       Text(
-                        _formatAudioDuration(poi.narrations.first.durationSeconds!),
+                        _formatAudioDuration(
+                            poi.narrations.first.durationSeconds!),
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.primary,

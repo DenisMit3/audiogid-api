@@ -527,13 +527,15 @@ class _TourCard extends StatelessWidget {
                               ),
                               if (tour.avgRating != null) ...[
                                 const SizedBox(width: AppSpacing.sm),
-                                TextBadge.rating(tour.avgRating!, tour.ratingCount),
+                                TextBadge.rating(
+                                    tour.avgRating!, tour.ratingCount),
                               ] else if (tour.isFree) ...[
                                 const SizedBox(width: AppSpacing.sm),
                                 TextBadge.free(),
                               ] else if (tour.priceAmount != null) ...[
                                 const SizedBox(width: AppSpacing.sm),
-                                TextBadge.price(tour.priceAmount!, tour.priceCurrency),
+                                TextBadge.price(
+                                    tour.priceAmount!, tour.priceCurrency),
                               ],
                             ],
                           ),
@@ -564,7 +566,8 @@ class _TourCard extends StatelessWidget {
                                 TextBadge.free(),
                                 const SizedBox(width: AppSpacing.sm),
                               ] else if (tour.priceAmount != null) ...[
-                                TextBadge.price(tour.priceAmount!, tour.priceCurrency),
+                                TextBadge.price(
+                                    tour.priceAmount!, tour.priceCurrency),
                                 const SizedBox(width: AppSpacing.sm),
                               ],
                               const Spacer(),

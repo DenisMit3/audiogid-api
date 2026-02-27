@@ -360,9 +360,10 @@ class _TourControls extends ConsumerWidget {
 
   const _TourControls({required this.state, required this.totalSteps});
 
-  Future<void> _showRatingDialog(BuildContext context, WidgetRef ref, String tourId) async {
+  Future<void> _showRatingDialog(
+      BuildContext context, WidgetRef ref, String tourId) async {
     int selectedRating = 0;
-    
+
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -381,7 +382,9 @@ class _TourControls extends ConsumerWidget {
                   return IconButton(
                     onPressed: () => setState(() => selectedRating = starIndex),
                     icon: Icon(
-                      starIndex <= selectedRating ? Icons.star : Icons.star_border,
+                      starIndex <= selectedRating
+                          ? Icons.star
+                          : Icons.star_border,
                       color: Colors.amber,
                       size: 36,
                     ),
@@ -423,12 +426,18 @@ class _TourControls extends ConsumerWidget {
 
   String _getRatingText(int rating) {
     switch (rating) {
-      case 1: return 'Очень плохо';
-      case 2: return 'Плохо';
-      case 3: return 'Нормально';
-      case 4: return 'Хорошо';
-      case 5: return 'Отлично!';
-      default: return '';
+      case 1:
+        return 'Очень плохо';
+      case 2:
+        return 'Плохо';
+      case 3:
+        return 'Нормально';
+      case 4:
+        return 'Хорошо';
+      case 5:
+        return 'Отлично!';
+      default:
+        return '';
     }
   }
 
@@ -437,7 +446,7 @@ class _TourControls extends ConsumerWidget {
       final dio = Dio();
       final config = ref.read(appConfigProvider);
       final deviceId = await ref.read(deviceIdProvider.future);
-      
+
       await dio.post(
         '${config.apiBaseUrl}/public/tours/$tourId/rate',
         data: {
@@ -534,12 +543,12 @@ class _TourControls extends ConsumerWidget {
                   onPressed: () async {
                     final tourId = state.activeTour?.id;
                     ref.read(tourModeServiceProvider.notifier).stopTour();
-                    
+
                     // Show rating dialog
                     if (tourId != null && context.mounted) {
                       await _showRatingDialog(context, ref, tourId);
                     }
-                    
+
                     if (context.mounted) {
                       if (context.canPop()) context.pop();
                     }

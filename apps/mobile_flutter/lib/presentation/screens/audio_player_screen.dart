@@ -142,8 +142,11 @@ class AudioPlayerScreen extends ConsumerWidget {
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               final current = state?.position ?? Duration.zero;
-                              final newPos = current - const Duration(seconds: 15);
-                              audioHandler.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                              final newPos =
+                                  current - const Duration(seconds: 15);
+                              audioHandler.seek(newPos < Duration.zero
+                                  ? Duration.zero
+                                  : newPos);
                             },
                             tooltip: '-15 сек',
                           ),
@@ -156,7 +159,9 @@ class AudioPlayerScreen extends ConsumerWidget {
                                 size: 64),
                             onPressed: () {
                               HapticFeedback.mediumImpact();
-                              playing ? audioHandler.pause() : audioHandler.play();
+                              playing
+                                  ? audioHandler.pause()
+                                  : audioHandler.play();
                             },
                           ),
                           const SizedBox(width: 8),
@@ -166,7 +171,8 @@ class AudioPlayerScreen extends ConsumerWidget {
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               final current = state?.position ?? Duration.zero;
-                              audioHandler.seek(current + const Duration(seconds: 15));
+                              audioHandler
+                                  .seek(current + const Duration(seconds: 15));
                             },
                             tooltip: '+15 сек',
                           ),
@@ -185,19 +191,21 @@ class AudioPlayerScreen extends ConsumerWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Speed and Sleep Timer row
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _SpeedControlButton(audioHandler: audioHandler as AudiogidAudioHandler, ref: ref),
+                  _SpeedControlButton(
+                      audioHandler: audioHandler as AudiogidAudioHandler,
+                      ref: ref),
                   const SizedBox(width: 16),
                   _SleepTimerButton(audioHandler: audioHandler),
                 ],
               ),
-              
+
               const SizedBox(height: 48),
             ],
           );
@@ -242,7 +250,7 @@ class _SpeedControlButton extends StatelessWidget {
       initialData: audioHandler.speed,
       builder: (context, snapshot) {
         final currentSpeed = snapshot.data ?? 1.0;
-        
+
         return Semantics(
           label: 'Скорость воспроизведения ${currentSpeed}x',
           button: true,
@@ -276,7 +284,7 @@ class _SpeedControlButton extends StatelessWidget {
 
   void _showSpeedPicker(BuildContext context, double currentSpeed) {
     HapticFeedback.selectionClick();
-    
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -291,20 +299,22 @@ class _SpeedControlButton extends StatelessWidget {
               ),
             ),
             ..._speeds.map((speed) => ListTile(
-              leading: speed == currentSpeed
-                  ? Icon(Icons.check, color: Theme.of(ctx).colorScheme.primary)
-                  : const SizedBox(width: 24),
-              title: Text('${speed}x'),
-              subtitle: _getSpeedLabel(speed),
-              onTap: () async {
-                HapticFeedback.selectionClick();
-                await audioHandler.setSpeed(speed);
-                // Save to settings
-                final settings = await ref.read(settingsRepositoryProvider.future);
-                await settings.setPlaybackSpeed(speed);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-            )),
+                  leading: speed == currentSpeed
+                      ? Icon(Icons.check,
+                          color: Theme.of(ctx).colorScheme.primary)
+                      : const SizedBox(width: 24),
+                  title: Text('${speed}x'),
+                  subtitle: _getSpeedLabel(speed),
+                  onTap: () async {
+                    HapticFeedback.selectionClick();
+                    await audioHandler.setSpeed(speed);
+                    // Save to settings
+                    final settings =
+                        await ref.read(settingsRepositoryProvider.future);
+                    await settings.setPlaybackSpeed(speed);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                )),
             const SizedBox(height: 16),
           ],
         ),
@@ -341,10 +351,10 @@ class _SleepTimerButton extends StatefulWidget {
 
 class _SleepTimerButtonState extends State<_SleepTimerButton> {
   static const List<int> _timerOptions = [0, 5, 10, 15, 30, 45, 60]; // minutes
-  
+
   int? _remainingMinutes;
   DateTime? _timerEndTime;
-  
+
   @override
   void dispose() {
     super.dispose();
@@ -358,18 +368,18 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
       });
       return;
     }
-    
+
     setState(() {
       _remainingMinutes = minutes;
       _timerEndTime = DateTime.now().add(Duration(minutes: minutes));
     });
-    
+
     _scheduleStop();
   }
-  
+
   void _scheduleStop() {
     if (_timerEndTime == null) return;
-    
+
     final remaining = _timerEndTime!.difference(DateTime.now());
     if (remaining.isNegative) {
       widget.audioHandler.pause();
@@ -379,11 +389,11 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
       });
       return;
     }
-    
+
     Future.delayed(const Duration(seconds: 30), () {
       if (!mounted) return;
       if (_timerEndTime == null) return;
-      
+
       final now = DateTime.now();
       if (now.isAfter(_timerEndTime!)) {
         widget.audioHandler.pause();
@@ -403,10 +413,10 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
   @override
   Widget build(BuildContext context) {
     final isActive = _remainingMinutes != null;
-    
+
     return Semantics(
-      label: isActive 
-          ? 'Таймер сна: $_remainingMinutes мин' 
+      label: isActive
+          ? 'Таймер сна: $_remainingMinutes мин'
           : 'Таймер сна выключен',
       button: true,
       child: OutlinedButton(
@@ -416,8 +426,9 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          side: isActive 
-              ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+          side: isActive
+              ? BorderSide(
+                  color: Theme.of(context).colorScheme.primary, width: 2)
               : null,
         ),
         child: Row(
@@ -445,7 +456,7 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
 
   void _showTimerPicker(BuildContext context) {
     HapticFeedback.selectionClick();
-    
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -469,27 +480,33 @@ class _SleepTimerButtonState extends State<_SleepTimerButton> {
             ),
             const SizedBox(height: 8),
             ..._timerOptions.map((minutes) => ListTile(
-              leading: (_remainingMinutes != null && minutes > 0 && 
-                       (minutes == _timerOptions.firstWhere((m) => m >= (_remainingMinutes ?? 0), orElse: () => 0)))
-                  ? Icon(Icons.check, color: Theme.of(ctx).colorScheme.primary)
-                  : (minutes == 0 && _remainingMinutes == null)
-                      ? Icon(Icons.check, color: Theme.of(ctx).colorScheme.primary)
-                      : const SizedBox(width: 24),
-              title: Text(minutes == 0 ? 'Выключить' : '$minutes мин'),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                _startTimer(minutes);
-                Navigator.pop(ctx);
-                if (minutes > 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Таймер сна: $minutes мин'),
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-            )),
+                  leading: (_remainingMinutes != null &&
+                          minutes > 0 &&
+                          (minutes ==
+                              _timerOptions.firstWhere(
+                                  (m) => m >= (_remainingMinutes ?? 0),
+                                  orElse: () => 0)))
+                      ? Icon(Icons.check,
+                          color: Theme.of(ctx).colorScheme.primary)
+                      : (minutes == 0 && _remainingMinutes == null)
+                          ? Icon(Icons.check,
+                              color: Theme.of(ctx).colorScheme.primary)
+                          : const SizedBox(width: 24),
+                  title: Text(minutes == 0 ? 'Выключить' : '$minutes мин'),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _startTimer(minutes);
+                    Navigator.pop(ctx);
+                    if (minutes > 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Таймер сна: $minutes мин'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                )),
             const SizedBox(height: 16),
           ],
         ),

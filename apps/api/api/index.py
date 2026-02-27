@@ -191,6 +191,22 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
+# Startup event to ensure ratings router is registered
+@app.on_event("startup")
+async def startup_event():
+    try:
+        from .admin.ratings import router as ratings_router
+        # Check if already registered
+        ratings_paths = [r.path for r in app.routes if hasattr(r, 'path') and '/admin/ratings' in r.path]
+        if not ratings_paths:
+            app.include_router(ratings_router, prefix="/v1")
+            logger.info("admin_ratings_router registered in startup event")
+            print("[STARTUP EVENT] admin_ratings_router registered")
+        else:
+            logger.info("admin_ratings_router already registered")
+    except Exception as e:
+        logger.error(f"Failed to register ratings router in startup: {e}")
+
 # --- Rate Limiter ---
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 app.state.limiter = limiter

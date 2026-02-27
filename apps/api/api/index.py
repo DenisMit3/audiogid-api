@@ -250,13 +250,17 @@ if admin_settings_router: app.include_router(admin_settings_router, prefix="/v1"
 if admin_analytics_router: app.include_router(admin_analytics_router, prefix="/v1")
 if admin_users_router: app.include_router(admin_users_router, prefix="/v1")
 if admin_audit_router: app.include_router(admin_audit_router, prefix="/v1")
-if admin_ratings_router: 
-    app.include_router(admin_ratings_router, prefix="/v1")
-    logger.info("admin_ratings_router registered successfully")
-    print(f"[STARTUP] admin_ratings_router REGISTERED in app")
-else:
-    logger.error("admin_ratings_router is None - not registered!")
-    print(f"[STARTUP] admin_ratings_router is None - NOT REGISTERED!")
+
+# Force register ratings router directly
+try:
+    from .admin.ratings import router as _ratings_router_direct
+    app.include_router(_ratings_router_direct, prefix="/v1")
+    logger.info("admin_ratings_router registered directly (forced)")
+    print(f"[STARTUP] admin_ratings_router REGISTERED directly (forced)")
+except Exception as e:
+    logger.error(f"Failed to register ratings router directly: {e}")
+    print(f"[STARTUP] admin_ratings_router direct registration FAILED: {e}")
+
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")

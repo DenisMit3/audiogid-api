@@ -229,7 +229,11 @@ if admin_settings_router: app.include_router(admin_settings_router, prefix="/v1"
 if admin_analytics_router: app.include_router(admin_analytics_router, prefix="/v1")
 if admin_users_router: app.include_router(admin_users_router, prefix="/v1")
 if admin_audit_router: app.include_router(admin_audit_router, prefix="/v1")
-if admin_ratings_router: app.include_router(admin_ratings_router, prefix="/v1")
+if admin_ratings_router: 
+    app.include_router(admin_ratings_router, prefix="/v1")
+    logger.info("admin_ratings_router registered successfully")
+else:
+    logger.error("admin_ratings_router is None - not registered!")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")

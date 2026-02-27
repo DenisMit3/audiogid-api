@@ -266,13 +266,15 @@ if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")
 if billing_router: app.include_router(billing_router, prefix="/v1")
 
+# Force register auth router directly
 try:
-    from .auth.router import router as auth_router # PR-58
+    from .auth.router import router as _auth_router_direct
+    app.include_router(_auth_router_direct, prefix="/v1")
+    logger.info("auth_router registered directly (forced)")
+    print(f"[STARTUP] auth_router REGISTERED directly (forced)")
 except Exception as e:
-    logger.error(f"Failed to import auth router: {e}")
-    auth_router = None
-
-if auth_router: app.include_router(auth_router, prefix="/v1")
+    logger.error(f"Failed to register auth router directly: {e}")
+    print(f"[STARTUP] auth_router direct registration FAILED: {e}")
 
 try:
     from .push.router import router as push_router

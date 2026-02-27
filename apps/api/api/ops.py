@@ -118,16 +118,17 @@ def health_check():
     return {"status": status, "checks": checks, "error": error}
 
 @router.get("/ops/check-ratings-import")
-def check_ratings_import():
-    """Check if ratings router can be imported"""
+def check_ratings_import(request: Request):
+    """Check if ratings router can be imported and is registered"""
     try:
         from .admin.ratings import router as ratings_router
-        # Also check if it was registered at startup
-        from .index import admin_ratings_router
+        # Check if ratings routes are in app
+        ratings_paths = [r.path for r in request.app.routes if hasattr(r, 'path') and 'rating' in r.path]
         return {
             "status": "ok", 
             "routes_count": len(ratings_router.routes),
-            "registered_at_startup": admin_ratings_router is not None
+            "ratings_in_app": ratings_paths,
+            "ratings_router_routes": [r.path for r in ratings_router.routes]
         }
     except Exception as e:
         import traceback

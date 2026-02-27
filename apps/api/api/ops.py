@@ -117,6 +117,16 @@ def health_check():
 
     return {"status": status, "checks": checks, "error": error}
 
+@router.get("/ops/check-ratings-import")
+def check_ratings_import():
+    """Check if ratings router can be imported"""
+    try:
+        from .admin.ratings import router as ratings_router
+        return {"status": "ok", "routes_count": len(ratings_router.routes)}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
 @router.get("/ops/routes")
 def list_routes(request: Request):
     """List all registered routes for debugging"""

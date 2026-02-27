@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Header
+from fastapi import APIRouter, Depends, HTTPException, Response, Header, Request
 from sqlmodel import Session, text, select
 from .core.database import engine
 import logging
@@ -118,11 +118,10 @@ def health_check():
     return {"status": status, "checks": checks, "error": error}
 
 @router.get("/ops/routes")
-def list_routes():
+def list_routes(request: Request):
     """List all registered routes for debugging"""
-    from .index import app
     routes = []
-    for route in app.routes:
+    for route in request.app.routes:
         if hasattr(route, 'path') and hasattr(route, 'methods'):
             routes.append({
                 "path": route.path,

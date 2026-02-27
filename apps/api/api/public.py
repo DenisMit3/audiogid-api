@@ -11,7 +11,7 @@ from slowapi.util import get_remote_address
 
 from .core.database import engine
 
-from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent, TourItem, Itinerary, ItineraryItem
+from .core.models import City, Tour, Poi, HelperPlace, Entitlement, EntitlementGrant, ContentEvent, TourItem, Itinerary, ItineraryItem, TourRating
 from .core.caching import redis_client
 from .core.security import sign_asset_url
 from .core.caching import SCHEMA_VERSION, generate_version_marker, check_etag_versioned
@@ -307,12 +307,44 @@ def get_catalog(
     
     query = select(Tour).where(Tour.city_slug == city, Tour.published_at != None)
     
-    # Count total (optional, skipping for performance unless needed by UI)
-    # total = session.exec(select(func.count()).select_from(query.subquery())).one()
-    
     tours = session.exec(query.offset(offset).limit(limit)).all()
     
-    return [t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes', 'cover_image', 'distance_km', 'tour_type', 'description_ru'}) for t in tours]
+    result = []
+    for t in tours:
+        tour_data = t.model_dump(include={'id', 'title_ru', 'city_slug', 'duration_minutes', 'cover_image', 'distance_km', 'tour_type', 'description_ru'})
+        
+        # Get price from entitlement
+        entitlement = session.exec(
+            select(Entitlement).where(
+                Entitlement.scope == "tour",
+                Entitlement.ref == str(t.id),
+                Entitlement.is_active == True
+            )
+        ).first()
+        
+        if entitlement:
+            tour_data['price_amount'] = entitlement.price_amount
+            tour_data['price_currency'] = entitlement.price_currency
+            tour_data['is_free'] = entitlement.price_amount == 0
+        else:
+            tour_data['price_amount'] = None
+            tour_data['price_currency'] = 'RUB'
+            tour_data['is_free'] = False
+        
+        # Get rating stats
+        rating_stats = session.exec(
+            select(
+                func.count(TourRating.id).label('count'),
+                func.avg(TourRating.rating).label('avg')
+            ).where(TourRating.tour_id == t.id)
+        ).first()
+        
+        tour_data['avg_rating'] = round(float(rating_stats[1]), 1) if rating_stats[1] else None
+        tour_data['rating_count'] = rating_stats[0] or 0
+        
+        result.append(tour_data)
+    
+    return result
 
 @router.get("/public/map/attribution")
 def get_map_attribution(response: Response):
@@ -712,3 +744,127 @@ def view_trip_share(share_id: str):
     </html>
     """
     return HTMLResponse(content=html_content)
+
+
+# --- Tour Ratings ---
+
+class RatingCreate(SQLModel):
+    rating: int  # 1-5
+    comment: Optional[str] = None
+    device_anon_id: str
+
+@router.post("/public/tours/{tour_id}/rate")
+@limiter.limit("10/minute")
+def rate_tour(
+    request: Request,
+    tour_id: uuid.UUID,
+    payload: RatingCreate,
+    session: Session = Depends(get_session)
+):
+    """Submit or update a rating for a tour."""
+    if payload.rating < 1 or payload.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+    
+    # Check if tour exists
+    tour = session.exec(select(Tour).where(Tour.id == tour_id)).first()
+    if not tour:
+        raise HTTPException(status_code=404, detail="Tour not found")
+    
+    # Check if user already rated this tour
+    existing = session.exec(
+        select(TourRating).where(
+            TourRating.tour_id == tour_id,
+            TourRating.device_anon_id == payload.device_anon_id
+        )
+    ).first()
+    
+    if existing:
+        # Update existing rating
+        existing.rating = payload.rating
+        existing.comment = payload.comment
+        existing.updated_at = datetime.utcnow()
+        session.add(existing)
+        session.commit()
+        return {"status": "updated", "rating_id": str(existing.id)}
+    else:
+        # Create new rating
+        rating = TourRating(
+            tour_id=tour_id,
+            device_anon_id=payload.device_anon_id,
+            rating=payload.rating,
+            comment=payload.comment
+        )
+        session.add(rating)
+        session.commit()
+        session.refresh(rating)
+        return {"status": "created", "rating_id": str(rating.id)}
+
+@router.get("/public/tours/{tour_id}/ratings")
+def get_tour_ratings(
+    response: Response,
+    tour_id: uuid.UUID,
+    limit: int = Query(20, le=100),
+    offset: int = Query(0),
+    session: Session = Depends(get_session)
+):
+    """Get ratings for a tour with aggregated stats."""
+    # Get aggregated stats
+    stats = session.exec(
+        select(
+            func.count(TourRating.id).label('count'),
+            func.avg(TourRating.rating).label('avg')
+        ).where(TourRating.tour_id == tour_id)
+    ).first()
+    
+    rating_count = stats[0] or 0
+    avg_rating = float(stats[1]) if stats[1] else None
+    
+    # Get individual ratings
+    ratings = session.exec(
+        select(TourRating)
+        .where(TourRating.tour_id == tour_id)
+        .order_by(TourRating.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    ).all()
+    
+    response.headers["Cache-Control"] = "public, max-age=60"
+    
+    return {
+        "tour_id": str(tour_id),
+        "avg_rating": round(avg_rating, 1) if avg_rating else None,
+        "rating_count": rating_count,
+        "ratings": [
+            {
+                "id": str(r.id),
+                "rating": r.rating,
+                "comment": r.comment,
+                "created_at": r.created_at.isoformat()
+            }
+            for r in ratings
+        ]
+    }
+
+@router.get("/public/tours/{tour_id}/my-rating")
+def get_my_tour_rating(
+    tour_id: uuid.UUID,
+    device_anon_id: str = Query(...),
+    session: Session = Depends(get_session)
+):
+    """Get current user's rating for a tour."""
+    rating = session.exec(
+        select(TourRating).where(
+            TourRating.tour_id == tour_id,
+            TourRating.device_anon_id == device_anon_id
+        )
+    ).first()
+    
+    if not rating:
+        return {"rated": False}
+    
+    return {
+        "rated": True,
+        "rating": rating.rating,
+        "comment": rating.comment,
+        "created_at": rating.created_at.isoformat()
+    }

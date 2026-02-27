@@ -17,7 +17,11 @@ import {
     QrCode,
     Zap,
     ChevronRight,
-    Building2
+    Building2,
+    Star,
+    Key,
+    HelpCircle,
+    Navigation
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -40,6 +44,10 @@ export function Sidebar({ permissions }: { permissions: string[] }) {
         { name: 'Точки', href: '/content/pois', icon: MapPin, perm: 'poi:read' },
         { name: 'Туры', href: '/content/tours', icon: Route, perm: 'tour:read' },
         { name: 'Медиа', href: '/content/media', icon: Eye, perm: 'media:read' },
+        { name: 'Отзывы', href: '/ratings', icon: Star, perm: 'ratings:read' },
+        { name: 'Права доступа', href: '/entitlements', icon: Key, perm: 'billing:read' },
+        { name: 'Помощники', href: '/helpers', icon: HelpCircle, perm: 'content:read' },
+        { name: 'Маршруты', href: '/itineraries', icon: Navigation, perm: 'content:read' },
         { name: 'QR-коды', href: '/qr-codes', icon: QrCode, perm: 'poi:read' },
         { name: 'Задачи', href: '/jobs', icon: Zap, perm: 'jobs:read' },
         { name: 'Аналитика', href: '/analytics/overview', icon: Activity, perm: 'analytics:read' },

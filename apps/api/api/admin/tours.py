@@ -57,6 +57,7 @@ class TourItemRead(BaseModel):
     effective_lon: Optional[float]  # computed: override or poi
     poi_published_at: Optional[str] # enriched - POI publication status
     transition_text_ru: Optional[str]
+    transition_text_en: Optional[str]
     transition_audio_url: Optional[str]
     duration_seconds: Optional[int]
 
@@ -84,11 +85,13 @@ class CreateItemReq(BaseModel):
     poi_id: uuid.UUID
     order_index: int
     transition_text_ru: Optional[str] = None
+    transition_text_en: Optional[str] = None
     transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None
 
 class TourItemUpdate(BaseModel):
     transition_text_ru: Optional[str] = None
+    transition_text_en: Optional[str] = None
     transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None
     order_index: Optional[int] = None

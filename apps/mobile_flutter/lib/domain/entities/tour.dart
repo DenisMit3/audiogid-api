@@ -11,6 +11,11 @@ class Tour {
   final double? distanceKm;
   final String? tourType;
   final List<TourItemEntity>? items;
+  final double? priceAmount;
+  final String priceCurrency;
+  final bool isFree;
+  final double? avgRating;
+  final int ratingCount;
 
   Tour({
     required this.id,
@@ -23,6 +28,11 @@ class Tour {
     this.distanceKm,
     this.tourType,
     this.items,
+    this.priceAmount,
+    this.priceCurrency = 'RUB',
+    this.isFree = false,
+    this.avgRating,
+    this.ratingCount = 0,
   });
 }
 

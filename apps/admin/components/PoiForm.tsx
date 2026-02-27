@@ -37,6 +37,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MediaUploader } from './media-upload';
 import { SourcesManager } from './sources-manager';
 import { NarrationsManager } from './narrations-manager';
+import { AudioUploadField } from './audio-upload-field';
 import dynamic from 'next/dynamic';
 const LocationPicker = dynamic(() => import('./location-picker').then(mod => mod.LocationPicker), {
     ssr: false,
@@ -74,6 +75,10 @@ type PoiData = PoiFormValues & {
     publish_issues: string[];
     opening_hours?: any;
     external_links?: string[];
+    preview_audio_url?: string;
+    preview_bullets?: string[];
+    osm_id?: string;
+    wikidata_id?: string;
 };
 
 export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?: (id: string) => void }) {
@@ -81,6 +86,8 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
     const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
     const [externalLinks, setExternalLinks] = useState<string[]>(poi?.external_links || []);
     const [newLink, setNewLink] = useState('');
+    const [previewBullets, setPreviewBullets] = useState<string[]>(poi?.preview_bullets || []);
+    const [newBullet, setNewBullet] = useState('');
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -432,6 +439,106 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                                                 <p className="text-xs text-muted-foreground">Официальный сайт, Wikipedia, и т.д.</p>
                                             </div>
 
+                                            {/* Preview Bullets */}
+                                            <div className="space-y-2">
+                                                <Label>Буллеты превью</Label>
+                                                <p className="text-xs text-muted-foreground">Краткие факты для карточки POI в мобильном приложении (3-5 пунктов)</p>
+                                                <div className="space-y-2">
+                                                    {previewBullets.map((bullet, idx) => (
+                                                        <div key={idx} className="flex items-center gap-2">
+                                                            <Input 
+                                                                value={bullet} 
+                                                                className="flex-1 h-8 text-sm"
+                                                                onChange={(e) => {
+                                                                    const newBullets = [...previewBullets];
+                                                                    newBullets[idx] = e.target.value;
+                                                                    setPreviewBullets(newBullets);
+                                                                }}
+                                                                onBlur={() => {
+                                                                    mutation.mutate({ ...form.getValues(), preview_bullets: previewBullets });
+                                                                }}
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    const newBullets = previewBullets.filter((_, i) => i !== idx);
+                                                                    setPreviewBullets(newBullets);
+                                                                    mutation.mutate({ ...form.getValues(), preview_bullets: newBullets });
+                                                                }}
+                                                            >
+                                                                ✕
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex items-center gap-2">
+                                                        <Input
+                                                            placeholder="Например: Построен в 1255 году"
+                                                            className="flex-1 h-8 text-sm"
+                                                            value={newBullet}
+                                                            onChange={(e) => setNewBullet(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    if (newBullet.trim()) {
+                                                                        const newBullets = [...previewBullets, newBullet.trim()];
+                                                                        setPreviewBullets(newBullets);
+                                                                        setNewBullet('');
+                                                                        mutation.mutate({ ...form.getValues(), preview_bullets: newBullets });
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                if (newBullet.trim()) {
+                                                                    const newBullets = [...previewBullets, newBullet.trim()];
+                                                                    setPreviewBullets(newBullets);
+                                                                    setNewBullet('');
+                                                                    mutation.mutate({ ...form.getValues(), preview_bullets: newBullets });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* External IDs */}
+                                            <div className="space-y-2">
+                                                <Label>Внешние идентификаторы</Label>
+                                                <p className="text-xs text-muted-foreground">Связь с внешними базами данных</p>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs">OSM ID</Label>
+                                                        <Input
+                                                            value={poi?.osm_id || ''}
+                                                            onChange={(e) => {
+                                                                mutation.mutate({ ...form.getValues(), osm_id: e.target.value || undefined });
+                                                            }}
+                                                            placeholder="node/123456789"
+                                                            className="h-8 text-sm"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs">Wikidata ID</Label>
+                                                        <Input
+                                                            value={poi?.wikidata_id || ''}
+                                                            onChange={(e) => {
+                                                                mutation.mutate({ ...form.getValues(), wikidata_id: e.target.value || undefined });
+                                                            }}
+                                                            placeholder="Q12345"
+                                                            className="h-8 text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="flex justify-end items-center bg-slate-50 p-4 rounded-lg">
                                                 <Button type="submit" disabled={mutation.isPending}>
                                                     {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -494,6 +601,28 @@ export default function PoiForm({ poi, onSuccess }: { poi?: PoiData, onSuccess?:
                         {/* TAB: NARRATIONS */}
                         <TabsContent value="narrations">
                             {poi && <NarrationsManager poiId={poi.id} narrations={poi.narrations} />}
+                            
+                            {/* Превью аудио */}
+                            {poi && (
+                                <Card className="mt-4">
+                                    <CardContent className="pt-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-base font-semibold">Превью аудио (бесплатное)</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                30-секундный отрывок для неоплаченного контента. Генерируется автоматически при загрузке озвучки, но можно загрузить вручную.
+                                            </p>
+                                            <AudioUploadField
+                                                value={poi.preview_audio_url}
+                                                onChange={(url) => {
+                                                    mutation.mutate({ ...form.getValues(), preview_audio_url: url });
+                                                }}
+                                                entityType="poi"
+                                                entityId={poi.id}
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
                         </TabsContent>
 
                         {/* TAB: SOURCES */}

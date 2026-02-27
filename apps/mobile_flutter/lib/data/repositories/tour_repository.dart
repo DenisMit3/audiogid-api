@@ -53,6 +53,11 @@ class OfflineTourRepository implements TourRepository {
                 transportType: r.transportType,
                 distanceKm: r.distanceKm,
                 tourType: r.tourType,
+                priceAmount: r.priceAmount,
+                priceCurrency: r.priceCurrency,
+                isFree: r.isFree,
+                avgRating: r.avgRating,
+                ratingCount: r.ratingCount,
               ))
           .toList();
     });
@@ -73,6 +78,11 @@ class OfflineTourRepository implements TourRepository {
         transportType: details.tour.transportType,
         distanceKm: details.tour.distanceKm,
         tourType: details.tour.tourType,
+        priceAmount: details.tour.priceAmount,
+        priceCurrency: details.tour.priceCurrency,
+        isFree: details.tour.isFree,
+        avgRating: details.tour.avgRating,
+        ratingCount: details.tour.ratingCount,
         items: details.items
             .map((i) => domain.TourItemEntity(
                   id: i.item.id,
@@ -126,28 +136,25 @@ class OfflineTourRepository implements TourRepository {
     print('[DEBUG f46abe] syncTours: started for citySlug=$citySlug');
     // #endregion
     try {
-      final response = await _api.publicCatalogGetWithHttpInfo(citySlug);
+      // Use Dio directly to get price fields not in generated API client
+      final response = await _dio.get(
+        '/public/catalog',
+        queryParameters: {'city': citySlug},
+      );
+      
       // #region agent log
-      print(
-          '[DEBUG f46abe] syncTours: response status=${response.statusCode}, body=${response.body?.substring(0, (response.body?.length ?? 0) > 500 ? 500 : response.body?.length ?? 0)}');
+      print('[DEBUG f46abe] syncTours: response status=${response.statusCode}');
       // #endregion
       if (response.statusCode == 304) return;
-      if (response.statusCode >= 400) return;
+      if (response.statusCode != 200) return;
 
-      final tours = await _api.apiClient
-          .deserializeAsync(response.body, 'List<TourSnippet>') as List;
+      final tours = response.data as List<dynamic>;
       // #region agent log
-      print('[DEBUG f46abe] syncTours: deserialized ${tours.length} tours');
-      if (tours.isNotEmpty) {
-        final first = tours.first as api.TourSnippet;
-        print(
-            '[DEBUG f46abe] syncTours: first tour coverImage=${first.coverImage}, descriptionRu=${first.descriptionRu}');
-      }
+      print('[DEBUG f46abe] syncTours: received ${tours.length} tours');
       // #endregion
 
       // Получаем ID туров с сервера
-      final serverTourIds =
-          tours.cast<api.TourSnippet>().map((t) => t.id!).toSet();
+      final serverTourIds = tours.map((t) => t['id'] as String).toSet();
 
       // Удаляем туры из локальной БД, которых нет на сервере
       await _db.tourDao.deleteToursNotIn(citySlug, serverTourIds.toList());
@@ -156,16 +163,20 @@ class OfflineTourRepository implements TourRepository {
       // #endregion
 
       final companions = tours
-          .cast<api.TourSnippet>()
           .map((t) => ToursCompanion(
-                id: Value(t.id!),
-                citySlug: Value(t.citySlug!),
-                titleRu: Value(t.titleRu!),
-                descriptionRu: Value(t.descriptionRu),
-                coverImage: Value(t.coverImage),
-                durationMinutes: Value(t.durationMinutes),
-                distanceKm: Value(t.distanceKm?.toDouble()),
-                tourType: Value(t.tourType ?? 'walking'),
+                id: Value(t['id'] as String),
+                citySlug: Value(t['city_slug'] as String? ?? citySlug),
+                titleRu: Value(t['title_ru'] as String? ?? ''),
+                descriptionRu: Value(t['description_ru'] as String?),
+                coverImage: Value(t['cover_image'] as String?),
+                durationMinutes: Value(t['duration_minutes'] as int?),
+                distanceKm: Value((t['distance_km'] as num?)?.toDouble()),
+                tourType: Value(t['tour_type'] as String? ?? 'walking'),
+                priceAmount: Value((t['price_amount'] as num?)?.toDouble()),
+                priceCurrency: Value(t['price_currency'] as String? ?? 'RUB'),
+                isFree: Value(t['is_free'] as bool? ?? false),
+                avgRating: Value((t['avg_rating'] as num?)?.toDouble()),
+                ratingCount: Value(t['rating_count'] as int? ?? 0),
               ))
           .toList();
 

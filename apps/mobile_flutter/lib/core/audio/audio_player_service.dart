@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
+import 'package:mobile_flutter/core/audio/audio_handler.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/services/analytics_service.dart';
@@ -136,6 +137,12 @@ class AudioPlayerService {
     // Auto-play
     await _handler.play();
     print('[DEBUG AUDIO] Play started');
+    
+    // Apply saved playback speed
+    final savedSpeed = settingsAsync.value?.getPlaybackSpeed() ?? 1.0;
+    if (savedSpeed != 1.0 && _handler is AudiogidAudioHandler) {
+      await (_handler as AudiogidAudioHandler).setSpeed(savedSpeed);
+    }
   }
 
   Future<void> play() => _handler.play();

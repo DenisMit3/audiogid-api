@@ -158,6 +158,16 @@ class AudiogidAudioHandler extends BaseAudioHandler
     }
   }
 
+  // Playback speed control
+  Future<void> setSpeed(double speed) async {
+    await _player.setSpeed(speed);
+    _broadcastState(_player.playbackEvent);
+  }
+
+  double get speed => _player.speed;
+
+  Stream<double> get speedStream => _player.speedStream;
+
   void _broadcastState(PlaybackEvent event) {
     playbackState.add(playbackState.value.copyWith(
       controls: [

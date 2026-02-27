@@ -36,6 +36,11 @@ class Tours extends Table {
   RealColumn get distanceKm => real().nullable()();
   TextColumn get tourType => text().withDefault(const Constant('walking'))();
   TextColumn get difficulty => text().withDefault(const Constant('easy'))();
+  RealColumn get priceAmount => real().nullable()();
+  TextColumn get priceCurrency => text().withDefault(const Constant('RUB'))();
+  BoolColumn get isFree => boolean().withDefault(const Constant(false))();
+  RealColumn get avgRating => real().nullable()();
+  IntColumn get ratingCount => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -196,7 +201,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -274,6 +279,15 @@ class AppDatabase extends _$AppDatabase {
                 'DROP INDEX IF EXISTS sqlite_autoindex_pois_2');
             await customStatement(
                 'DROP INDEX IF EXISTS pois_city_slug_category_unique');
+          }
+          if (from < 17) {
+            await m.addColumn(tours, tours.priceAmount);
+            await m.addColumn(tours, tours.priceCurrency);
+            await m.addColumn(tours, tours.isFree);
+          }
+          if (from < 18) {
+            await m.addColumn(tours, tours.avgRating);
+            await m.addColumn(tours, tours.ratingCount);
           }
         },
       );

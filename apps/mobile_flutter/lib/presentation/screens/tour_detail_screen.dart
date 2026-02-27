@@ -30,6 +30,15 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
   final Set<String> _selectedPoiIds = {};
   bool _syncTriggered = false;
 
+  String _formatAudioDuration(double seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = (seconds % 60).floor();
+    if (mins > 0) {
+      return '$mins мин';
+    }
+    return '$secs сек';
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedCity = ref.watch(selectedCityProvider).value;
@@ -328,6 +337,16 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
   }
 
   Widget _buildTourInfo(BuildContext context, Tour tour) {
+    // Calculate total audio duration from POIs
+    final items = tour.items ?? [];
+    double totalAudioSeconds = 0;
+    for (final item in items) {
+      if (item.poi != null && item.poi!.narrations.isNotEmpty) {
+        totalAudioSeconds += item.poi!.narrations.first.durationSeconds ?? 0;
+      }
+    }
+    final totalAudioMinutes = (totalAudioSeconds / 60).ceil();
+    
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -340,6 +359,12 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                     icon: Icons.timer_outlined,
                     label: '${tour.durationMinutes ?? 0} мин'),
                 const SizedBox(width: 8),
+                if (totalAudioMinutes > 0) ...[
+                  _InfoChip(
+                      icon: Icons.headphones,
+                      label: '$totalAudioMinutes мин аудио'),
+                  const SizedBox(width: 8),
+                ],
                 _InfoChip(
                     icon: Icons.route_outlined,
                     label: '${tour.distanceKm?.toStringAsFixed(1) ?? '—'} км'),
@@ -431,8 +456,27 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                 ),
                 title: Text(poi.titleRu,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(poi.descriptionRu ?? '',
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Row(
+                  children: [
+                    Expanded(
+                      child: Text(poi.descriptionRu ?? '',
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                    if (poi.narrations.isNotEmpty && poi.narrations.first.durationSeconds != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.headphones, size: 14, color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatAudioDuration(poi.narrations.first.durationSeconds!),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

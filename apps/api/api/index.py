@@ -96,6 +96,54 @@ except Exception as e:
     admin_media_router = None
 
 try:
+    from .admin.entitlements import router as admin_entitlements_router
+except Exception as e:
+    logger.error(f"Failed to import admin_entitlements router: {e}")
+    admin_entitlements_router = None
+
+try:
+    from .admin.helpers import router as admin_helpers_router
+except Exception as e:
+    logger.error(f"Failed to import admin_helpers router: {e}")
+    admin_helpers_router = None
+
+try:
+    from .admin.itineraries import router as admin_itineraries_router
+except Exception as e:
+    logger.error(f"Failed to import admin_itineraries router: {e}")
+    admin_itineraries_router = None
+
+try:
+    from .admin.settings import router as admin_settings_router
+except Exception as e:
+    logger.error(f"Failed to import admin_settings router: {e}")
+    admin_settings_router = None
+
+try:
+    from .admin.analytics import router as admin_analytics_router
+except Exception as e:
+    logger.error(f"Failed to import admin_analytics router: {e}")
+    admin_analytics_router = None
+
+try:
+    from .admin.users import router as admin_users_router
+except Exception as e:
+    logger.error(f"Failed to import admin_users router: {e}")
+    admin_users_router = None
+
+try:
+    from .admin.audit import router as admin_audit_router
+except Exception as e:
+    logger.error(f"Failed to import admin_audit router: {e}")
+    admin_audit_router = None
+
+try:
+    from .admin.ratings import router as admin_ratings_router
+except Exception as e:
+    logger.error(f"Failed to import admin_ratings router: {e}")
+    admin_ratings_router = None
+
+try:
     from .purchases import router as purchases_router
 except Exception as e:
     logger.error(f"Failed to import purchases router: {e}")
@@ -172,6 +220,14 @@ else:
     print(f"[DEBUG] admin_cities_router is None, not adding")
 if admin_validation_router: app.include_router(admin_validation_router, prefix="/v1")
 if admin_media_router: app.include_router(admin_media_router, prefix="/v1")
+if admin_entitlements_router: app.include_router(admin_entitlements_router, prefix="/v1")
+if admin_helpers_router: app.include_router(admin_helpers_router, prefix="/v1")
+if admin_itineraries_router: app.include_router(admin_itineraries_router, prefix="/v1")
+if admin_settings_router: app.include_router(admin_settings_router, prefix="/v1")
+if admin_analytics_router: app.include_router(admin_analytics_router, prefix="/v1")
+if admin_users_router: app.include_router(admin_users_router, prefix="/v1")
+if admin_audit_router: app.include_router(admin_audit_router, prefix="/v1")
+if admin_ratings_router: app.include_router(admin_ratings_router, prefix="/v1")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")

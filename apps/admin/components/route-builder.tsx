@@ -224,6 +224,7 @@ type TourItem = {
     effective_lon?: number;
     poi_published_at?: string;
     transition_text_ru?: string;
+    transition_text_en?: string;
     transition_audio_url?: string;
     duration_seconds?: number;
 };
@@ -235,7 +236,7 @@ type Props = {
     onReorder: (items: TourItem[]) => void;
     onAddItem: (poiId: string, poiTitle: string) => void;
     onRemoveItem: (id: string) => void;
-    onUpdateItem: (itemId: string, data: { transition_text_ru?: string, duration_seconds?: number, transition_audio_url?: string, override_lat?: number, override_lon?: number }) => void;
+    onUpdateItem: (itemId: string, data: { transition_text_ru?: string, transition_text_en?: string, duration_seconds?: number, transition_audio_url?: string, override_lat?: number, override_lon?: number }) => void;
     onAddNewPoi?: (lat: number, lon: number, title: string) => Promise<string | null>;
     onPoiPublishChange?: () => void;
 };
@@ -250,7 +251,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
 
     const [openCombobox, setOpenCombobox] = useState(false);
     const [editingItem, setEditingItem] = useState<TourItem | null>(null);
-    const [editForm, setEditForm] = useState({ text: '', duration: 0, audioUrl: '' });
+    const [editForm, setEditForm] = useState({ text: '', textEn: '', duration: 0, audioUrl: '' });
     const [selectedItemId, setSelectedItemId] = useState<string | undefined>();
     const [isAddMode, setIsAddMode] = useState(false);
     const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -428,6 +429,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
         setEditingItem(item);
         setEditForm({
             text: item.transition_text_ru || '',
+            textEn: item.transition_text_en || '',
             duration: item.duration_seconds || 0,
             audioUrl: item.transition_audio_url || ''
         });
@@ -438,6 +440,7 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
         if (!editingItem) return;
         onUpdateItem(editingItem.id, {
             transition_text_ru: editForm.text,
+            transition_text_en: editForm.textEn,
             duration_seconds: editForm.duration,
             transition_audio_url: editForm.audioUrl || undefined
         });
@@ -633,12 +636,26 @@ export function RouteBuilder({ items, citySlug, tourId, onReorder, onAddItem, on
                         {/* Заметка */}
                         <div>
                             <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                                Инструкция перехода
+                                Инструкция перехода (RU)
                             </Label>
                             <Textarea
                                 value={editForm.text}
                                 onChange={e => setEditForm({ ...editForm, text: e.target.value })}
                                 placeholder="Пройдите 50м прямо, поверните налево..."
+                                rows={2}
+                                className="resize-none text-sm"
+                            />
+                        </div>
+
+                        {/* Заметка EN */}
+                        <div>
+                            <Label className="text-xs font-medium text-slate-600 mb-1.5 block">
+                                Инструкция перехода (EN)
+                            </Label>
+                            <Textarea
+                                value={editForm.textEn}
+                                onChange={e => setEditForm({ ...editForm, textEn: e.target.value })}
+                                placeholder="Walk 50m straight, turn left..."
                                 rows={2}
                                 className="resize-none text-sm"
                             />

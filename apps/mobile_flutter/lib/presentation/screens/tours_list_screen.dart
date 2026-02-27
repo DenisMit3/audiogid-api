@@ -525,9 +525,15 @@ class _TourCard extends StatelessWidget {
                                   style: textTheme.titleMedium,
                                 ),
                               ),
-                              if (tour.durationMinutes != null) ...[
+                              if (tour.avgRating != null) ...[
                                 const SizedBox(width: AppSpacing.sm),
-                                TextBadge.duration(tour.durationMinutes!),
+                                TextBadge.rating(tour.avgRating!, tour.ratingCount),
+                              ] else if (tour.isFree) ...[
+                                const SizedBox(width: AppSpacing.sm),
+                                TextBadge.free(),
+                              ] else if (tour.priceAmount != null) ...[
+                                const SizedBox(width: AppSpacing.sm),
+                                TextBadge.price(tour.priceAmount!, tour.priceCurrency),
                               ],
                             ],
                           ),
@@ -546,24 +552,20 @@ class _TourCard extends StatelessWidget {
                           // Metadata row
                           Row(
                             children: [
+                              if (tour.durationMinutes != null) ...[
+                                TextBadge.duration(tour.durationMinutes!),
+                                const SizedBox(width: AppSpacing.sm),
+                              ],
                               if (tour.distanceKm != null) ...[
                                 TextBadge.distance(tour.distanceKm!),
                                 const SizedBox(width: AppSpacing.sm),
                               ],
-                              if (tour.tourType != null) ...[
-                                Icon(
-                                  tour.tourType == 'walking'
-                                      ? Icons.directions_walk
-                                      : Icons.directions_car,
-                                  size: 16,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 4),
-                                LabelText(
-                                  tour.tourType == 'walking'
-                                      ? 'Пешком'
-                                      : 'На машине',
-                                ),
+                              if (tour.isFree) ...[
+                                TextBadge.free(),
+                                const SizedBox(width: AppSpacing.sm),
+                              ] else if (tour.priceAmount != null) ...[
+                                TextBadge.price(tour.priceAmount!, tour.priceCurrency),
+                                const SizedBox(width: AppSpacing.sm),
                               ],
                               const Spacer(),
                               if (!isSelectionMode)

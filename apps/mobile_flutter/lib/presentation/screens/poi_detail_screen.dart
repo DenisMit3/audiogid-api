@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
@@ -12,6 +13,7 @@ import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/presentation/widgets/paywall_widget.dart';
 import 'package:mobile_flutter/core/audio/audio_player_service.dart';
+import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -336,18 +338,14 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
                   button: true,
                   label: 'Слушать бесплатное превью',
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      // Preview always allowed
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Воспроизведение превью...'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+                    onPressed: poi.previewAudioUrl != null
+                        ? () {
+                            HapticFeedback.lightImpact();
+                            _playPreviewAudio(context, ref, poi.previewAudioUrl!);
+                          }
+                        : null,
                     icon: const Icon(Icons.preview_outlined),
-                    label: const Text('Превью'),
+                    label: Text(poi.previewAudioUrl != null ? 'Превью' : 'Нет превью'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 52),
                     ),
@@ -621,6 +619,30 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
         .then((_) {
       ref.read(audioPlayerServiceProvider).play();
     });
+  }
+
+  void _playPreviewAudio(BuildContext context, WidgetRef ref, String previewUrl) {
+    final audioHandler = ref.read(audioHandlerProvider);
+    
+    // Create a MediaItem for the preview
+    final previewItem = MediaItem(
+      id: previewUrl,
+      title: 'Превью',
+      artist: 'Аудиогид',
+      duration: const Duration(seconds: 30),
+    );
+    
+    // Play the preview
+    audioHandler.updateQueue([previewItem]);
+    audioHandler.skipToQueueItem(0);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Воспроизведение превью (30 сек)...'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _showGatingDialog(BuildContext context) {

@@ -380,6 +380,43 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('easy'));
+  static const VerificationMeta _priceAmountMeta =
+      const VerificationMeta('priceAmount');
+  @override
+  late final GeneratedColumn<double> priceAmount = GeneratedColumn<double>(
+      'price_amount', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _priceCurrencyMeta =
+      const VerificationMeta('priceCurrency');
+  @override
+  late final GeneratedColumn<String> priceCurrency = GeneratedColumn<String>(
+      'price_currency', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('RUB'));
+  static const VerificationMeta _isFreeMeta = const VerificationMeta('isFree');
+  @override
+  late final GeneratedColumn<bool> isFree = GeneratedColumn<bool>(
+      'is_free', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_free" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _avgRatingMeta =
+      const VerificationMeta('avgRating');
+  @override
+  late final GeneratedColumn<double> avgRating = GeneratedColumn<double>(
+      'avg_rating', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _ratingCountMeta =
+      const VerificationMeta('ratingCount');
+  @override
+  late final GeneratedColumn<int> ratingCount = GeneratedColumn<int>(
+      'rating_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -391,7 +428,12 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
         transportType,
         distanceKm,
         tourType,
-        difficulty
+        difficulty,
+        priceAmount,
+        priceCurrency,
+        isFree,
+        avgRating,
+        ratingCount
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -460,6 +502,32 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
           difficulty.isAcceptableOrUnknown(
               data['difficulty']!, _difficultyMeta));
     }
+    if (data.containsKey('price_amount')) {
+      context.handle(
+          _priceAmountMeta,
+          priceAmount.isAcceptableOrUnknown(
+              data['price_amount']!, _priceAmountMeta));
+    }
+    if (data.containsKey('price_currency')) {
+      context.handle(
+          _priceCurrencyMeta,
+          priceCurrency.isAcceptableOrUnknown(
+              data['price_currency']!, _priceCurrencyMeta));
+    }
+    if (data.containsKey('is_free')) {
+      context.handle(_isFreeMeta,
+          isFree.isAcceptableOrUnknown(data['is_free']!, _isFreeMeta));
+    }
+    if (data.containsKey('avg_rating')) {
+      context.handle(_avgRatingMeta,
+          avgRating.isAcceptableOrUnknown(data['avg_rating']!, _avgRatingMeta));
+    }
+    if (data.containsKey('rating_count')) {
+      context.handle(
+          _ratingCountMeta,
+          ratingCount.isAcceptableOrUnknown(
+              data['rating_count']!, _ratingCountMeta));
+    }
     return context;
   }
 
@@ -489,6 +557,16 @@ class $ToursTable extends Tours with TableInfo<$ToursTable, Tour> {
           .read(DriftSqlType.string, data['${effectivePrefix}tour_type'])!,
       difficulty: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}difficulty'])!,
+      priceAmount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}price_amount']),
+      priceCurrency: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}price_currency'])!,
+      isFree: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_free'])!,
+      avgRating: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}avg_rating']),
+      ratingCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}rating_count'])!,
     );
   }
 
@@ -509,6 +587,11 @@ class Tour extends DataClass implements Insertable<Tour> {
   final double? distanceKm;
   final String tourType;
   final String difficulty;
+  final double? priceAmount;
+  final String priceCurrency;
+  final bool isFree;
+  final double? avgRating;
+  final int ratingCount;
   const Tour(
       {required this.id,
       required this.citySlug,
@@ -519,7 +602,12 @@ class Tour extends DataClass implements Insertable<Tour> {
       this.transportType,
       this.distanceKm,
       required this.tourType,
-      required this.difficulty});
+      required this.difficulty,
+      this.priceAmount,
+      required this.priceCurrency,
+      required this.isFree,
+      this.avgRating,
+      required this.ratingCount});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -543,6 +631,15 @@ class Tour extends DataClass implements Insertable<Tour> {
     }
     map['tour_type'] = Variable<String>(tourType);
     map['difficulty'] = Variable<String>(difficulty);
+    if (!nullToAbsent || priceAmount != null) {
+      map['price_amount'] = Variable<double>(priceAmount);
+    }
+    map['price_currency'] = Variable<String>(priceCurrency);
+    map['is_free'] = Variable<bool>(isFree);
+    if (!nullToAbsent || avgRating != null) {
+      map['avg_rating'] = Variable<double>(avgRating);
+    }
+    map['rating_count'] = Variable<int>(ratingCount);
     return map;
   }
 
@@ -568,6 +665,15 @@ class Tour extends DataClass implements Insertable<Tour> {
           : Value(distanceKm),
       tourType: Value(tourType),
       difficulty: Value(difficulty),
+      priceAmount: priceAmount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(priceAmount),
+      priceCurrency: Value(priceCurrency),
+      isFree: Value(isFree),
+      avgRating: avgRating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avgRating),
+      ratingCount: Value(ratingCount),
     );
   }
 
@@ -585,6 +691,11 @@ class Tour extends DataClass implements Insertable<Tour> {
       distanceKm: serializer.fromJson<double?>(json['distanceKm']),
       tourType: serializer.fromJson<String>(json['tourType']),
       difficulty: serializer.fromJson<String>(json['difficulty']),
+      priceAmount: serializer.fromJson<double?>(json['priceAmount']),
+      priceCurrency: serializer.fromJson<String>(json['priceCurrency']),
+      isFree: serializer.fromJson<bool>(json['isFree']),
+      avgRating: serializer.fromJson<double?>(json['avgRating']),
+      ratingCount: serializer.fromJson<int>(json['ratingCount']),
     );
   }
   @override
@@ -601,6 +712,11 @@ class Tour extends DataClass implements Insertable<Tour> {
       'distanceKm': serializer.toJson<double?>(distanceKm),
       'tourType': serializer.toJson<String>(tourType),
       'difficulty': serializer.toJson<String>(difficulty),
+      'priceAmount': serializer.toJson<double?>(priceAmount),
+      'priceCurrency': serializer.toJson<String>(priceCurrency),
+      'isFree': serializer.toJson<bool>(isFree),
+      'avgRating': serializer.toJson<double?>(avgRating),
+      'ratingCount': serializer.toJson<int>(ratingCount),
     };
   }
 
@@ -614,7 +730,12 @@ class Tour extends DataClass implements Insertable<Tour> {
           Value<String?> transportType = const Value.absent(),
           Value<double?> distanceKm = const Value.absent(),
           String? tourType,
-          String? difficulty}) =>
+          String? difficulty,
+          Value<double?> priceAmount = const Value.absent(),
+          String? priceCurrency,
+          bool? isFree,
+          Value<double?> avgRating = const Value.absent(),
+          int? ratingCount}) =>
       Tour(
         id: id ?? this.id,
         citySlug: citySlug ?? this.citySlug,
@@ -630,6 +751,11 @@ class Tour extends DataClass implements Insertable<Tour> {
         distanceKm: distanceKm.present ? distanceKm.value : this.distanceKm,
         tourType: tourType ?? this.tourType,
         difficulty: difficulty ?? this.difficulty,
+        priceAmount: priceAmount.present ? priceAmount.value : this.priceAmount,
+        priceCurrency: priceCurrency ?? this.priceCurrency,
+        isFree: isFree ?? this.isFree,
+        avgRating: avgRating.present ? avgRating.value : this.avgRating,
+        ratingCount: ratingCount ?? this.ratingCount,
       );
   Tour copyWithCompanion(ToursCompanion data) {
     return Tour(
@@ -652,6 +778,15 @@ class Tour extends DataClass implements Insertable<Tour> {
       tourType: data.tourType.present ? data.tourType.value : this.tourType,
       difficulty:
           data.difficulty.present ? data.difficulty.value : this.difficulty,
+      priceAmount:
+          data.priceAmount.present ? data.priceAmount.value : this.priceAmount,
+      priceCurrency: data.priceCurrency.present
+          ? data.priceCurrency.value
+          : this.priceCurrency,
+      isFree: data.isFree.present ? data.isFree.value : this.isFree,
+      avgRating: data.avgRating.present ? data.avgRating.value : this.avgRating,
+      ratingCount:
+          data.ratingCount.present ? data.ratingCount.value : this.ratingCount,
     );
   }
 
@@ -667,7 +802,12 @@ class Tour extends DataClass implements Insertable<Tour> {
           ..write('transportType: $transportType, ')
           ..write('distanceKm: $distanceKm, ')
           ..write('tourType: $tourType, ')
-          ..write('difficulty: $difficulty')
+          ..write('difficulty: $difficulty, ')
+          ..write('priceAmount: $priceAmount, ')
+          ..write('priceCurrency: $priceCurrency, ')
+          ..write('isFree: $isFree, ')
+          ..write('avgRating: $avgRating, ')
+          ..write('ratingCount: $ratingCount')
           ..write(')'))
         .toString();
   }
@@ -683,7 +823,12 @@ class Tour extends DataClass implements Insertable<Tour> {
       transportType,
       distanceKm,
       tourType,
-      difficulty);
+      difficulty,
+      priceAmount,
+      priceCurrency,
+      isFree,
+      avgRating,
+      ratingCount);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -697,7 +842,12 @@ class Tour extends DataClass implements Insertable<Tour> {
           other.transportType == this.transportType &&
           other.distanceKm == this.distanceKm &&
           other.tourType == this.tourType &&
-          other.difficulty == this.difficulty);
+          other.difficulty == this.difficulty &&
+          other.priceAmount == this.priceAmount &&
+          other.priceCurrency == this.priceCurrency &&
+          other.isFree == this.isFree &&
+          other.avgRating == this.avgRating &&
+          other.ratingCount == this.ratingCount);
 }
 
 class ToursCompanion extends UpdateCompanion<Tour> {
@@ -711,6 +861,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
   final Value<double?> distanceKm;
   final Value<String> tourType;
   final Value<String> difficulty;
+  final Value<double?> priceAmount;
+  final Value<String> priceCurrency;
+  final Value<bool> isFree;
+  final Value<double?> avgRating;
+  final Value<int> ratingCount;
   final Value<int> rowid;
   const ToursCompanion({
     this.id = const Value.absent(),
@@ -723,6 +878,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     this.distanceKm = const Value.absent(),
     this.tourType = const Value.absent(),
     this.difficulty = const Value.absent(),
+    this.priceAmount = const Value.absent(),
+    this.priceCurrency = const Value.absent(),
+    this.isFree = const Value.absent(),
+    this.avgRating = const Value.absent(),
+    this.ratingCount = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ToursCompanion.insert({
@@ -736,6 +896,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     this.distanceKm = const Value.absent(),
     this.tourType = const Value.absent(),
     this.difficulty = const Value.absent(),
+    this.priceAmount = const Value.absent(),
+    this.priceCurrency = const Value.absent(),
+    this.isFree = const Value.absent(),
+    this.avgRating = const Value.absent(),
+    this.ratingCount = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         citySlug = Value(citySlug),
@@ -751,6 +916,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     Expression<double>? distanceKm,
     Expression<String>? tourType,
     Expression<String>? difficulty,
+    Expression<double>? priceAmount,
+    Expression<String>? priceCurrency,
+    Expression<bool>? isFree,
+    Expression<double>? avgRating,
+    Expression<int>? ratingCount,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -764,6 +934,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       if (distanceKm != null) 'distance_km': distanceKm,
       if (tourType != null) 'tour_type': tourType,
       if (difficulty != null) 'difficulty': difficulty,
+      if (priceAmount != null) 'price_amount': priceAmount,
+      if (priceCurrency != null) 'price_currency': priceCurrency,
+      if (isFree != null) 'is_free': isFree,
+      if (avgRating != null) 'avg_rating': avgRating,
+      if (ratingCount != null) 'rating_count': ratingCount,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -779,6 +954,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       Value<double?>? distanceKm,
       Value<String>? tourType,
       Value<String>? difficulty,
+      Value<double?>? priceAmount,
+      Value<String>? priceCurrency,
+      Value<bool>? isFree,
+      Value<double?>? avgRating,
+      Value<int>? ratingCount,
       Value<int>? rowid}) {
     return ToursCompanion(
       id: id ?? this.id,
@@ -791,6 +971,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
       distanceKm: distanceKm ?? this.distanceKm,
       tourType: tourType ?? this.tourType,
       difficulty: difficulty ?? this.difficulty,
+      priceAmount: priceAmount ?? this.priceAmount,
+      priceCurrency: priceCurrency ?? this.priceCurrency,
+      isFree: isFree ?? this.isFree,
+      avgRating: avgRating ?? this.avgRating,
+      ratingCount: ratingCount ?? this.ratingCount,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -828,6 +1013,21 @@ class ToursCompanion extends UpdateCompanion<Tour> {
     if (difficulty.present) {
       map['difficulty'] = Variable<String>(difficulty.value);
     }
+    if (priceAmount.present) {
+      map['price_amount'] = Variable<double>(priceAmount.value);
+    }
+    if (priceCurrency.present) {
+      map['price_currency'] = Variable<String>(priceCurrency.value);
+    }
+    if (isFree.present) {
+      map['is_free'] = Variable<bool>(isFree.value);
+    }
+    if (avgRating.present) {
+      map['avg_rating'] = Variable<double>(avgRating.value);
+    }
+    if (ratingCount.present) {
+      map['rating_count'] = Variable<int>(ratingCount.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -847,6 +1047,11 @@ class ToursCompanion extends UpdateCompanion<Tour> {
           ..write('distanceKm: $distanceKm, ')
           ..write('tourType: $tourType, ')
           ..write('difficulty: $difficulty, ')
+          ..write('priceAmount: $priceAmount, ')
+          ..write('priceCurrency: $priceCurrency, ')
+          ..write('isFree: $isFree, ')
+          ..write('avgRating: $avgRating, ')
+          ..write('ratingCount: $ratingCount, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4724,6 +4929,11 @@ typedef $$ToursTableCreateCompanionBuilder = ToursCompanion Function({
   Value<double?> distanceKm,
   Value<String> tourType,
   Value<String> difficulty,
+  Value<double?> priceAmount,
+  Value<String> priceCurrency,
+  Value<bool> isFree,
+  Value<double?> avgRating,
+  Value<int> ratingCount,
   Value<int> rowid,
 });
 typedef $$ToursTableUpdateCompanionBuilder = ToursCompanion Function({
@@ -4737,6 +4947,11 @@ typedef $$ToursTableUpdateCompanionBuilder = ToursCompanion Function({
   Value<double?> distanceKm,
   Value<String> tourType,
   Value<String> difficulty,
+  Value<double?> priceAmount,
+  Value<String> priceCurrency,
+  Value<bool> isFree,
+  Value<double?> avgRating,
+  Value<int> ratingCount,
   Value<int> rowid,
 });
 
@@ -4797,6 +5012,21 @@ class $$ToursTableFilterComposer extends Composer<_$AppDatabase, $ToursTable> {
 
   ColumnFilters<String> get difficulty => $composableBuilder(
       column: $table.difficulty, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get priceAmount => $composableBuilder(
+      column: $table.priceAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get priceCurrency => $composableBuilder(
+      column: $table.priceCurrency, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFree => $composableBuilder(
+      column: $table.isFree, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get avgRating => $composableBuilder(
+      column: $table.avgRating, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get ratingCount => $composableBuilder(
+      column: $table.ratingCount, builder: (column) => ColumnFilters(column));
 
   Expression<bool> tourItemsRefs(
       Expression<bool> Function($$TourItemsTableFilterComposer f) f) {
@@ -4861,6 +5091,22 @@ class $$ToursTableOrderingComposer
 
   ColumnOrderings<String> get difficulty => $composableBuilder(
       column: $table.difficulty, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get priceAmount => $composableBuilder(
+      column: $table.priceAmount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get priceCurrency => $composableBuilder(
+      column: $table.priceCurrency,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFree => $composableBuilder(
+      column: $table.isFree, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get avgRating => $composableBuilder(
+      column: $table.avgRating, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get ratingCount => $composableBuilder(
+      column: $table.ratingCount, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ToursTableAnnotationComposer
@@ -4901,6 +5147,21 @@ class $$ToursTableAnnotationComposer
 
   GeneratedColumn<String> get difficulty => $composableBuilder(
       column: $table.difficulty, builder: (column) => column);
+
+  GeneratedColumn<double> get priceAmount => $composableBuilder(
+      column: $table.priceAmount, builder: (column) => column);
+
+  GeneratedColumn<String> get priceCurrency => $composableBuilder(
+      column: $table.priceCurrency, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFree =>
+      $composableBuilder(column: $table.isFree, builder: (column) => column);
+
+  GeneratedColumn<double> get avgRating =>
+      $composableBuilder(column: $table.avgRating, builder: (column) => column);
+
+  GeneratedColumn<int> get ratingCount => $composableBuilder(
+      column: $table.ratingCount, builder: (column) => column);
 
   Expression<T> tourItemsRefs<T extends Object>(
       Expression<T> Function($$TourItemsTableAnnotationComposer a) f) {
@@ -4957,6 +5218,11 @@ class $$ToursTableTableManager extends RootTableManager<
             Value<double?> distanceKm = const Value.absent(),
             Value<String> tourType = const Value.absent(),
             Value<String> difficulty = const Value.absent(),
+            Value<double?> priceAmount = const Value.absent(),
+            Value<String> priceCurrency = const Value.absent(),
+            Value<bool> isFree = const Value.absent(),
+            Value<double?> avgRating = const Value.absent(),
+            Value<int> ratingCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ToursCompanion(
@@ -4970,6 +5236,11 @@ class $$ToursTableTableManager extends RootTableManager<
             distanceKm: distanceKm,
             tourType: tourType,
             difficulty: difficulty,
+            priceAmount: priceAmount,
+            priceCurrency: priceCurrency,
+            isFree: isFree,
+            avgRating: avgRating,
+            ratingCount: ratingCount,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4983,6 +5254,11 @@ class $$ToursTableTableManager extends RootTableManager<
             Value<double?> distanceKm = const Value.absent(),
             Value<String> tourType = const Value.absent(),
             Value<String> difficulty = const Value.absent(),
+            Value<double?> priceAmount = const Value.absent(),
+            Value<String> priceCurrency = const Value.absent(),
+            Value<bool> isFree = const Value.absent(),
+            Value<double?> avgRating = const Value.absent(),
+            Value<int> ratingCount = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ToursCompanion.insert(
@@ -4996,6 +5272,11 @@ class $$ToursTableTableManager extends RootTableManager<
             distanceKm: distanceKm,
             tourType: tourType,
             difficulty: difficulty,
+            priceAmount: priceAmount,
+            priceCurrency: priceCurrency,
+            isFree: isFree,
+            avgRating: avgRating,
+            ratingCount: ratingCount,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

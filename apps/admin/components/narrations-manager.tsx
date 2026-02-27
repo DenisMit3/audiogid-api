@@ -31,6 +31,7 @@ import { useToast } from "@/components/ui/use-toast";
 type NarrationItem = {
     id: string;
     url: string;
+    kids_url?: string;
     locale: string;
     duration_seconds: number;
     transcript: string;
@@ -54,6 +55,8 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
     // Form State
     const [locale, setLocale] = useState('ru');
     const [transcript, setTranscript] = useState('');
+    const [kidsUrl, setKidsUrl] = useState<string | null>(null);
+    const [kidsFile, setKidsFile] = useState<File | null>(null);
 
     const queryClient = useQueryClient();
 
@@ -105,6 +108,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                 credentials: 'include',
                 body: JSON.stringify({
                     url: uploadedUrl,
+                    kids_url: kidsUrl || undefined,
                     locale: locale,
                     duration_seconds: audioDuration,
                     transcript: transcript
@@ -118,6 +122,7 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
             setList([...list, {
                 id: data.id,
                 url: uploadedUrl!,
+                kids_url: kidsUrl || undefined,
                 locale,
                 duration_seconds: audioDuration,
                 transcript
@@ -161,6 +166,8 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
         setUploadedUrl(null);
         setCurrentFile(null);
         setAudioDuration(0);
+        setKidsUrl(null);
+        setKidsFile(null);
     };
 
     const formatDuration = (sec: number) => {
@@ -187,6 +194,9 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                                     <div className="font-medium flex items-center gap-2">
                                         <span className="uppercase text-xs font-bold bg-slate-200 px-1.5 py-0.5 rounded">{n.locale}</span>
                                         <span>{formatDuration(n.duration_seconds)}</span>
+                                        {n.kids_url && (
+                                            <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">👶 детская</span>
+                                        )}
                                     </div>
                                     <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                                         {n.transcript || "Нет транскрипта"}
@@ -249,6 +259,83 @@ export function NarrationsManager({ poiId, narrations: initialNarrations }: Prop
                                     rows={5}
                                 />
                             </div>
+                            
+                            {/* Kids Audio Upload */}
+                            <div className="grid gap-2 p-3 border rounded-lg bg-purple-50/50">
+                                <Label className="flex items-center gap-2">
+                                    <span>👶</span> Детская версия (опционально)
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Упрощённая озвучка для режима "С детьми"
+                                </p>
+                                {kidsUrl ? (
+                                    <div className="flex items-center gap-2">
+                                        <audio src={kidsUrl} controls className="flex-1 h-8" />
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => { setKidsUrl(null); setKidsFile(null); }}
+                                        >
+                                            <Trash className="w-4 h-4 text-red-500" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <input
+                                            type="file"
+                                            accept="audio/*"
+                                            className="hidden"
+                                            id="kids-audio-input"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setKidsFile(file);
+                                                
+                                                // Upload kids audio
+                                                try {
+                                                    const preRes = await fetch(`${API_URL}/admin/media/presign`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        credentials: 'include',
+                                                        body: JSON.stringify({
+                                                            filename: `kids_${file.name}`,
+                                                            content_type: file.type,
+                                                            entity_type: 'poi',
+                                                            entity_id: poiId
+                                                        })
+                                                    });
+                                                    if (!preRes.ok) throw new Error("Presign failed");
+                                                    const { upload_url, final_url, headers } = await preRes.json();
+                                                    
+                                                    const uploadRes = await fetch(upload_url, {
+                                                        method: 'PUT',
+                                                        body: file,
+                                                        headers: headers || {}
+                                                    });
+                                                    if (!uploadRes.ok) throw new Error("Upload failed");
+                                                    
+                                                    setKidsUrl(final_url);
+                                                } catch (err) {
+                                                    console.error('Kids audio upload failed:', err);
+                                                    setKidsFile(null);
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full"
+                                            onClick={() => document.getElementById('kids-audio-input')?.click()}
+                                        >
+                                            <Upload className="w-4 h-4 mr-2" />
+                                            {kidsFile ? 'Загрузка...' : 'Загрузить детскую версию'}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                            
                             {audioDuration > 0 && <div className="text-xs text-slate-500">Определённая длительность: {audioDuration.toFixed(1)}с</div>}
                         </div>
 

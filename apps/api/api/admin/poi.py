@@ -61,6 +61,7 @@ class NarrationRead(BaseModel):
     id: uuid.UUID
     locale: str
     url: str
+    kids_url: Optional[str] = None
     duration_seconds: float
     transcript: Optional[str]
 
@@ -92,6 +93,7 @@ class CreateMediaReq(BaseModel):
 
 class CreateNarrationReq(BaseModel):
     url: str
+    kids_url: Optional[str] = None
     locale: str = "ru"
     duration_seconds: float
     transcript: Optional[str] = None
@@ -357,7 +359,93 @@ def add_poi_narration(poi_id: uuid.UUID, req: CreateNarrationReq, session: Sessi
     narration = Narration(poi_id=poi_id, **req.dict())
     session.add(narration)
     session.commit()
+    
+    # Auto-generate preview audio if duration > 30 seconds and no preview exists
+    if req.duration_seconds > 30 and not poi.preview_audio_url:
+        try:
+            preview_url = _generate_preview_audio(req.url, poi_id, session)
+            if preview_url:
+                poi.preview_audio_url = preview_url
+                session.add(poi)
+                session.commit()
+        except Exception as e:
+            print(f"Failed to generate preview audio: {e}")
+    
     return {"id": narration.id}
+
+
+def _generate_preview_audio(source_url: str, poi_id: uuid.UUID, session: Session) -> Optional[str]:
+    """
+    Generate a 30-second preview audio clip with fade-out using FFmpeg.
+    Returns the URL of the generated preview or None if failed.
+    """
+    import subprocess
+    import tempfile
+    import boto3
+    
+    if not settings.S3_ENDPOINT_URL:
+        return None
+    
+    try:
+        # Download source audio to temp file
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as src_file:
+            src_path = src_file.name
+            response = requests.get(source_url, timeout=30)
+            response.raise_for_status()
+            src_file.write(response.content)
+        
+        # Generate preview with FFmpeg
+        preview_path = src_path.replace('.mp3', '_preview.mp3')
+        
+        # FFmpeg command: take first 30 seconds with 5-second fade-out starting at 25s
+        cmd = [
+            'ffmpeg', '-y', '-i', src_path,
+            '-t', '30',
+            '-af', 'afade=t=out:st=25:d=5',
+            '-acodec', 'libmp3lame',
+            '-ab', '128k',
+            preview_path
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, timeout=60)
+        if result.returncode != 0:
+            print(f"FFmpeg error: {result.stderr.decode()}")
+            return None
+        
+        # Upload to S3
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.S3_ENDPOINT_URL,
+            aws_access_key_id=settings.S3_ACCESS_KEY,
+            aws_secret_access_key=settings.S3_SECRET_KEY,
+        )
+        
+        preview_key = f"poi/{poi_id}/preview_{uuid.uuid4()}.mp3"
+        
+        with open(preview_path, 'rb') as f:
+            s3.upload_fileobj(
+                f,
+                settings.S3_BUCKET_NAME,
+                preview_key,
+                ExtraArgs={'ContentType': 'audio/mpeg'}
+            )
+        
+        # Clean up temp files
+        os.unlink(src_path)
+        os.unlink(preview_path)
+        
+        # Return public URL
+        if settings.S3_PUBLIC_URL:
+            return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{preview_key}"
+        else:
+            return f"{settings.S3_ENDPOINT_URL.rstrip('/')}/{settings.S3_BUCKET_NAME}/{preview_key}"
+            
+    except subprocess.TimeoutExpired:
+        print("FFmpeg timeout")
+        return None
+    except Exception as e:
+        print(f"Preview generation error: {e}")
+        return None
 
 @router.delete("/admin/pois/{poi_id}/narrations/{narration_id}")
 def delete_poi_narration(poi_id: uuid.UUID, narration_id: uuid.UUID, session: Session = Depends(get_session), user: User = Depends(require_permission('poi:write'))):

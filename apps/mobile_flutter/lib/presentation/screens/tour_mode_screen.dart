@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:dio/dio.dart';
 import 'package:mobile_flutter/core/location/location_service.dart';
+import 'package:mobile_flutter/core/config/app_config.dart';
+import 'package:mobile_flutter/core/api/device_id_provider.dart';
 import 'package:mobile_flutter/data/services/tour_mode_service.dart';
 import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
@@ -357,6 +360,96 @@ class _TourControls extends ConsumerWidget {
 
   const _TourControls({required this.state, required this.totalSteps});
 
+  Future<void> _showRatingDialog(BuildContext context, WidgetRef ref, String tourId) async {
+    int selectedRating = 0;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Как вам прогулка?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Оцените тур, чтобы помочь другим пользователям'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  final starIndex = index + 1;
+                  return IconButton(
+                    onPressed: () => setState(() => selectedRating = starIndex),
+                    icon: Icon(
+                      starIndex <= selectedRating ? Icons.star : Icons.star_border,
+                      color: Colors.amber,
+                      size: 36,
+                    ),
+                  );
+                }),
+              ),
+              if (selectedRating > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _getRatingText(selectedRating),
+                    style: TextStyle(
+                      color: Theme.of(ctx).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Пропустить'),
+            ),
+            FilledButton(
+              onPressed: selectedRating > 0
+                  ? () async {
+                      Navigator.pop(ctx);
+                      await _submitRating(ref, tourId, selectedRating);
+                    }
+                  : null,
+              child: const Text('Оценить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getRatingText(int rating) {
+    switch (rating) {
+      case 1: return 'Очень плохо';
+      case 2: return 'Плохо';
+      case 3: return 'Нормально';
+      case 4: return 'Хорошо';
+      case 5: return 'Отлично!';
+      default: return '';
+    }
+  }
+
+  Future<void> _submitRating(WidgetRef ref, String tourId, int rating) async {
+    try {
+      final dio = Dio();
+      final config = ref.read(appConfigProvider);
+      final deviceId = await ref.read(deviceIdProvider.future);
+      
+      await dio.post(
+        '${config.apiBaseUrl}/public/tours/$tourId/rate',
+        data: {
+          'rating': rating,
+          'device_anon_id': deviceId,
+        },
+      );
+    } catch (e) {
+      print('Failed to submit rating: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final audioHandler = ref.watch(audioHandlerProvider);
@@ -438,9 +531,18 @@ class _TourControls extends ConsumerWidget {
                   ],
                 ),
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final tourId = state.activeTour?.id;
                     ref.read(tourModeServiceProvider.notifier).stopTour();
-                    if (context.canPop()) context.pop();
+                    
+                    // Show rating dialog
+                    if (tourId != null && context.mounted) {
+                      await _showRatingDialog(context, ref, tourId);
+                    }
+                    
+                    if (context.mounted) {
+                      if (context.canPop()) context.pop();
+                    }
                   },
                   child: const Text('Завершить прогулку',
                       style: TextStyle(color: Colors.redAccent)),

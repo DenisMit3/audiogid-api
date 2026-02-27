@@ -137,6 +137,7 @@ class TourItem(SQLModel, table=True):
     poi_id: Optional[uuid.UUID] = Field(default=None, foreign_key="poi.id")
     order_index: int = Field(default=0)
     transition_text_ru: Optional[str] = None
+    transition_text_en: Optional[str] = None
     transition_audio_url: Optional[str] = None
     duration_seconds: Optional[int] = None  # Recommended stay time
     # Override coordinates for this tour (if different from POI's default location)
@@ -542,3 +543,19 @@ class ItineraryItem(SQLModel, table=True):
     
     itinerary: Optional[Itinerary] = Relationship(back_populates="items")
     poi: Optional[Poi] = Relationship()
+
+
+# --- Tour Ratings ---
+
+class TourRating(SQLModel, table=True):
+    __tablename__ = "tour_ratings"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    tour_id: uuid.UUID = Field(foreign_key="tour.id", index=True)
+    device_anon_id: str = Field(index=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    rating: int = Field(ge=1, le=5)  # 1-5 stars
+    comment: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    tour: Optional[Tour] = Relationship()

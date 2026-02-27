@@ -42,7 +42,7 @@ final class FreeWalkingServiceProvider
 }
 
 String _$freeWalkingServiceHash() =>
-    r'c4f61011f8d50c32090b30f4693a46a4c27dbd8e';
+    r'69fe3969ebfdb93a8dcce1dc139110c4548ffd0d';
 
 abstract class _$FreeWalkingService extends $Notifier<FreeWalkingState> {
   FreeWalkingState build();

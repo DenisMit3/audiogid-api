@@ -362,6 +362,37 @@ class TextBadge extends StatelessWidget {
     return TextBadge('$count $word', icon: Icons.place);
   }
 
+  /// Factory for free badge
+  factory TextBadge.free() {
+    return TextBadge(
+      'Бесплатно',
+      icon: Icons.card_giftcard,
+      backgroundColor: const Color(0xFF4CAF50),
+      textColor: Colors.white,
+    );
+  }
+
+  /// Factory for price badge
+  factory TextBadge.price(double amount, [String currency = 'RUB']) {
+    final formatted = currency == 'RUB' 
+        ? '${amount.toInt()} ₽' 
+        : '${amount.toStringAsFixed(0)} $currency';
+    return TextBadge(formatted, icon: Icons.sell);
+  }
+
+  /// Factory for rating badge
+  factory TextBadge.rating(double rating, [int? count]) {
+    final text = count != null && count > 0
+        ? '${rating.toStringAsFixed(1)} ($count)'
+        : rating.toStringAsFixed(1);
+    return TextBadge(
+      text,
+      icon: Icons.star,
+      backgroundColor: const Color(0xFFFFC107),
+      textColor: Colors.black87,
+    );
+  }
+
   static String _pluralize(int n, String one, String few, String many) {
     if (n % 10 == 1 && n % 100 != 11) return one;
     if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20))

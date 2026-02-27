@@ -41,7 +41,7 @@ final class TourModeServiceProvider
   }
 }
 
-String _$tourModeServiceHash() => r'07452ed863f94576cda56c784fdb2dd34927728e';
+String _$tourModeServiceHash() => r'd19eddb14d42115ee8188df5c8037d10e27ecdf4';
 
 abstract class _$TourModeService extends $Notifier<TourModeState> {
   TourModeState build();

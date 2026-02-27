@@ -140,9 +140,11 @@ except Exception as e:
 try:
     from .admin.ratings import router as admin_ratings_router
     logger.info("admin_ratings_router imported successfully")
+    print(f"[STARTUP] admin_ratings_router imported: {admin_ratings_router}, routes: {len(admin_ratings_router.routes)}")
 except Exception as e:
     import traceback
     logger.error(f"Failed to import admin_ratings router: {e}\n{traceback.format_exc()}")
+    print(f"[STARTUP] admin_ratings_router FAILED: {e}")
     admin_ratings_router = None
 
 try:
@@ -232,8 +234,10 @@ if admin_audit_router: app.include_router(admin_audit_router, prefix="/v1")
 if admin_ratings_router: 
     app.include_router(admin_ratings_router, prefix="/v1")
     logger.info("admin_ratings_router registered successfully")
+    print(f"[STARTUP] admin_ratings_router REGISTERED in app")
 else:
     logger.error("admin_ratings_router is None - not registered!")
+    print(f"[STARTUP] admin_ratings_router is None - NOT REGISTERED!")
 if purchases_router: app.include_router(purchases_router, prefix="/v1")
 if deletion_router: app.include_router(deletion_router, prefix="/v1")
 if offline_router: app.include_router(offline_router, prefix="/v1")

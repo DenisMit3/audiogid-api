@@ -1,2 +1,2 @@
 # API package
-# Deploy trigger: free entitlement for Limpopo tour
+# Deploy trigger: add transition_text_en column

@@ -38,7 +38,7 @@ jobs:
           ssh ${USER}@${SERVER} "cd ${APP_DIR}/api && . venv/bin/activate && pip install -q -r requirements.txt"
           
           # Apply override coords migration via psql (needs owner privileges)
-          ssh ${USER}@${SERVER} "sudo -u postgres psql -d audiogid -c 'ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT; ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT;'" || echo "Migration skipped"
+          ssh ${USER}@${SERVER} "sudo -u postgres psql -d audiogid -c 'ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lat FLOAT; ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS override_lon FLOAT; ALTER TABLE tour_items ADD COLUMN IF NOT EXISTS transition_text_en TEXT;'" || echo "Migration skipped"
           
           # Create free entitlement for Limpopo tour if not exists
           ssh ${USER}@${SERVER} "sudo -u postgres psql -d audiogid -c \"INSERT INTO entitlements (id, slug, scope, ref, title_ru, price_amount, price_currency, is_active) VALUES (gen_random_uuid(), 'tour_db086913-97cd-4716-8f7e-1d14f31f40af_free', 'tour', 'db086913-97cd-4716-8f7e-1d14f31f40af', 'Free: Limpopo', 0, 'RUB', true) ON CONFLICT (slug) DO NOTHING;\"" || echo "Entitlement creation skipped"

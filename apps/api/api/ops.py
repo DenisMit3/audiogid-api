@@ -124,6 +124,19 @@ def check_ratings_import(request: Request):
         from .admin.ratings import router as ratings_router
         # Check if ratings routes are in app
         ratings_paths = [r.path for r in request.app.routes if hasattr(r, 'path') and 'rating' in r.path]
+        
+        # Try to register now if not registered
+        if not any('/v1/admin/ratings' in p for p in ratings_paths):
+            request.app.include_router(ratings_router, prefix="/v1")
+            ratings_paths_after = [r.path for r in request.app.routes if hasattr(r, 'path') and 'rating' in r.path]
+            return {
+                "status": "registered_now", 
+                "routes_count": len(ratings_router.routes),
+                "ratings_in_app_before": ratings_paths,
+                "ratings_in_app_after": ratings_paths_after,
+                "ratings_router_routes": [r.path for r in ratings_router.routes]
+            }
+        
         return {
             "status": "ok", 
             "routes_count": len(ratings_router.routes),

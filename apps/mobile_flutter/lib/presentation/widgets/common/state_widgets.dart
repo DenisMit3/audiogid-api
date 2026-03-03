@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/core/error/error_utils.dart';
+import 'package:mobile_flutter/presentation/widgets/common/glass_widgets.dart';
 
-/// Empty state widget for when there's no content
+/// Empty state widget for when there's no content - Kombai dark style
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -23,9 +24,6 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -34,18 +32,22 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon with subtle background
+            // Icon with glass background
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
+                color: AppColors.accentPrimary.withOpacity(0.1),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.accentPrimary.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: customIcon ??
                   Icon(
                     icon,
                     size: 64,
-                    color: colorScheme.primary.withOpacity(0.7),
+                    color: AppColors.accentPrimary.withOpacity(0.7),
                     semanticLabel: title,
                   ),
             ),
@@ -55,8 +57,10 @@ class EmptyStateWidget extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
               semanticsLabel: title,
             ),
@@ -67,8 +71,9 @@ class EmptyStateWidget extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -76,10 +81,11 @@ class EmptyStateWidget extends StatelessWidget {
             // Action button
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              ElevatedButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.refresh),
-                label: Text(actionLabel!),
+              PrimaryCTAButton(
+                text: actionLabel!,
+                icon: Icons.refresh,
+                onPressed: onAction!,
+                fullWidth: false,
               ),
             ],
           ],
@@ -166,7 +172,7 @@ class EmptyStateWidget extends StatelessWidget {
   }
 }
 
-/// Error state widget with retry option
+/// Error state widget with retry option - Kombai dark style
 class ErrorStateWidget extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -185,9 +191,6 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -200,13 +203,17 @@ class ErrorStateWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: colorScheme.errorContainer.withOpacity(0.3),
+                color: AppColors.error.withOpacity(0.1),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.error.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Icon(
                 icon,
                 size: 64,
-                color: colorScheme.error,
+                color: AppColors.error,
                 semanticLabel: 'Ошибка',
               ),
             ),
@@ -216,8 +223,10 @@ class ErrorStateWidget extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
 
@@ -227,8 +236,9 @@ class ErrorStateWidget extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -244,13 +254,16 @@ class ErrorStateWidget extends StatelessWidget {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.bgSecondary,
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  border: Border.all(color: AppColors.glassBorder),
                 ),
                 child: Text(
                   'Код: $errorCode',
-                  style: textTheme.labelSmall?.copyWith(
+                  style: const TextStyle(
+                    fontSize: 12,
                     fontFamily: 'monospace',
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ),
@@ -259,14 +272,11 @@ class ErrorStateWidget extends StatelessWidget {
             // Retry button
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Попробовать снова'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                ),
+              PrimaryCTAButton(
+                text: 'Попробовать снова',
+                icon: Icons.refresh,
+                onPressed: onRetry!,
+                fullWidth: false,
               ),
             ],
           ],
@@ -342,7 +352,7 @@ class ErrorStateWidget extends StatelessWidget {
   }
 }
 
-/// Loading overlay with message
+/// Loading overlay with message - Kombai dark style
 class LoadingOverlay extends StatelessWidget {
   final String? message;
   final bool showProgress;
@@ -357,39 +367,40 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Container(
-      color: Colors.black45,
+      color: Colors.black.withOpacity(0.7),
       child: Center(
         child: Container(
           margin: EdgeInsets.symmetric(horizontal: context.horizontalPadding),
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: AppColors.bgSecondary,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.glassBorder, width: 1),
+            boxShadow: AppShadows.glass,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showProgress && progress != null)
-                CircularProgressIndicator(value: progress)
+                CircularProgressIndicator(
+                  value: progress,
+                  color: AppColors.accentPrimary,
+                  backgroundColor: AppColors.bgPrimary,
+                )
               else
-                const CircularProgressIndicator(),
+                const CircularProgressIndicator(
+                  color: AppColors.accentPrimary,
+                ),
               if (message != null) ...[
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: textTheme.bodyMedium,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ],
@@ -418,6 +429,8 @@ class RefreshableContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       displacement: 40 + context.safeAreaPadding.top,
+      color: AppColors.accentPrimary,
+      backgroundColor: AppColors.bgSecondary,
       child: child,
     );
   }

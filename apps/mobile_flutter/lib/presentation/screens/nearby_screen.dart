@@ -13,6 +13,7 @@ import 'package:mobile_flutter/domain/entities/poi.dart' as entity;
 import 'package:mobile_flutter/presentation/providers/nearby_providers.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:mobile_flutter/presentation/widgets/common/glass_widgets.dart';
 import 'package:mobile_flutter/data/services/free_walking_service.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -51,7 +52,6 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     final userLocationAsync = ref.watch(userLocationStreamProvider);
     final cityAsync = ref.watch(selectedCityProvider);
     final citySlug = cityAsync.value;
-    final colorScheme = Theme.of(context).colorScheme;
     final freeWalkState = ref.watch(freeWalkingServiceProvider);
 
     final poisAsync = citySlug != null
@@ -61,7 +61,11 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     // Handle permission denied state
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Рядом')),
+        backgroundColor: AppColors.bgPrimary,
+        appBar: AppBar(
+          title: const Text('Рядом'),
+          backgroundColor: AppColors.bgPrimary,
+        ),
         body: EmptyStateWidget.noLocation(
           onEnable: () async {
             HapticFeedback.lightImpact();
@@ -74,6 +78,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
       body: StreamBuilder<List<entity.Poi>>(
         stream: poisAsync,
         builder: (context, poisSnapshot) {
@@ -81,22 +86,25 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
 
           return Stack(
             children: [
-              // Map
+              // Map with dark style
               FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: const LatLng(54.7104, 20.4522),
                   initialZoom: 13,
+                  backgroundColor: AppColors.bgPrimary,
                   interactionOptions: const InteractionOptions(
                     flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                   ),
                 ),
                 children: [
-                  // Map tiles - using OSM
+                  // Dark map tiles (CartoDB Dark Matter)
                   TileLayer(
                     urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                    subdomains: const ['a', 'b', 'c', 'd'],
                     userAgentPackageName: 'com.audiogid.app',
+                    retinaMode: true,
                   ),
 
                   // Markers
@@ -138,21 +146,21 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                               label: '${markers.length} объектов',
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary,
+                                  gradient: AppGradients.primaryButton,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
                                       color:
-                                          colorScheme.primary.withOpacity(0.3),
-                                      blurRadius: 8,
+                                          AppColors.accentPrimary.withOpacity(0.4),
+                                      blurRadius: 12,
                                     ),
                                   ],
                                 ),
                                 child: Center(
                                   child: Text(
                                     markers.length.toString(),
-                                    style: TextStyle(
-                                      color: colorScheme.onPrimary,
+                                    style: const TextStyle(
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -180,15 +188,15 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                               label: 'Ваше местоположение',
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary,
+                                  color: AppColors.accentSecondary,
                                   shape: BoxShape.circle,
                                   border:
                                       Border.all(color: Colors.white, width: 3),
                                   boxShadow: [
                                     BoxShadow(
                                       color:
-                                          colorScheme.primary.withOpacity(0.4),
-                                      blurRadius: 8,
+                                          AppColors.accentSecondary.withOpacity(0.5),
+                                      blurRadius: 12,
                                     ),
                                   ],
                                 ),
@@ -205,134 +213,71 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                   RichAttributionWidget(
                     attributions: [
                       TextSourceAttribution(
-                        'OpenStreetMap contributors',
+                        'CartoDB',
                         onTap: () => launchUrl(
-                            Uri.parse('https://openstreetmap.org/copyright')),
+                            Uri.parse('https://carto.com/attributions')),
                       ),
                       TextSourceAttribution(
-                        'MapLibre',
-                        onTap: () =>
-                            launchUrl(Uri.parse('https://maplibre.org')),
+                        'OpenStreetMap',
+                        onTap: () => launchUrl(
+                            Uri.parse('https://openstreetmap.org/copyright')),
                       ),
                     ],
                   ),
                 ],
               ),
 
+              // Gradient overlay at top
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 120,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.bgPrimary,
+                        AppColors.bgPrimary.withOpacity(0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
               // Top controls
-              SafeAreaWrapper(
+              SafeArea(
                 bottom: false,
                 child: Padding(
                   padding: EdgeInsets.all(context.horizontalPadding),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // SOS Button
-                      Semantics(
-                        button: true,
-                        label: 'SOS - Экстренный вызов',
-                        child: FloatingActionButton.small(
-                          heroTag: 'sos_btn',
-                          backgroundColor: colorScheme.error,
-                          foregroundColor: colorScheme.onError,
-                          onPressed: () => context.push('/sos'),
-                          child: const Icon(Icons.sos),
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.sm),
-
-                      // Share Location
-                      Semantics(
-                        button: true,
-                        label: 'Поделиться геолокацией',
-                        child: FloatingActionButton.small(
-                          heroTag: 'share_loc',
-                          backgroundColor: colorScheme.surface,
-                          foregroundColor: colorScheme.onSurface,
-                          onPressed: () {
-                            final pos =
-                                ref.read(userLocationStreamProvider).value;
-                            if (pos != null) {
-                              Share.share(
-                                  'Я здесь! https://maps.google.com/?q=${pos.latitude},${pos.longitude}');
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Местоположение не определено')),
-                              );
-                            }
-                          },
-                          child: const Icon(Icons.share),
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.sm),
-
-                      // My location button
-                      Semantics(
-                        button: true,
-                        label: 'Центрировать на моём местоположении',
-                        child: FloatingActionButton.small(
-                          heroTag: 'my_loc',
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            final pos =
-                                ref.read(userLocationStreamProvider).value;
-                            if (pos != null) {
-                              _mapController.move(
-                                  LatLng(pos.latitude, pos.longitude), 15);
-                            } else {
-                              _checkPermission();
-                            }
-                          },
-                          child: const Icon(Icons.my_location),
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // Free Walking Toggle
-                      Semantics(
-                        button: true,
-                        label: freeWalkState.isActive
-                            ? 'Выключить прогулку'
-                            : 'Включить свободную прогулку',
-                        child: FloatingActionButton.extended(
-                          heroTag: 'free_walk',
-                          isExtended: true,
-                          elevation: 4,
-                          backgroundColor: freeWalkState.isActive
-                              ? colorScheme.primary
-                              : colorScheme.surface,
-                          foregroundColor: freeWalkState.isActive
-                              ? colorScheme.onPrimary
-                              : colorScheme.primary,
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            if (freeWalkState.isActive) {
-                              ref
-                                  .read(freeWalkingServiceProvider.notifier)
-                                  .stop();
-                            } else {
-                              ref
-                                  .read(freeWalkingServiceProvider.notifier)
-                                  .start();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Свободная прогулка включена. Мы расскажем о местах рядом!')),
-                              );
-                            }
-                          },
-                          icon: Icon(freeWalkState.isActive
-                              ? Icons.hearing
-                              : Icons.directions_walk),
-                          label: Text(freeWalkState.isActive
-                              ? 'Слушаем...'
-                              : 'Прогулка'),
-                        ),
+                      // Header
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Рядом с вами',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          // SOS Button
+                          GlassFAB(
+                            icon: Icons.sos,
+                            onPressed: () => context.push('/sos'),
+                            isPrimary: false,
+                            tooltip: 'SOS - Экстренный вызов',
+                            size: 44,
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: AppSpacing.md),
@@ -340,60 +285,57 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                       // Filter chips
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: Semantics(
-                          label: 'Фильтры объектов',
-                          child: Row(
-                            children: [
-                              _FilterChip(
-                                label: 'Все',
-                                icon: Icons.apps,
-                                isSelected: selectedType == null,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(selectedHelperTypeProvider.notifier)
-                                      .select(null);
-                                },
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              _FilterChip(
-                                label: 'Туалеты',
-                                icon: Icons.wc,
-                                isSelected: selectedType == HelperType.toilet,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(selectedHelperTypeProvider.notifier)
-                                      .select(HelperType.toilet);
-                                },
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              _FilterChip(
-                                label: 'Кафе',
-                                icon: Icons.local_cafe,
-                                isSelected: selectedType == HelperType.cafe,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(selectedHelperTypeProvider.notifier)
-                                      .select(HelperType.cafe);
-                                },
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              _FilterChip(
-                                label: 'Питьевая вода',
-                                icon: Icons.water_drop,
-                                isSelected:
-                                    selectedType == HelperType.drinkingWater,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(selectedHelperTypeProvider.notifier)
-                                      .select(HelperType.drinkingWater);
-                                },
-                              ),
-                            ],
-                          ),
+                        child: Row(
+                          children: [
+                            _GlassFilterChip(
+                              label: 'Все',
+                              icon: Icons.apps,
+                              isSelected: selectedType == null,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                ref
+                                    .read(selectedHelperTypeProvider.notifier)
+                                    .select(null);
+                              },
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _GlassFilterChip(
+                              label: 'Туалеты',
+                              icon: Icons.wc,
+                              isSelected: selectedType == HelperType.toilet,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                ref
+                                    .read(selectedHelperTypeProvider.notifier)
+                                    .select(HelperType.toilet);
+                              },
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _GlassFilterChip(
+                              label: 'Кафе',
+                              icon: Icons.local_cafe,
+                              isSelected: selectedType == HelperType.cafe,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                ref
+                                    .read(selectedHelperTypeProvider.notifier)
+                                    .select(HelperType.cafe);
+                              },
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _GlassFilterChip(
+                              label: 'Вода',
+                              icon: Icons.water_drop,
+                              isSelected:
+                                  selectedType == HelperType.drinkingWater,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                ref
+                                    .read(selectedHelperTypeProvider.notifier)
+                                    .select(HelperType.drinkingWater);
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -401,23 +343,100 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                 ),
               ),
 
+              // Right side FAB buttons
+              Positioned(
+                right: context.horizontalPadding,
+                bottom: MediaQuery.of(context).size.height * 0.35,
+                child: Column(
+                  children: [
+                    // Share Location
+                    GlassFAB(
+                      icon: Icons.share,
+                      onPressed: () {
+                        final pos =
+                            ref.read(userLocationStreamProvider).value;
+                        if (pos != null) {
+                          Share.share(
+                              'Я здесь! https://maps.google.com/?q=${pos.latitude},${pos.longitude}');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Местоположение не определено')),
+                          );
+                        }
+                      },
+                      isPrimary: false,
+                      tooltip: 'Поделиться геолокацией',
+                      size: 48,
+                    ),
+
+                    const SizedBox(height: AppSpacing.sm),
+
+                    // My location button
+                    GlassFAB(
+                      icon: Icons.my_location,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        final pos =
+                            ref.read(userLocationStreamProvider).value;
+                        if (pos != null) {
+                          _mapController.move(
+                              LatLng(pos.latitude, pos.longitude), 15);
+                        } else {
+                          _checkPermission();
+                        }
+                      },
+                      isPrimary: true,
+                      tooltip: 'Моё местоположение',
+                      size: 48,
+                    ),
+
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Free Walking Toggle
+                    _FreeWalkButton(
+                      isActive: freeWalkState.isActive,
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        if (freeWalkState.isActive) {
+                          ref
+                              .read(freeWalkingServiceProvider.notifier)
+                              .stop();
+                        } else {
+                          ref
+                              .read(freeWalkingServiceProvider.notifier)
+                              .start();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'Свободная прогулка включена. Мы расскажем о местах рядом!')),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
               // Bottom sheet list
               DraggableScrollableSheet(
-                initialChildSize: 0.12,
+                initialChildSize: 0.15,
                 minChildSize: 0.1,
-                maxChildSize: 0.6,
+                maxChildSize: 0.7,
+                snap: true,
+                snapSizes: const [0.15, 0.4, 0.7],
                 builder: (context, scrollController) {
                   return Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
+                    decoration: const BoxDecoration(
+                      color: AppColors.bgSecondary,
                       borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(20)),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 16,
-                          color: Colors.black.withOpacity(0.1),
-                        ),
-                      ],
+                          BorderRadius.vertical(top: Radius.circular(AppRadius.bottomSheet)),
+                      border: Border(
+                        top: BorderSide(color: AppColors.glassBorder, width: 1),
+                        left: BorderSide(color: AppColors.glassBorder, width: 1),
+                        right: BorderSide(color: AppColors.glassBorder, width: 1),
+                      ),
                     ),
                     child: helpersAsync.when(
                       data: (helpers) {
@@ -432,7 +451,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                         if (allItems.isEmpty) {
                           return Column(
                             children: [
-                              _buildDragHandle(),
+                              const GlassDragHandle(),
                               Expanded(
                                 child: EmptyStateWidget.pois(),
                               ),
@@ -449,7 +468,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                           itemCount: allItems.length + 1,
                           itemBuilder: (context, index) {
                             if (index == 0) {
-                              return _buildDragHandle();
+                              return const GlassDragHandle();
                             }
                             final item = allItems[index - 1];
                             if (item is entity.Poi) {
@@ -463,13 +482,13 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
                       },
                       loading: () => Column(
                         children: [
-                          _buildDragHandle(),
+                          const GlassDragHandle(),
                           const Expanded(child: SkeletonNearbyScreen()),
                         ],
                       ),
                       error: (e, s) => Column(
                         children: [
-                          _buildDragHandle(),
+                          const GlassDragHandle(),
                           Expanded(
                             child: ErrorStateWidget.generic(
                               error: e.toString(),
@@ -491,29 +510,7 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
     );
   }
 
-  Widget _buildDragHandle() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Semantics(
-      label: 'Потяните для развертывания списка',
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildPoiMarker(entity.Poi poi) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Semantics(
       button: true,
       label: 'Достопримечательность: ${poi.titleRu}',
@@ -525,23 +522,24 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: AppColors.bgSecondary,
             shape: BoxShape.circle,
             border: Border.all(
-              color: poi.isFavorite ? colorScheme.error : colorScheme.primary,
+              color: poi.isFavorite ? AppColors.error : AppColors.accentPrimary,
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
+                color: (poi.isFavorite ? AppColors.error : AppColors.accentPrimary)
+                    .withOpacity(0.4),
+                blurRadius: 12,
               ),
             ],
           ),
           child: Icon(
             Icons.place,
             size: 24,
-            color: poi.isFavorite ? colorScheme.error : colorScheme.primary,
+            color: poi.isFavorite ? AppColors.error : AppColors.accentPrimary,
           ),
         ),
       ),
@@ -549,8 +547,6 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
   }
 
   Widget _buildHelperMarker(Helper helper) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Semantics(
       button: true,
       label: '${_getTypeLabel(helper.type)}: ${helper.title}',
@@ -561,20 +557,15 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: AppColors.bgSecondary,
             shape: BoxShape.circle,
-            border: Border.all(color: colorScheme.outline, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 6,
-              ),
-            ],
+            border: Border.all(color: AppColors.glassBorder, width: 2),
+            boxShadow: AppShadows.card,
           ),
           child: Icon(
             _getIconForType(helper.type),
             size: 20,
-            color: colorScheme.onSurface,
+            color: AppColors.textSecondary,
           ),
         ),
       ),
@@ -582,100 +573,143 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
   }
 
   Widget _buildPoiTile(entity.Poi poi) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Semantics(
-      button: true,
-      label: '${poi.titleRu}, ${poi.category ?? "Место"}',
-      child: Card(
-        margin: EdgeInsets.symmetric(
-          horizontal: context.horizontalPadding,
-          vertical: AppSpacing.xs,
-        ),
-        child: ListTile(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            _mapController.move(LatLng(poi.lat, poi.lon), 16);
-            context.push('/poi/${poi.id}');
-          },
-          leading: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.horizontalPadding,
+        vertical: AppSpacing.xs,
+      ),
+      child: GlassCard(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _mapController.move(LatLng(poi.lat, poi.lon), 16);
+          context.push('/poi/${poi.id}');
+        },
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.accentPrimary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: const Icon(
+                Icons.place,
+                color: AppColors.accentPrimary,
+              ),
             ),
-            child: Icon(
-              Icons.place,
-              color: colorScheme.primary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    poi.titleRu,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    poi.category ?? 'Место',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          title: TitleText(
-            poi.titleRu,
-            maxLines: 1,
-            style: textTheme.titleSmall,
-          ),
-          subtitle: LabelText(poi.category ?? 'Место'),
-          trailing: AccessibleIconButton(
-            icon: poi.isFavorite ? Icons.bookmark : Icons.bookmark_border,
-            tooltip: poi.isFavorite
-                ? 'Убрать из избранного'
-                : 'Добавить в избранное',
-            color: poi.isFavorite ? colorScheme.primary : null,
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
-            },
-          ),
+            IconButton(
+              icon: Icon(
+                poi.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                color: poi.isFavorite
+                    ? AppColors.accentPrimary
+                    : AppColors.textTertiary,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ref.read(poiRepositoryProvider).toggleFavorite(poi.id);
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHelperTile(Helper helper) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Semantics(
-      button: true,
-      label: '${_getTypeLabel(helper.type)}: ${helper.title}',
-      child: Card(
-        margin: EdgeInsets.symmetric(
-          horizontal: context.horizontalPadding,
-          vertical: AppSpacing.xs,
-        ),
-        child: ListTile(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            _mapController.move(LatLng(helper.lat, helper.lon), 16);
-          },
-          leading: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.horizontalPadding,
+        vertical: AppSpacing.xs,
+      ),
+      child: GlassCard(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _mapController.move(LatLng(helper.lat, helper.lon), 16);
+        },
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(
+                _getIconForType(helper.type),
+                color: AppColors.textSecondary,
+              ),
             ),
-            child: Icon(
-              _getIconForType(helper.type),
-              color: colorScheme.onSecondaryContainer,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    helper.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (helper.address != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      helper.address!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          title: TitleText(
-            helper.title,
-            maxLines: 1,
-            style: textTheme.titleSmall,
-          ),
-          subtitle: LabelText(helper.address ?? ''),
-          trailing: AccessibleIconButton(
-            icon: Icons.directions_outlined,
-            tooltip: 'Проложить маршрут',
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              // TODO: Open navigation
-            },
-          ),
+            IconButton(
+              icon: const Icon(
+                Icons.directions_outlined,
+                color: AppColors.textTertiary,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                // TODO: Open navigation
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -708,13 +742,13 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
   }
 }
 
-class _FilterChip extends StatelessWidget {
+class _GlassFilterChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _FilterChip({
+  const _GlassFilterChip({
     required this.label,
     required this.icon,
     required this.isSelected,
@@ -723,48 +757,102 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Semantics(
       button: true,
       selected: isSelected,
       label: 'Фильтр: $label',
-      child: Material(
-        color: isSelected ? colorScheme.primary : colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppDurations.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.accentPrimary.withOpacity(0.2)
+                : AppColors.glassBg,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.accentPrimary.withOpacity(0.4)
+                  : AppColors.glassBorder,
+              width: 1,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? AppColors.accentPrimary
+                    : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
                   color: isSelected
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurface,
+                      ? AppColors.accentPrimary
+                      : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 13,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FreeWalkButton extends StatelessWidget {
+  final bool isActive;
+  final VoidCallback onPressed;
+
+  const _FreeWalkButton({
+    required this.isActive,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: isActive ? 'Выключить прогулку' : 'Включить свободную прогулку',
+      child: GestureDetector(
+        onTap: onPressed,
+        child: AnimatedContainer(
+          duration: AppDurations.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: isActive ? AppGradients.primaryButton : null,
+            color: isActive ? null : AppColors.glassBg,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: isActive
+                ? null
+                : Border.all(color: AppColors.glassBorder, width: 1),
+            boxShadow: AppShadows.fab,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? Icons.hearing : Icons.directions_walk,
+                color: isActive ? Colors.white : AppColors.textPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isActive ? 'Слушаем...' : 'Прогулка',
+                style: TextStyle(
+                  color: isActive ? Colors.white : AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

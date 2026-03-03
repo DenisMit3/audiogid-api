@@ -100,6 +100,10 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
 
         const finalUrl = `${base}/${targetPath}${query}`;
 
+        // #region agent log
+        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ccaba0'},body:JSON.stringify({sessionId:'ccaba0',location:'route.ts:103',message:'Proxy request start',data:{finalUrl,method,hasAuth:!!headers['Authorization']},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+
         const res = await fetch(finalUrl, {
             method,
             headers,
@@ -107,6 +111,10 @@ async function proxy(request: Request, pathSegments: string[], method: string) {
         });
 
         const responseText = await res.text();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7766/ingest/d777dd49-2097-49f1-af7b-31e83b667f8c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ccaba0'},body:JSON.stringify({sessionId:'ccaba0',location:'route.ts:115',message:'Proxy response',data:{finalUrl,status:res.status,responsePreview:responseText.substring(0,200)},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
 
         let data = {};
         try {

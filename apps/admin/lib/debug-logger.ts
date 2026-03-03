@@ -167,13 +167,22 @@ class DebugLogger {
 
             // Логируем тело запроса для POST/PUT/PATCH
             let bodyPreview = '';
-            if (init?.body && typeof init.body === 'string') {
-                try {
-                    const parsed = JSON.parse(init.body);
-                    bodyPreview = JSON.stringify(parsed).slice(0, 200);
-                } catch {
-                    bodyPreview = String(init.body).slice(0, 200);
+            if (init?.body) {
+                if (typeof init.body === 'string') {
+                    try {
+                        const parsed = JSON.parse(init.body);
+                        bodyPreview = JSON.stringify(parsed).slice(0, 200);
+                    } catch {
+                        bodyPreview = `[RAW:${init.body.slice(0, 100)}]`;
+                    }
+                } else {
+                    bodyPreview = `[${typeof init.body}:${init.body?.constructor?.name || 'unknown'}]`;
                 }
+            }
+            
+            // Детальный лог для отладки login
+            if (url.includes('/login')) {
+                self.add('api', `🔍 LOGIN DEBUG: input type=${typeof input}, init.body type=${typeof init?.body}, body=${init?.body ? String(init.body).slice(0, 150) : 'none'}`);
             }
 
             self.add('api', `→ ${method} ${url}${bodyPreview ? ` | Body: ${bodyPreview}` : ''}`);

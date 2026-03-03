@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
 
-/// A shimmer loading effect for skeleton loaders
+/// A shimmer loading effect for skeleton loaders - Kombai dark style
 class ShimmerEffect extends StatefulWidget {
   final Widget child;
   final bool isLoading;
@@ -44,9 +44,9 @@ class _ShimmerEffectState extends State<ShimmerEffect>
   Widget build(BuildContext context) {
     if (!widget.isLoading) return widget.child;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    // Kombai dark theme colors
+    const baseColor = AppColors.bgSecondary;
+    final highlightColor = AppColors.textTertiary.withOpacity(0.3);
 
     return AnimatedBuilder(
       animation: _animation,
@@ -76,7 +76,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
   }
 }
 
-/// Base skeleton container with rounded corners
+/// Base skeleton container with rounded corners - Kombai style
 class SkeletonContainer extends StatelessWidget {
   final double? width;
   final double height;
@@ -93,15 +93,14 @@ class SkeletonContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: width,
       height: height,
       margin: margin,
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[300],
-        borderRadius: borderRadius ?? BorderRadius.circular(8),
+        color: AppColors.bgSecondary,
+        borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: AppColors.glassBorder, width: 1),
       ),
     );
   }
@@ -144,21 +143,20 @@ class SkeletonCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       width: size,
       height: size,
       margin: margin,
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[300],
+        color: AppColors.bgSecondary,
         shape: BoxShape.circle,
+        border: Border.all(color: AppColors.glassBorder, width: 1),
       ),
     );
   }
 }
 
-/// Skeleton loader for tour/POI cards
+/// Skeleton loader for tour/POI cards - Kombai dark style
 class SkeletonTourCard extends StatelessWidget {
   const SkeletonTourCard({super.key});
 
@@ -168,11 +166,9 @@ class SkeletonTourCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          color: AppColors.bgSecondary,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.glassBorder, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -181,7 +177,7 @@ class SkeletonTourCard extends StatelessWidget {
             SkeletonContainer(
               height: 160,
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+                  const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -198,7 +194,7 @@ class SkeletonTourCard extends StatelessWidget {
                       SkeletonContainer(
                         width: 60,
                         height: 24,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ],
                   ),
@@ -231,10 +227,15 @@ class SkeletonListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShimmerEffect(
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.bgSecondary,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: AppColors.glassBorder, width: 1),
         ),
         child: Row(
           children: [
@@ -256,7 +257,7 @@ class SkeletonListTile extends StatelessWidget {
               SkeletonContainer(
                 width: 48,
                 height: 48,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
           ],
         ),
@@ -294,7 +295,7 @@ class SkeletonPoiDetail extends StatelessWidget {
                   SkeletonContainer(
                     width: 100,
                     height: 24,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   // Action buttons
@@ -303,14 +304,14 @@ class SkeletonPoiDetail extends StatelessWidget {
                       Expanded(
                         child: SkeletonContainer(
                           height: 48,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.button),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: SkeletonContainer(
                           height: 48,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.button),
                         ),
                       ),
                     ],
@@ -369,12 +370,20 @@ class SkeletonTourDetail extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(
                       3,
-                      (_) => Column(
-                        children: const [
-                          SkeletonText(width: 60, height: 20),
-                          SizedBox(height: AppSpacing.xs),
-                          SkeletonText(width: 40, height: 12),
-                        ],
+                      (_) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgSecondary,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: Border.all(color: AppColors.glassBorder),
+                        ),
+                        child: Column(
+                          children: const [
+                            SkeletonText(width: 60, height: 20),
+                            SizedBox(height: AppSpacing.xs),
+                            SkeletonText(width: 40, height: 12),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -382,7 +391,7 @@ class SkeletonTourDetail extends StatelessWidget {
                   // Map placeholder
                   SkeletonContainer(
                     height: 200,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   // Section title
@@ -425,26 +434,36 @@ class SkeletonNearbyScreen extends StatelessWidget {
           ),
           // Bottom panel
           Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+            decoration: const BoxDecoration(
+              color: AppColors.bgSecondary,
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+                  BorderRadius.vertical(top: Radius.circular(AppRadius.bottomSheet)),
+              border: Border(
+                top: BorderSide(color: AppColors.glassBorder, width: 1),
+              ),
             ),
             child: Column(
               children: [
                 const SizedBox(height: AppSpacing.md),
                 // Handle
-                SkeletonContainer(
+                Container(
                   width: 40,
-                  height: 4,
-                  borderRadius: BorderRadius.circular(2),
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.textTertiary,
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 // List items
                 ...List.generate(
                   3,
                   (_) => const Padding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: EdgeInsets.only(
+                      bottom: AppSpacing.sm,
+                      left: AppSpacing.md,
+                      right: AppSpacing.md,
+                    ),
                     child: SkeletonListTile(),
                   ),
                 ),

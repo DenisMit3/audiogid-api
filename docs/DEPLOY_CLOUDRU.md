@@ -293,7 +293,7 @@ curl http://localhost:8000/v1/ops/health
 ### 9.3 Проверка из браузера
 
 - API: http://82.202.159.64:8000/docs
-- Admin: http://82.202.159.64:3080
+- Admin: http://82.202.159.64:3080/login
 - MinIO Console: http://82.202.159.64:9001
 
 ---
@@ -401,6 +401,6 @@ sudo systemctl restart audiogid-admin
 
 - Сервер: 82.202.159.64
 - API: http://82.202.159.64:8000
-- Admin: http://82.202.159.64:3080
+- Admin: http://82.202.159.64:3080/login
 - MinIO: http://82.202.159.64:9001
 - База данных: PostgreSQL + PostGIS (локально на сервере)

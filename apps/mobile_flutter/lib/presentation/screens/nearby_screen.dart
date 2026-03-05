@@ -24,7 +24,8 @@ class NearbyScreen extends ConsumerStatefulWidget {
   ConsumerState<NearbyScreen> createState() => _NearbyScreenState();
 }
 
-class _NearbyScreenState extends ConsumerState<NearbyScreen> {
+class _NearbyScreenState extends ConsumerState<NearbyScreen>
+    with AutomaticKeepAliveClientMixin {
   final MapController _mapController = MapController();
   bool _permissionGranted = false;
   bool _permissionDenied = false;
@@ -46,7 +47,11 @@ class _NearbyScreenState extends ConsumerState<NearbyScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final helpersAsync = ref.watch(nearbyHelpersProvider);
     final selectedType = ref.watch(selectedHelperTypeProvider);
     final userLocationAsync = ref.watch(userLocationStreamProvider);

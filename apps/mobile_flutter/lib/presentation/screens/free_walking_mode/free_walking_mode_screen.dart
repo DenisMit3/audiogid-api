@@ -5,6 +5,12 @@ import 'package:mobile_flutter/core/theme/app_theme.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/data/services/free_walking_service.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
+import 'package:mobile_flutter/design_system/tokens/colors.dart';
+import 'package:mobile_flutter/design_system/tokens/spacing.dart';
+import 'package:mobile_flutter/design_system/tokens/radius.dart';
+import 'package:mobile_flutter/design_system/tokens/motion.dart';
+import 'package:mobile_flutter/design_system/components/buttons/buttons.dart';
+import 'package:mobile_flutter/presentation/widgets/common/glass_widgets.dart';
 import 'package:go_router/go_router.dart';
 
 class FreeWalkingModeScreen extends ConsumerWidget {
@@ -17,8 +23,14 @@ class FreeWalkingModeScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
-        title: const Text('Режим прогулки'),
+        backgroundColor: AppColors.bgPrimary,
+        elevation: 0,
+        title: const Text(
+          'Режим прогулки',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
       ),
       body: Column(
         children: [
@@ -39,11 +51,13 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                             ? 'Ищем интересные места...'
                             : 'Готов к прогулке'),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: state.isActive
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                        ),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: state.isActive
+                          ? AppColors.accentPrimary
+                          : AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -80,13 +94,12 @@ class FreeWalkingModeScreen extends ConsumerWidget {
             const Spacer(flex: 1),
 
           // 3. Settings Panel
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.3),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+          GlassCard(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.bottomSheet),
             ),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            margin: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -118,39 +131,22 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
 
                 // Start/Stop Button
-                SizedBox(
+                PrimaryButton(
+                  label: state.isActive
+                      ? 'Остановить прогулку'
+                      : 'Начать прогулку',
+                  icon: state.isActive
+                      ? Icons.stop_rounded
+                      : Icons.play_arrow_rounded,
                   height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      if (state.isActive) {
-                        controller.stop();
-                      } else {
-                        controller.start();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: state.isActive
-                          ? colorScheme.error
-                          : colorScheme.primary,
-                      foregroundColor: state.isActive
-                          ? colorScheme.onError
-                          : colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      elevation: 4,
-                    ),
-                    icon: Icon(state.isActive
-                        ? Icons.stop_rounded
-                        : Icons.play_arrow_rounded),
-                    label: Text(
-                      state.isActive
-                          ? 'Остановить прогулку'
-                          : 'Начать прогулку',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    if (state.isActive) {
+                      controller.stop();
+                    } else {
+                      controller.start();
+                    }
+                  },
                 ),
                 const SizedBox(height: AppSpacing.lg),
               ],
@@ -163,22 +159,23 @@ class FreeWalkingModeScreen extends ConsumerWidget {
 
   Widget _buildRadar(bool isActive, ColorScheme colors) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
+      duration: AppDurations.standard,
+      curve: AppCurves.easeOut,
       width: 160,
       height: 160,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isActive
-            ? colors.primaryContainer.withOpacity(0.2)
-            : colors.surfaceVariant,
+            ? AppColors.accentPrimary.withOpacity(0.1)
+            : AppColors.bgSecondary,
         border: Border.all(
-          color: isActive ? colors.primary : colors.outline.withOpacity(0.5),
+          color: isActive ? AppColors.accentPrimary : AppColors.glassBorder,
           width: isActive ? 4 : 2,
         ),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: colors.primary.withOpacity(0.3),
+                  color: AppColors.accentPrimary.withOpacity(0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 )
@@ -189,7 +186,7 @@ class FreeWalkingModeScreen extends ConsumerWidget {
         child: Icon(
           Icons.directions_walk_rounded,
           size: 64,
-          color: isActive ? colors.primary : colors.onSurfaceVariant,
+          color: isActive ? AppColors.accentPrimary : AppColors.textSecondary,
         ),
       ),
     );
@@ -231,42 +228,36 @@ class FreeWalkingModeScreen extends ConsumerWidget {
   }
 
   Widget _buildHistoryItem(BuildContext context, Poi poi) {
-    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => context.push('/poi/${poi.id}'),
-      child: Container(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push('/poi/${poi.id}');
+      },
+      child: GlassCard(
         width: 240,
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outlineVariant),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ],
-        ),
+        padding: EdgeInsets.zero,
+        margin: EdgeInsets.zero,
         child: Row(
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
+                topLeft: Radius.circular(AppRadius.card),
+                bottomLeft: Radius.circular(AppRadius.card),
               ),
               child: Container(
                 width: 80,
                 height: double.infinity,
-                color: colorScheme.surfaceVariant,
-                child: poi.previewAudioUrl != null
-                    ? Icon(Icons.music_note, color: colorScheme.primary)
-                    : Icon(Icons.place, color: colorScheme.onSurfaceVariant),
+                color: AppColors.bgSecondary,
+                child: Center(
+                  child: poi.previewAudioUrl != null
+                      ? Icon(Icons.music_note, color: AppColors.accentPrimary, size: 32)
+                      : Icon(Icons.place, color: AppColors.textSecondary, size: 32),
+                ),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,18 +266,19 @@ class FreeWalkingModeScreen extends ConsumerWidget {
                       poi.titleRu,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Только что',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(color: colorScheme.secondary),
+                      style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),

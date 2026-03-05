@@ -202,7 +202,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildSectionHeader(context, 'Предпочтения'),
             SwitchListTile(
               title: const Text('Режим "С детьми"'),
-              subtitle: const Text('Упрощенный язык и короткие рассказы'),
+              subtitle: const Text(
+                'Включает детскую озвучку и упрощённые рассказы, если они доступны для маршрута',
+              ),
               secondary: const Icon(Icons.child_care),
               value: _kidsMode,
               onChanged: _isLoadingSettings
@@ -212,6 +214,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       final repo =
                           await ref.read(settingsRepositoryProvider.future);
                       await repo.setKidsModeEnabled(value);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              value
+                                  ? 'Детский режим включён'
+                                  : 'Детский режим выключен',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     },
             ),
             const Divider(),

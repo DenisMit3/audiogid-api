@@ -102,6 +102,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
               _buildAppBar(context, tour),
               _buildStatsSection(context, tour),
               _buildDescriptionSection(context, tour),
+              _buildTourTimelineSection(context, tour, items),
               _buildPoiListSection(context, tour, items),
               // Bottom padding for CTA button
               const SliverToBoxAdapter(
@@ -381,6 +382,60 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTourTimelineSection(
+      BuildContext context, Tour tour, List<TourItemEntity> items) {
+    if (items.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    // Get current progress from settings if available
+    final settingsAsync = ref.read(settingsRepositoryProvider);
+    final savedProgress = settingsAsync.value?.getTourProgress();
+    int currentStepIndex = -1;
+    if (savedProgress != null && savedProgress['tourId'] == tour.id) {
+      currentStepIndex = savedProgress['stepIndex'] as int;
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(
+              title: 'Маршрут',
+              padding: EdgeInsets.only(bottom: 12),
+            ),
+            GlassCard(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: _TourTimeline(
+                items: items,
+                currentStepIndex: currentStepIndex,
+                onStepTap: (index, item) {
+                  HapticFeedback.lightImpact();
+                  if (item.poi != null) {
+                    context.push('/poi/${item.poi!.id}');
+                  }
+                },
+                onPlayStep: (index, item) {
+                  HapticFeedback.lightImpact();
+                  final validItems =
+                      items.where((i) => i.poi != null).toList();
+                  final targetIndex = validItems.indexOf(item);
+                  if (targetIndex >= 0) {
+                    ref.read(audioPlayerServiceProvider).loadPlaylist(
+                          tourId: tour.id,
+                          items: validItems,
+                          initialIndex: targetIndex,
+                        );
+                  }
+                },
               ),
             ),
           ],
@@ -907,6 +962,151 @@ class _ReminderOption extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _TourTimeline extends StatelessWidget {
+  final List<TourItemEntity> items;
+  final int currentStepIndex;
+  final void Function(int index, TourItemEntity item) onStepTap;
+  final void Function(int index, TourItemEntity item) onPlayStep;
+
+  const _TourTimeline({
+    required this.items,
+    required this.currentStepIndex,
+    required this.onStepTap,
+    required this.onPlayStep,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final validItems = items.where((i) => i.poi != null).toList();
+    if (validItems.isEmpty) return const SizedBox.shrink();
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: validItems.length,
+      separatorBuilder: (_, index) => const SizedBox(height: 4),
+      itemBuilder: (context, index) {
+        final item = validItems[index];
+        final poi = item.poi!;
+        final isCurrent = index == currentStepIndex;
+        final isPassed = currentStepIndex >= 0 && index < currentStepIndex;
+        final isNext = currentStepIndex >= 0 && index == currentStepIndex + 1;
+        final hasAudio = poi.narrations.isNotEmpty &&
+            poi.narrations.first.durationSeconds != null;
+
+        return InkWell(
+          onTap: () => onStepTap(index, item),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                // Timeline dot + line
+                Column(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCurrent
+                            ? AppColors.accentPrimary
+                            : (isPassed
+                                ? AppColors.textTertiary
+                                : AppColors.glassBorder),
+                        border: isNext
+                            ? Border.all(
+                                color: AppColors.accentPrimary, width: 2)
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isCurrent || isNext
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index < validItems.length - 1)
+                      Container(
+                        width: 2,
+                        height: 40,
+                        color: isPassed
+                            ? AppColors.accentPrimary
+                            : AppColors.glassBorder,
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              poi.titleRu,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isCurrent || isNext
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isCurrent || isNext
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          if (hasAudio)
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => onPlayStep(index, item),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xs),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    size: 20,
+                                    color: AppColors.accentPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (poi.descriptionRu != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          poi.descriptionRu!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

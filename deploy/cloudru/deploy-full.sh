@@ -118,7 +118,7 @@ sudo systemctl restart audiogid-api audiogid-admin
 echo ""
 echo "=== Deploy Complete ==="
 echo "API:   http://82.202.159.64:8000"
-echo "Admin: http://82.202.159.64:3080"
+echo "Admin: http://82.202.159.64:3080/login"
 echo ""
 echo "Check status:"
 echo "  sudo systemctl status audiogid-api"

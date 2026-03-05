@@ -287,11 +287,23 @@ class HeroImage extends StatelessWidget {
         }
       } else {
         // Regular network URL
+        // Оптимизация памяти: вычисляем memCacheWidth/Height на основе размера экрана
+        final screenWidth = MediaQuery.of(context).size.width;
+        final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+        final memCacheWidth = width != null
+            ? (width * devicePixelRatio).round()
+            : (screenWidth * devicePixelRatio).round();
+        final memCacheHeight = height != null
+            ? (height * devicePixelRatio).round()
+            : null;
+
         imageWidget = CachedNetworkImage(
           imageUrl: imageUrl!,
           width: width,
           height: height,
           fit: fit,
+          memCacheWidth: memCacheWidth,
+          memCacheHeight: memCacheHeight,
           progressIndicatorBuilder: (context, url, progress) {
             // #region agent log
             print(

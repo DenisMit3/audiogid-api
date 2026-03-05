@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_flutter/core/theme/app_theme.dart';
+import 'package:mobile_flutter/design_system/tokens/colors.dart';
+import 'package:mobile_flutter/design_system/tokens/motion.dart';
+import 'package:mobile_flutter/design_system/tokens/radius.dart';
+import 'package:mobile_flutter/design_system/tokens/spacing.dart';
+import 'package:mobile_flutter/data/repositories/city_repository.dart';
+import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
 import 'package:mobile_flutter/data/repositories/settings_repository.dart';
 import 'package:mobile_flutter/data/repositories/tour_repository.dart';
-import 'package:mobile_flutter/data/repositories/city_repository.dart';
-import 'package:mobile_flutter/domain/entities/tour.dart';
+import 'package:mobile_flutter/data/services/purchase_service.dart';
 import 'package:mobile_flutter/domain/entities/city.dart';
+import 'package:mobile_flutter/domain/entities/entitlement_grant.dart';
+import 'package:mobile_flutter/domain/entities/tour.dart';
+import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
 import 'package:mobile_flutter/presentation/widgets/common/common.dart';
 import 'package:mobile_flutter/presentation/widgets/common/glass_widgets.dart';
-import 'package:mobile_flutter/presentation/providers/selection_provider.dart';
-import 'package:mobile_flutter/data/services/purchase_service.dart';
 
 class ToursListScreen extends ConsumerStatefulWidget {
   const ToursListScreen({super.key});
@@ -36,7 +41,11 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final selectedCity = ref.watch(selectedCityProvider).value;
 
     if (selectedCity == null) {
@@ -52,6 +61,12 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
         ref.watch(tourRepositoryProvider).watchTours(selectedCity);
     final selectedIds = ref.watch(selectionProvider);
     final isMultiSelectMode = selectedIds.isNotEmpty || _isMultiSelectMode;
+
+    // Entitlements: используем для подсветки туров, которые уже разблокированы
+    // Оптимизация: используем .select чтобы пересборка происходила только при изменении списка grants
+    final grants = ref.watch(
+      entitlementGrantsProvider.select((asyncValue) => asyncValue.value ?? const <EntitlementGrant>[]),
+    );
 
     final citiesStream = ref.watch(cityRepositoryProvider).watchCities();
 
@@ -201,10 +216,13 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                                 horizontal: context.horizontalPadding),
                             itemCount: featuredTours.length,
                             itemBuilder: (context, index) {
+                              final tour = featuredTours[index];
+                              final hasAccess = _hasTourAccess(tour, grants);
                               return _FeaturedTourCard(
-                                tour: featuredTours[index],
+                                tour: tour,
                                 isFirst: index == 0,
                                 isLast: index == featuredTours.length - 1,
+                                hasAccess: hasAccess,
                               );
                             },
                           ),
@@ -242,8 +260,10 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
                                 : (regularTours.isNotEmpty
                                     ? regularTours[index]
                                     : tours[index]);
+                            final hasAccess = _hasTourAccess(tour, grants);
                             return _TourCard(
                               tour: tour,
+                              hasAccess: hasAccess,
                               isSelected: selectedIds.contains(tour.id),
                               isSelectionMode: isMultiSelectMode,
                               onToggle: () {
@@ -284,6 +304,17 @@ class _ToursListScreenState extends ConsumerState<ToursListScreen> {
               : null,
         );
       },
+    );
+  }
+
+  bool _hasTourAccess(Tour tour, List<EntitlementGrant> grants) {
+    if (tour.isFree) return true;
+    return grants.any(
+      (g) =>
+          g.isActive &&
+          ((g.scope == 'tour' && g.ref == tour.id) ||
+              (g.scope == 'city' && g.ref == tour.citySlug) ||
+              g.scope == 'all_access'),
     );
   }
 
@@ -585,11 +616,13 @@ class _FeaturedTourCard extends StatelessWidget {
   final Tour tour;
   final bool isFirst;
   final bool isLast;
+  final bool hasAccess;
 
   const _FeaturedTourCard({
     required this.tour,
     this.isFirst = false,
     this.isLast = false,
+    this.hasAccess = false,
   });
 
   @override
@@ -658,6 +691,13 @@ class _FeaturedTourCard extends StatelessWidget {
                               text: '${tour.priceAmount?.toInt()} ₽',
                               textColor: AppColors.accentPrimary,
                             ),
+                          const SizedBox(width: AppSpacing.sm),
+                          if (hasAccess && !tour.isFree)
+                            const GlassBadge(
+                              text: 'Открыто',
+                              icon: Icons.lock_open,
+                              textColor: AppColors.success,
+                            ),
                           const Spacer(),
                           if (tour.avgRating != null)
                             GlassBadge(
@@ -684,31 +724,81 @@ class _FeaturedTourCard extends StatelessWidget {
                       const SizedBox(height: 8),
 
                       // Meta info
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          if (tour.durationMinutes != null) ...[
-                            const Icon(Icons.schedule,
-                                size: 14, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${tour.durationMinutes} мин',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                          if (tour.tourType != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentPrimary.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    tour.tourType == 'walking'
+                                        ? Icons.directions_walk
+                                        : tour.tourType == 'driving'
+                                            ? Icons.directions_car
+                                            : Icons.explore,
+                                    size: 12,
+                                    color: AppColors.accentPrimary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tour.tourType == 'walking'
+                                        ? 'Пеший'
+                                        : tour.tourType == 'driving'
+                                            ? 'Авто'
+                                            : tour.tourType!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.accentPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 12),
+                          ],
+                          if (tour.durationMinutes != null) ...[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.schedule,
+                                    size: 14, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${tour.durationMinutes} мин',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                           if (tour.distanceKm != null) ...[
-                            const Icon(Icons.straighten,
-                                size: 14, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${tour.distanceKm} км',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.straighten,
+                                    size: 14, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${tour.distanceKm} км',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ],
@@ -727,12 +817,14 @@ class _FeaturedTourCard extends StatelessWidget {
 
 class _TourCard extends StatelessWidget {
   final Tour tour;
+  final bool hasAccess;
   final bool isSelected;
   final bool isSelectionMode;
   final VoidCallback onToggle;
 
   const _TourCard({
     required this.tour,
+    required this.hasAccess,
     required this.isSelected,
     required this.isSelectionMode,
     required this.onToggle,
@@ -744,6 +836,7 @@ class _TourCard extends StatelessWidget {
       'Тур: ${tour.titleRu}',
       if (tour.durationMinutes != null) '${tour.durationMinutes} минут',
       if (tour.distanceKm != null) '${tour.distanceKm} километров',
+      if (hasAccess) 'Доступ открыт',
     ];
 
     return Padding(
@@ -832,6 +925,59 @@ class _TourCard extends StatelessWidget {
                           ),
                         ),
 
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // Tour type chip
+                        if (tour.tourType != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentPrimary.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                                    border: Border.all(
+                                      color: AppColors.accentPrimary.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        tour.tourType == 'walking'
+                                            ? Icons.directions_walk
+                                            : tour.tourType == 'driving'
+                                                ? Icons.directions_car
+                                                : Icons.explore,
+                                        size: 14,
+                                        color: AppColors.accentPrimary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        tour.tourType == 'walking'
+                                            ? 'Пеший маршрут'
+                                            : tour.tourType == 'driving'
+                                                ? 'Автомобильный'
+                                                : tour.tourType!,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.accentPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
                         const SizedBox(height: AppSpacing.md),
 
                         // Metadata row
@@ -870,6 +1016,14 @@ class _TourCard extends StatelessWidget {
                                   color: AppColors.accentPrimary,
                                 ),
                               ),
+                            if (hasAccess && !tour.isFree) ...[
+                              const SizedBox(width: AppSpacing.sm),
+                              const Icon(
+                                Icons.lock_open,
+                                size: 16,
+                                color: AppColors.success,
+                              ),
+                            ],
                             if (!isSelectionMode) ...[
                               const SizedBox(width: AppSpacing.sm),
                               const Icon(

@@ -4,7 +4,12 @@ import { NextResponse } from 'next/server';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://82.202.159.64/v1';
 
 export async function POST(request: Request) {
-    const body = await request.json();
+    let body;
+    try {
+        body = await request.json();
+    } catch (e) {
+        return NextResponse.json({ detail: 'Invalid JSON body' }, { status: 400 });
+    }
 
     // Определяем endpoint по типу логина
     let endpoint = '/auth/login/email';
@@ -17,7 +22,10 @@ export async function POST(request: Request) {
     try {
         const backendRes = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify(body)
         });
 
@@ -52,10 +60,13 @@ export async function POST(request: Request) {
 
     } catch (e: any) {
         console.error('Login Error:', e);
+        console.error('API URL:', apiUrl);
+        console.error('Request body:', body);
         return NextResponse.json({
             detail: 'Internal Server Error',
             error: e.message,
-            url: apiUrl
+            url: apiUrl,
+            stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
         }, { status: 500 });
     }
 }

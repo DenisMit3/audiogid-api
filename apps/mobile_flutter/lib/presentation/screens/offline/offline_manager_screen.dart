@@ -6,6 +6,11 @@ import 'package:mobile_flutter/data/services/storage_manager.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:mobile_flutter/core/constants/offline_constants.dart';
+import 'package:mobile_flutter/design_system/tokens/colors.dart';
+import 'package:mobile_flutter/design_system/tokens/spacing.dart';
+import 'package:mobile_flutter/design_system/tokens/radius.dart';
+import 'package:mobile_flutter/presentation/widgets/common/glass_widgets.dart';
+import 'package:mobile_flutter/presentation/widgets/common/skeleton_loader.dart';
 import 'dart:io';
 
 class OfflineManagerScreen extends ConsumerWidget {
@@ -64,21 +69,28 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: GlassCard(
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
             Icon(
               Icons.info_outline,
-              color: Theme.of(context).colorScheme.primary,
+              color: AppColors.accentPrimary,
+              size: 24,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 'Загрузите город для прослушивания экскурсий без интернета',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -120,32 +132,58 @@ class _StorageHeader extends ConsumerWidget {
         final used = snapshot.data?['used'] ?? 0;
         final hasData = snapshot.hasData;
 
-        return Card(
-          margin: const EdgeInsets.all(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          child: GlassCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Хранилище',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 16),
+                const Text(
+                  'Хранилище',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                        'Использовано: ${hasData ? _formatBytes(used) : '...'}'),
-                    Text('Свободно: ${hasData ? _formatBytes(free) : '...'}'),
+                      'Использовано: ${hasData ? _formatBytes(used) : '...'}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Свободно: ${hasData ? _formatBytes(free) : '...'}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
-                if (hasData && (free + used) > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
+                if (hasData && (free + used) > 0) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                     child: LinearProgressIndicator(
                       value: used / (free + used + 1),
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: AppColors.bgPrimary,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.accentPrimary,
+                      ),
+                      minHeight: 6,
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -238,28 +276,63 @@ class _CityDownloadTile extends ConsumerWidget {
       );
     }
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isDownloaded
-            ? Colors.green.withOpacity(0.1)
-            : Theme.of(context).colorScheme.primaryContainer,
-        child: Icon(
-          isDownloaded ? Icons.offline_pin : Icons.location_city,
-          color: isDownloaded
-              ? Colors.green
-              : Theme.of(context).colorScheme.primary,
-        ),
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isDownloaded
+                  ? AppColors.success.withOpacity(0.1)
+                  : AppColors.accentPrimary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isDownloaded ? Icons.offline_pin : Icons.location_city,
+              color: isDownloaded ? AppColors.success : AppColors.accentPrimary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  city.nameRu,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (hasFailed) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatError(status?.error),
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ] else if (isDownloaded) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Загружено',
+                    style: TextStyle(
+                      color: AppColors.success,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          trailing,
+        ],
       ),
-      title: Text(city.nameRu),
-      subtitle: hasFailed
-          ? Text(
-              _formatError(status?.error),
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-            )
-          : isDownloaded
-              ? const Text('Загружено', style: TextStyle(color: Colors.green))
-              : null,
-      trailing: trailing,
     );
   }
 

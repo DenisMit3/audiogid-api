@@ -57,8 +57,8 @@ class DebugLogger {
             this.interceptErrors();
             this.logNavigation();
             
-            // Автоподключение к remote серверу (localhost для разработки)
-            this.connectRemote('http://localhost:8765');
+            // Автоподключение к remote серверу отключено (только облачная конфигурация)
+            // this.connectRemote('http://localhost:8765');
             
             // Логируем старт
             console.log('🔍 Debug Logger initialized - максимальное логирование включено');

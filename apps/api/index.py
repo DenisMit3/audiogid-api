@@ -121,8 +121,7 @@ _default_origins = [
     "https://admin.audiogid.app",
     "http://82.202.159.64:3080",  # Cloud.ru Admin
     "http://82.202.159.64:8000",  # Cloud.ru API
-    "http://localhost:3000",      # Local admin dev
-    "http://localhost:3080",      # Local admin
+    # Локальные серверы удалены - только облачная конфигурация
 ]
 _env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 allowed_origins = list(set(_default_origins + [o.strip() for o in _env_origins if o.strip()]))

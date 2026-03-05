@@ -17,7 +17,8 @@ class CatalogScreen extends ConsumerStatefulWidget {
   ConsumerState<CatalogScreen> createState() => _CatalogScreenState();
 }
 
-class _CatalogScreenState extends ConsumerState<CatalogScreen> {
+class _CatalogScreenState extends ConsumerState<CatalogScreen>
+    with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   String? _selectedCategory;
   bool _isMultiSelectMode = false;
@@ -53,7 +54,11 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     ref.listen(selectedCityProvider, (prev, next) {
       final city = next.value;
       if (city != null && city != prev?.value) {

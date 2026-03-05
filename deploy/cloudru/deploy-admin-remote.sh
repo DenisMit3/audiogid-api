@@ -27,4 +27,4 @@ sudo rm -rf $ADMIN_DIR/.next.backup 2>/dev/null || true
 
 echo ""
 echo "=== Admin deployed successfully ==="
-echo "URL: http://82.202.159.64:3080"
+echo "URL: http://82.202.159.64:3080/login"

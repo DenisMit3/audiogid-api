@@ -73,6 +73,6 @@ if ($LASTEXITCODE -ne 0) {
 Remove-Item $archivePath -ErrorAction SilentlyContinue
 
 Write-Host "`n=== Deploy Complete ===" -ForegroundColor Green
-Write-Host "Admin panel: http://82.202.159.64:3080" -ForegroundColor Cyan
+Write-Host "Admin panel: http://82.202.159.64:3080/login" -ForegroundColor Cyan
 Write-Host "`nTo check status on server:" -ForegroundColor Gray
 Write-Host "  ssh ${USER}@${SERVER} 'sudo systemctl status audiogid-admin'"

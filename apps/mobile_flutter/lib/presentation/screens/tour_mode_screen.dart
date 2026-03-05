@@ -12,6 +12,13 @@ import 'package:mobile_flutter/core/audio/providers.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:mobile_flutter/design_system/tokens/colors.dart';
+import 'package:mobile_flutter/design_system/tokens/radius.dart';
+import 'package:mobile_flutter/design_system/tokens/spacing.dart';
+import 'package:mobile_flutter/design_system/tokens/motion.dart';
+import 'package:mobile_flutter/design_system/styles/gradients.dart';
+import 'package:mobile_flutter/design_system/styles/glass.dart';
+import 'package:flutter/services.dart';
 
 class TourModeScreen extends ConsumerStatefulWidget {
   const TourModeScreen({super.key});
@@ -169,87 +176,137 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen>
           // Re-center button
           if (!_shouldFollowUser)
             Positioned(
-              right: 16,
-              bottom: 260,
-              child: FloatingActionButton.small(
-                onPressed: () => setState(() => _shouldFollowUser = true),
-                heroTag: 'recenter',
-                child: const Icon(Icons.my_location),
+              right: AppSpacing.md,
+              bottom: 280,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _shouldFollowUser = true);
+                  },
+                  borderRadius: BorderRadius.circular(AppRadius.fab),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.primaryButton,
+                      borderRadius: BorderRadius.circular(AppRadius.fab),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.my_location_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
               ),
             ),
 
           // Top Info Card
           Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 16,
-            right: 16,
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              color: Theme.of(context).colorScheme.surface,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.directions_walk),
+            top: MediaQuery.of(context).padding.top + AppSpacing.md,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            child: Container(
+              decoration: GlassDecoration.card(),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.primaryButton,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tourState.currentPoi?.titleRu ?? 'Конец маршрута',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    child: const Icon(
+                      Icons.directions_walk,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tourState.currentPoi?.titleRu ?? 'Конец маршрута',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
                           ),
-                          const SizedBox(height: 4),
-                          if (tourState.distanceToNextPoi != null)
-                            Row(
-                              children: [
-                                Text(
-                                  '${tourState.distanceToNextPoi!.toInt()} м',
-                                  style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        if (tourState.distanceToNextPoi != null)
+                          Row(
+                            children: [
+                              Text(
+                                '${tourState.distanceToNextPoi!.toInt()} м',
+                                style: const TextStyle(
+                                  color: AppColors.accentPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
                                 ),
-                                if (tourState.etaSeconds != null)
-                                  Text(
-                                    ' • ${_formatDuration(tourState.etaSeconds!)}',
-                                    style: const TextStyle(color: Colors.grey),
+                              ),
+                              if (tourState.etaSeconds != null) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  ' • ${_formatDuration(tourState.etaSeconds!)}',
+                                  style: const TextStyle(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 13,
                                   ),
+                                ),
                               ],
-                            ),
-                        ],
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  // AutoPlay Toggle
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        ref
+                            .read(tourModeServiceProvider.notifier)
+                            .toggleAutoPlay();
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: tourState.isAutoPlayEnabled
+                              ? AppColors.accentPrimary.withOpacity(0.2)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Icon(
+                          tourState.isAutoPlayEnabled
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          color: tourState.isAutoPlayEnabled
+                              ? AppColors.accentPrimary
+                              : AppColors.textTertiary,
+                          size: 24,
+                        ),
                       ),
                     ),
-
-                    // AutoPlay Toggle
-                    IconButton(
-                      icon: Icon(
-                        tourState.isAutoPlayEnabled
-                            ? Icons.volume_up
-                            : Icons.volume_off,
-                        color: tourState.isAutoPlayEnabled
-                            ? Colors.green
-                            : Colors.grey,
-                      ),
-                      onPressed: () => ref
-                          .read(tourModeServiceProvider.notifier)
-                          .toggleAutoPlay(),
-                      tooltip: 'Автовоспроизведение',
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -257,35 +314,63 @@ class _TourModeScreenState extends ConsumerState<TourModeScreen>
           // Off-Route Banner
           if (tourState.isOffRoute)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 90,
-              left: 16,
-              right: 16,
-              child: Card(
-                color: Colors.redAccent.shade700,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          color: Colors.white),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          "Вы ушли с маршрута",
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
+              top: MediaQuery.of(context).padding.top + 100,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.error.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    const Expanded(
+                      child: Text(
+                        "Вы ушли с маршрута",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _shouldFollowUser = true),
-                        style:
-                            TextButton.styleFrom(foregroundColor: Colors.white),
-                        child: const Text("ПОКАЗАТЬ"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _shouldFollowUser = true);
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                        ),
                       ),
-                    ],
-                  ),
+                      child: const Text(
+                        "ПОКАЗАТЬ",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -472,75 +557,153 @@ class _TourControls extends ConsumerWidget {
           final isBuffering = processingState == AudioProcessingState.buffering;
 
           return Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(blurRadius: 20, color: Colors.black26)
-              ],
-            ),
+            margin: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: GlassDecoration.card(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Progress Bar
-                LinearProgressIndicator(
-                  value: totalSteps > 0
-                      ? ((state.currentStepIndex + 1) / totalSteps)
-                      : 0,
-                  borderRadius: BorderRadius.circular(4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  child: LinearProgressIndicator(
+                    value: totalSteps > 0
+                        ? ((state.currentStepIndex + 1) / totalSteps)
+                        : 0,
+                    minHeight: 4,
+                    backgroundColor: AppColors.bgPrimary,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.accentPrimary,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Локация ${state.currentStepIndex + 1} из $totalSteps',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey),
+                  style: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    IconButton(
-                      onPressed: state.currentStepIndex > 0
-                          ? () => ref
-                              .read(tourModeServiceProvider.notifier)
-                              .prevStep()
-                          : null,
-                      icon: const Icon(Icons.skip_previous_rounded, size: 32),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: state.currentStepIndex > 0
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(tourModeServiceProvider.notifier)
+                                    .prevStep();
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: state.currentStepIndex > 0
+                                ? AppColors.bgPrimary
+                                : AppColors.bgPrimary.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Icon(
+                            Icons.skip_previous_rounded,
+                            size: 28,
+                            color: state.currentStepIndex > 0
+                                ? AppColors.textPrimary
+                                : AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
                     ),
-                    FloatingActionButton(
-                      onPressed: () {
-                        if (isPlaying) {
-                          audioHandler.pause();
-                        } else {
-                          audioHandler.play();
-                        }
-                      },
-                      elevation: 2,
-                      child: isBuffering
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Icon(
-                              isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              size: 36),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          if (isPlaying) {
+                            audioHandler.pause();
+                          } else {
+                            audioHandler.play();
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.fab),
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            gradient: AppGradients.primaryButton,
+                            borderRadius: BorderRadius.circular(AppRadius.fab),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accentPrimary.withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: isBuffering
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  size: 36,
+                                  color: Colors.white,
+                                ),
+                        ),
+                      ),
                     ),
-                    IconButton(
-                      onPressed: state.currentStepIndex < totalSteps - 1
-                          ? () => ref
-                              .read(tourModeServiceProvider.notifier)
-                              .nextStep()
-                          : null,
-                      icon: const Icon(Icons.skip_next_rounded, size: 32),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: state.currentStepIndex < totalSteps - 1
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(tourModeServiceProvider.notifier)
+                                    .nextStep();
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: state.currentStepIndex < totalSteps - 1
+                                ? AppColors.bgPrimary
+                                : AppColors.bgPrimary.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Icon(
+                            Icons.skip_next_rounded,
+                            size: 28,
+                            color: state.currentStepIndex < totalSteps - 1
+                                ? AppColors.textPrimary
+                                : AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.md),
                 TextButton(
                   onPressed: () async {
+                    HapticFeedback.lightImpact();
                     final tourId = state.activeTour?.id;
                     ref.read(tourModeServiceProvider.notifier).stopTour();
 
@@ -553,8 +716,20 @@ class _TourControls extends ConsumerWidget {
                       if (context.canPop()) context.pop();
                     }
                   },
-                  child: const Text('Завершить прогулку',
-                      style: TextStyle(color: Colors.redAccent)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                  ),
+                  child: const Text(
+                    'Завершить прогулку',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             ),

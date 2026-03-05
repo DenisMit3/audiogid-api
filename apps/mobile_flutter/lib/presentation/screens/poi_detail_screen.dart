@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:mobile_flutter/core/theme/app_theme.dart';
+import 'package:mobile_flutter/design_system/tokens/colors.dart';
+import 'package:mobile_flutter/design_system/tokens/spacing.dart';
 import 'package:mobile_flutter/domain/entities/poi.dart';
 import 'package:mobile_flutter/domain/entities/tour.dart';
 import 'package:mobile_flutter/data/repositories/entitlement_repository.dart';
@@ -271,21 +273,49 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
   Widget _buildHeader(BuildContext context, Poi poi) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final narration = poi.narrations.isNotEmpty ? poi.narrations.first : null;
+    final kidsModeEnabled = ref.watch(settingsRepositoryProvider).value?.getKidsModeEnabled() ?? false;
 
     return Semantics(
       header: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (poi.category != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: TextBadge(
-                _translateCategory(poi.category!),
-                backgroundColor: colorScheme.primaryContainer,
-                textColor: colorScheme.onPrimaryContainer,
-              ),
-            ),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              if (poi.category != null)
+                TextBadge(
+                  _translateCategory(poi.category!),
+                  backgroundColor: colorScheme.primaryContainer,
+                  textColor: colorScheme.onPrimaryContainer,
+                ),
+              if (narration != null) ...[
+                if (narration.locale.isNotEmpty)
+                  TextBadge(
+                    narration.locale.toUpperCase(),
+                    backgroundColor: AppColors.accentSecondary.withOpacity(0.2),
+                    textColor: AppColors.accentSecondary,
+                  ),
+                if (narration.durationSeconds != null)
+                  TextBadge(
+                    _formatDuration(narration.durationSeconds!),
+                    backgroundColor: AppColors.info.withOpacity(0.2),
+                    textColor: AppColors.info,
+                    icon: Icons.headphones,
+                  ),
+                if (kidsModeEnabled && narration.kidsUrl != null)
+                  TextBadge(
+                    'Для детей',
+                    backgroundColor: AppColors.warning.withOpacity(0.2),
+                    textColor: AppColors.warning,
+                    icon: Icons.child_care,
+                  ),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
           AccessibleHeader(
             text: poi.titleRu,
             level: 1,
@@ -296,6 +326,15 @@ class _PoiDetailScreenState extends ConsumerState<PoiDetailScreen> {
         ],
       ),
     );
+  }
+
+  String _formatDuration(double seconds) {
+    final mins = (seconds / 60).floor();
+    final secs = (seconds % 60).floor();
+    if (mins > 0) {
+      return '$mins мин';
+    }
+    return '$secs сек';
   }
 
   Widget _buildActionButtons(BuildContext context, Poi poi, bool hasAccess) {

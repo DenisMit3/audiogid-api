@@ -1,5 +1,6 @@
 # Audio Guide 2026 API - Main Entry Point
 # Supports deployment on any platform: Cloud.ru VM, Docker, etc.
+# Updated: 2026-03-06 - trigger deploy
 
 from fastapi import FastAPI, Request, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware

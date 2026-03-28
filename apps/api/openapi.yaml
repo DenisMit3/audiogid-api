@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Audio Guide 2026 API
-  version: 1.13.0
+  version: 1.15.6
   description: Canonical API for Audio Guide 2026. Includes fail-closed caching rules.
 servers:
   - url: http://82.202.159.64:8000/v1

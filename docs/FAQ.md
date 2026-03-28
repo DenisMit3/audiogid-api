@@ -1,22 +1,23 @@
 # Frequently Asked Questions
 
 ## What is this project?
-This is an audio processing API that allows users to manipulate audio files programmatically.
+Audio Guide API is a FastAPI backend for a mobile audio guide application with offline-first support, billing, auth, and an admin panel.
 
-## How do I install the API?
-You can install the API using the following command:
-```
-npm install audiogid-api
-```
+## What is the source of truth for API contracts?
+`apps/api/openapi.yaml` (OpenAPI 3.1).
 
-## What are the main features?
-- Audio file conversion
-- Audio effects
-- Batch processing
+## How do users authenticate?
+Supported methods are SMS (`/auth/login/sms/*`), Telegram (`/auth/login/telegram`), and email (`/auth/login/email`).
 
-## Troubleshooting
-- **Issue:** Installation errors.
-  **Solution:** Make sure you have Node.js and npm installed.
+## How is paid access managed?
+The backend verifies store receipts/tokens (`/billing/apple/verify`, `/billing/google/verify`) and grants entitlements via `EntitlementGrant` records.
 
-- **Issue:** API not responding.
-  **Solution:** Check that your server is running and configured correctly.
+## How does offline mode work?
+Clients request bundle build jobs (`/offline/bundles:build`) and then poll job status (`/offline/bundles/{job_id}`).
+
+## Where can I check service health?
+Use `/v1/ops/health`, `/v1/ops/ready`, and `/v1/ops/config-check`.
+
+## Where are deployment endpoints?
+Production API: `http://82.202.159.64:8000/v1`
+Admin Panel: `http://82.202.159.64:3080/login`

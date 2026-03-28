@@ -9,13 +9,13 @@
 | Параметр | Значение |
 |----------|----------|
 | Название | Audio Guide 2026 / Аудиогид |
-| Версия API | 1.15.0 |
+| Версия API | 1.15.6 |
 | Архитектура | Monorepo (pnpm workspaces + Turborepo) |
 | Package Manager | pnpm 8.15.4 |
 | Деплой | Cloud.ru (API + Admin), App Stores (Mobile) |
 | База данных | PostgreSQL + PostGIS (локально на Cloud.ru) |
 | Статус | Release Candidate (RC1) |
-| Последнее обновление | 2026-02-25 |
+| Последнее обновление | 2026-03-27 |
 
 ### 1.2 Технологический стек
 

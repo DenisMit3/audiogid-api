@@ -199,7 +199,7 @@ class TourSnippet {
         descriptionRu: mapValueOfType<String>(json, r'description_ru'),
         coverImage: mapValueOfType<String>(json, r'cover_image'),
         durationMinutes: mapValueOfType<int>(json, r'duration_minutes'),
-        distanceKm: json[r'distance_km'] != null ? num.tryParse('${json[r'distance_km']}') : null,
+        distanceKm: num.parse('${json[r'distance_km']}'),
         tourType: mapValueOfType<String>(json, r'tour_type'),
         difficulty: mapValueOfType<String>(json, r'difficulty'),
       );

@@ -194,10 +194,6 @@ else:
     receiver = None
 
 
-@app.get("/api/health")
-def health_check_legacy():
-    return {"status": "ok", "version": "1.15.6"}
-
 # --- Diagnostic Endpoint ---
 @app.get("/api/diagnose-admin")
 def diagnose_admin():

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 // Direct API URL - Cloud.ru nginx proxies API on port 80
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://82.202.159.64/v1';
+const IS_SECURE_COOKIE = process.env.NODE_ENV === 'production';
 
 export async function POST(request: Request) {
     let body;
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
                 status: 200,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Set-Cookie': `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
+                    'Set-Cookie': `token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${IS_SECURE_COOKIE ? '; Secure' : ''}`
                 }
             }
         );

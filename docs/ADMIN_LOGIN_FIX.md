@@ -10,7 +10,7 @@ API endpoint работает корректно:
 ```bash
 curl -X POST "http://82.202.159.64/v1/auth/login/email" \
   -H "Content-Type: application/json" \
-  -d '{"email":"mit333@list.ru","password":"Solnyshko3"}'
+  -d '{"email":"admin@example.com","password":"<your-password>"}'
 ```
 
 **Результат:** ✅ Возвращает токены успешно
@@ -60,10 +60,8 @@ curl -X POST "http://82.202.159.64/v1/auth/login/email" \
 
 ## Тестовые данные для входа
 
-- **Email:** `mit333@list.ru`
-- **Password:** `Solnyshko3`
-
-Эти данные автоматически создают пользователя при первом входе (fallback в коде API).
+Используйте только реальные учетные данные, созданные администратором.
+Hardcoded fallback-логин отключен в API по соображениям безопасности.
 
 ## Дополнительная диагностика
 
@@ -82,4 +80,3 @@ curl -X POST "http://82.202.159.64/v1/auth/login/email" \
    ```
 
 3. **Проверьте логи Next.js** в консоли браузера и на сервере
-
